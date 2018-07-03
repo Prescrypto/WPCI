@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import config as conf
 
 from tornado.httpclient import AsyncHTTPClient
@@ -47,16 +48,14 @@ def handle_response(res):
     else:
         print ("success",res.body)
 
-def get_repo_pages():
-    repo_url = 'repos/Prescrypto/cryptosign_whitepaper/contents/README.md'
+def get_repo_pages(owner_repo, path):
+    repo_url= 'repos/'+owner_repo+'contents/'+path
     URL= GIT_BASE_URI + repo_url
     http_client = AsyncHTTPClient()
     # Asynchronous request for contet
-    bodydict = {}
-    bodydict.update({'username': ''})
-    bodydict.update({'password': ''})
     headers['Accept'] = 'application/vnd.github.v3.raw'
 
     response = http_client.fetch(URL,headers=headers, method="GET", callback=handle_response)
 
     return response
+
