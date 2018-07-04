@@ -36,7 +36,6 @@ class WSHandler(object):
 
     def on_response(self, url, response):
         self.url_res[url] = response
-        #print(url, response)
         self.write(str(response) + "\n")
         self.flush()
         if not filter(lambda x: x is None, self.url_res.values()):

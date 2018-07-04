@@ -10,6 +10,11 @@ import config as conf
 import datetime
 import json
 from models import User
+import tempfile
+import os
+import subprocess
+import glob
+from handlers.emailHandler import write_email
 
 SECRET = conf.SECRET
 
@@ -168,6 +173,69 @@ def authenticate_json(json_data):
     else:
         return False
 
+def clone_repo(repo_url, main_tex="main.tex"):
+    repo_name = ''
+    new_name = ''
+    clone = "git clone " + repo_url
+    try:
+        repo_name= repo_url.split("/")[-1].split(".")[0]
+    except Exception as e:
+        print('couldnt find the name or not valid url')
+        return("ERROR")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            filesdir = os.path.join(tmpdir, repo_name)
+            subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            run_latex_result = subprocess.call("pdflatex -interaction=nonstopmode "+ filesdir+"/"+main_tex , shell=True, cwd=tmpdir)
+            #print("response",run_latex_result)
+            new_name = main_tex.split(".")[0]+ ".pdf"
+            write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , tmpdir+"/")
+
+            return("Email Sent")
+
+        except IOError as e:
+            print('IOError', e)
+            return("IO ERROR")
+        except Exception as e:
+            print("other error", e)
+            return("ERROR")
+
+def clone_repo_all(repo_url):
+    repo_name = ''
+    new_name = ''
+    clone = "git clone " + repo_url
+    try:
+        repo_name= repo_url.split("/")[-1].split(".")[0]
+    except Exception as e:
+        print('couldnt find the name or not valid url')
+        return("ERROR")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            filesdir = os.path.join(tmpdir, repo_name)
+            subprocess.call(clone, shell=True, cwd=tmpdir)
+            files = glob.glob(filesdir + '/*.tex')
+
+            for name in files:
+                print("response", subprocess.call("pdflatex "+ name, shell=True, cwd=tmpdir))
+                try:
+                    new_name = name.split("/")[-1].split(".")[0] + ".pdf"
+                except:
+                    print("main file name not found")
+                    return("ERROR ON MAIN FILE")
+
+                write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , tmpdir+"/")
+                #print('name', name)
+                #with open(name) as tmp:
+                #    print(tmp)
+            return("Email Sent")
+
+        except IOError as e:
+            print('IOError', e)
+            return("IO ERROR")
+
+
 @jwtauth
 class APINotFoundHandler(BaseHandler):
     def options(self, *args, **kwargs):
@@ -216,7 +284,22 @@ class HelloWorld2(BaseHandler):
     def post(self, userid):
         self.write(json.dumps({"response": "hello world2"}))
 
+@jwtauth
+class PostRepo(BaseHandler):
+    def get(self, userid):
+        self.write(json.dumps({"response": "GET not found"}))
 
+    def post(self, userid):
+        json_data = json.loads(self.request.body.decode('utf-8'))
+        #repo_url = 'https://github.com/Prescrypto/cryptosign_whitepaper.git'
+        try:
+            result = clone_repo(json_data.get("remote_url"),json_data.get("main_tex") )
+            self.write(json.dumps({"response": result}))
+        except Exception as e:
+            print("error on clone", e)
+
+
+"""No autentication"""
 class HelloWorld(BaseHandler):
     def get(self):
         self.write(json.dumps({"response": "hello world"}))
@@ -228,7 +311,7 @@ class HelloWorld(BaseHandler):
 
 application = Application([
         (r"/api/v1/helloworld", HelloWorld),
-        (r"/api/v1/helloworld2", HelloWorld2),
+        (r"/api/v1/renderrepo", PostRepo),
         (r"/api/v1/auth/login", AuthLoginHandler),
         (r"/api/v1/auth/signin", RegisterUser),
         (r'.*', APINotFoundHandler)], debug=True)
