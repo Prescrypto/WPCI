@@ -20,16 +20,20 @@ class BaseHandler(RequestHandler):
 
 
     def get(self, *args, **kwargs):
-        raise HTTPError(**status_0)
+        self.set_status(404)
+        self.finish(json.dumps({"response": "NOT FOUND"}))
 
     def post(self, *args, **kwargs):
-        raise HTTPError(**status_0)
+        self.set_status(404)
+        self.finish(json.dumps({"response": "NOT FOUND"}))
 
     def put(self, *args, **kwargs):
-        raise HTTPError(**status_0)
+        self.set_status(404)
+        self.finish(json.dumps({"response": "NOT FOUND"}))
 
     def delete(self, *args, **kwargs):
-        raise HTTPError(**status_0)
+        self.set_status(404)
+        self.finish(json.dumps({"response": "NOT FOUND"}))
 
     def options(self, *args, **kwargs):
         print ("in options")
