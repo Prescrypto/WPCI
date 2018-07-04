@@ -3,6 +3,7 @@ import datetime
 import jwt
 import tempfile
 import os
+import subprocess
 import glob
 
 from tornado.httpserver import HTTPServer
@@ -15,9 +16,12 @@ from tornado.websocket import WebSocketHandler
 from tornado.ioloop import IOLoop
 from tornado.options import define, options
 PORT = conf.LISTEN_PORT
+from handlers.emailHandler import write_email
 
 
 def clone_repo(repo_url):
+    repo_name = ''
+    new_name = ''
     try:
         repo_name= repo_url.split("/")[-1].split(".")[0]
     except Exception as e:
@@ -28,73 +32,27 @@ def clone_repo(repo_url):
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
             filesdir = os.path.join(tmpdir, repo_name)
-            os.chdir(tmpdir)  # Specifying the path where the cloned project has to be copied
-            os.system(clone)  # Cloning
+            subprocess.call(clone, shell=True, cwd=tmpdir)
             files = glob.glob(filesdir + '/*.tex')
 
             for name in files:
+                subprocess.call("pdflatex "+ name, shell=True, cwd=tmpdir)
+                try:
+                    new_name = name.split("/")[-1].split(".")[0] + ".pdf"
+                except:
+                    print("main file name not found")
+                    return("ERROR ON MAIN FILE")
+
+                write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , tmpdir+"/")
                 #print('name', name)
-                with open(name) as tmp:
-                    print(tmp)
+                #with open(name) as tmp:
+                #    print(tmp)
 
         except IOError as e:
             print('IOError', e)
 
         finally:
             print('finally')
-
-def clone_repo3(repo_url):
-    tmpdir = tempfile.mkdtemp()
-    clone = "git clone "+ repo_url
-
-    try:
-        filesdir = os.path.join(tmpdir, 'cryptosign_whitepaper')
-        print(filesdir)
-        #files = glob.glob(filesdir+ '/*.tex')
-
-        os.chdir(tmpdir)  # Specifying the path where the cloned project has to be copied
-        os.system(clone)  # Cloning
-        files = glob.glob(filesdir+ '/*.tex')
-
-        for name in files:
-            print('name',name)
-            with open(name) as tmp:
-                for line in tmp:
-                    print(line)
-            #os.remove(path)
-
-    except IOError as e:
-        print('IOError', e)
-
-    finally:
-        #os.umask(saved_umask)
-        #os.rmdir(tmpdir)
-        print('finally')
-
-def clone_repo2(repo_url):
-    tmpdir = tempfile.mkdtemp()
-    predictable_filename = 'myfile.txt'
-
-    # Ensure the file is read/write by the creator only
-    #saved_umask = os.umask(0o777)
-
-    path = os.path.join(tmpdir, predictable_filename)
-    print(path)
-    try:
-        with open(path, "w") as tmp:
-            tmp.write("secrets!")
-        with open(path, "r") as tmp:
-            line = tmp.readline()
-            print(line)
-        #os.remove(path)
-
-    except IOError as e:
-        print('IOError', e)
-
-    finally:
-        #os.umask(saved_umask)
-        os.rmdir(tmpdir)
-        print('finally')
 
 
 def main():
