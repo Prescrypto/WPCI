@@ -187,10 +187,10 @@ def clone_repo(repo_url, main_tex="main.tex"):
         try:
             filesdir = os.path.join(tmpdir, repo_name)
             subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            run_latex_result = subprocess.call("pdflatex -interaction=nonstopmode "+ filesdir+"/"+main_tex , shell=True, cwd=tmpdir)
+            run_latex_result = subprocess.call("pdflatex -interaction=nonstopmode "+ filesdir+"/"+main_tex , shell=True, cwd=filesdir)
             #print("response",run_latex_result)
             new_name = main_tex.split(".")[0]+ ".pdf"
-            write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , tmpdir+"/")
+            write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , filesdir+"/")
 
             return("Email Sent")
 
