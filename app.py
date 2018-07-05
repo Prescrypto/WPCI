@@ -13,7 +13,6 @@ from tornado.websocket import WebSocketHandler
 from tornado.ioloop import IOLoop
 from tornado.options import define, options
 from handlers.routes import clone_repo
-PORT = conf.LISTEN_PORT
 
 
 def main():
@@ -33,6 +32,7 @@ if __name__ == '__main__':
     try:
         application = routes.application
         httpServer = HTTPServer(application)
+        PORT = int(os.environ.get("PORT", 5000))
         httpServer.listen(PORT)
         httpServer.start()
         # application.listen(5000)
