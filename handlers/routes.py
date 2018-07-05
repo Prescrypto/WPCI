@@ -182,7 +182,7 @@ def clone_repo(repo_url, main_tex="main.tex"):
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            repo_name = os.listdir(tmpdir)
+            repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             #print("response",run_latex_result)
