@@ -17,11 +17,9 @@ ucs
 todonotes
 xkeyval
 cprotect
-indentfirst
 hyperref
 listings
 natbib
 url
 pdfpages
 algorithm2e
-algpseudocode
