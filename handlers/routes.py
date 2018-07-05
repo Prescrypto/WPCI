@@ -178,17 +178,13 @@ def clone_repo(repo_url, main_tex="main.tex"):
     repo_name = ''
     new_name = ''
     clone = "git clone " + repo_url
-    try:
-        repo_name= repo_url.split("/")[-1].split(".")[0]
-    except Exception as e:
-        print('couldnt find the name or not valid url')
-        return("ERROR")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            repo_name = os.listdir(tmpdir)
             filesdir = os.path.join(tmpdir, repo_name)
-            subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ filesdir+"/"+main_tex , shell=True, cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             #print("response",run_latex_result)
             new_name = main_tex.split(".")[0]+ ".pdf"
             write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , filesdir+"/")
@@ -272,10 +268,16 @@ class AuthLoginHandler(BaseHandler):
 
 class RegisterUser(BaseHandler):
     def post(self):
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        user = User.User(json_data.get("username"), json_data.get("password"))
-        if not user.find():
-            user.create()
+        try:
+            json_data = json.loads(self.request.body.decode('utf-8'))
+            user = User.User(json_data.get("username"), json_data.get("password"))
+            if not user.find():
+                user.create()
+                self.write(json.dumps({"response": "user created successfully"}))
+            else:
+                self.write(json.dumps({"response": "user already exists"}))
+        except:
+            self.write(json.dumps({"response": "error registering user"}))
 
 @jwtauth
 class HelloWorld2(BaseHandler):
@@ -294,7 +296,12 @@ class PostRepo(BaseHandler):
         json_data = json.loads(self.request.body.decode('utf-8'))
         #repo_url = 'https://github.com/Prescrypto/cryptosign_whitepaper.git'
         try:
-            result = clone_repo(json_data.get("remote_url"),json_data.get("main_tex") )
+            if json_data.get("main_tex") is None or json_data.get("main_tex") == "":
+                main_tex = "main.tex"
+            else:
+                main_tex = json_data.get("main_tex")
+
+            result = clone_repo(json_data.get("remote_url"),main_tex )
             self.write(json.dumps({"response": result}))
         except Exception as e:
             print("error on clone", e)
