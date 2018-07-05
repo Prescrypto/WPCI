@@ -9,7 +9,7 @@ import config as conf
 class ManageDB():
     def __init__(self, collection_string):
         self.client = MongoClient(conf.MONGO_URI)
-        self.db = self.client.wpci
+        self.db = self.client.get_database()
         self.collection = self.db[collection_string]
 
     def set_collection(self, collection):
