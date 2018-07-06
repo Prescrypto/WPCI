@@ -22,8 +22,8 @@ try:
             (r"/api/v1/auth/signin", routes.RegisterUser),
             (r'.*', routes.APINotFoundHandler)], debug=True)
 
-    PORT = int(os.environ.get("PORT", 8000))
-    application.listen(PORT)
+    #PORT = int(os.environ.get("PORT", 8000))
+    #application.listen(PORT)
     IOLoop.instance().start()
 except KeyboardInterrupt:
     IOLoop.instance().stop()
