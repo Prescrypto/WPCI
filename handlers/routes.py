@@ -175,7 +175,7 @@ def authenticate_json(json_data):
     else:
         return False
 
-def clone_repo(repo_url, main_tex="main.tex", email = "valerybriz@gmail.com"):
+def create_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
@@ -201,7 +201,7 @@ def clone_repo(repo_url, main_tex="main.tex", email = "valerybriz@gmail.com"):
             print("other error", e)
             return("ERROR")
 
-def clone_repo_all(repo_url):
+def create_each_pdf(repo_url):
     '''renders one by one all the .tex on a repo'''
     repo_name = ''
     new_name = ''
@@ -300,7 +300,7 @@ class PostRepo(BaseHandler):
             else:
                 main_tex = json_data.get("main_tex")
             userjson = ast.literal_eval(userid)
-            result = clone_repo(json_data.get("remote_url"),main_tex, userjson.get('username'))
+            result = create_pdf(json_data.get("remote_url"),userjson.get('username'), main_tex)
             self.write(json.dumps({"response": result}))
         except Exception as e:
             print("error on clone", e)
