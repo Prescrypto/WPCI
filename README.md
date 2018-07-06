@@ -19,5 +19,5 @@ and finally you can post a url and recieve an email in your user email with the 
   curl -X POST \
   http://latex-ci.herokuapp.com/api/v1/renderrepo \
   -H 'Authorization: Bearer <TOKEN>' \
-  -d '{"remote_url":"https://git.overleaf.com/<ID FROM OVERLEAF>", "main_tex":"main.tex"}'
+  -d '{"remote_url":"<URL FROM GITHUB OR OVERLEAF>", "main_tex":"main.tex"}'
 ```
