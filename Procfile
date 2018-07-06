@@ -1,1 +1,1 @@
-web: gunicorn -k gevent --timeout 120 --bind 127.0.0.1:$PORT app:application 
+web: gunicorn --timeout 120 app:application 
