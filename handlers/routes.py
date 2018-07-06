@@ -1,5 +1,5 @@
 from tornado.wsgi import WSGIContainer
-from tornado.web import Application, FallbackHandler, RequestHandler, HTTPError, os
+from tornado.web import Application, FallbackHandler, RequestHandler, HTTPError, os, asynchronous
 from tornado.websocket import WebSocketHandler
 import tornado
 import ast
@@ -242,14 +242,6 @@ class APINotFoundHandler(BaseHandler):
         self.finish()
 
 class AuthLoginHandler(BaseHandler):
-    def get(self):
-        try:
-            errormessage = self.get_argument("error")
-        except:
-            errormessage = ""
-        #self.render("login.html", errormessage = errormessage)
-        self.write_json({"response":"error"}, 200)
-
     def post(self):
         json_data = json.loads(self.request.body.decode('utf-8'))
         token_auth = authenticate_json(json_data)
