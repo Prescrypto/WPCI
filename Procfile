@@ -1,1 +1,1 @@
-web: gunicorn -k tornado app:application
+web: gunicorn -k tornado --timeout 90 app:application
