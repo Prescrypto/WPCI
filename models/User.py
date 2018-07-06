@@ -42,7 +42,8 @@ class User(object):
             print("finding user", e)
 
         finally:
-            mydb.close()
+            if mydb is not None:
+                mydb.close()
 
         return result
 
@@ -61,7 +62,8 @@ class User(object):
             print("finding user", e)
 
         finally:
-            mydb.close()
+            if mydb is not None:
+                mydb.close()
 
         return result
 
@@ -78,6 +80,7 @@ class User(object):
             print("creating user", error)
 
         finally:
-            mydb.close()
+            if mydb is not None:
+                mydb.close()
 
         return result

@@ -2,6 +2,7 @@ from tornado.wsgi import WSGIContainer
 from tornado.web import Application, FallbackHandler, RequestHandler, HTTPError, os
 from tornado.websocket import WebSocketHandler
 import tornado
+import ast
 from tornado.ioloop import IOLoop
 from tornado.options import define, options
 from handlers.apiBaseHandler import BaseHandler
@@ -173,21 +174,22 @@ def authenticate_json(json_data):
     else:
         return False
 
-def clone_repo(repo_url, main_tex="main.tex"):
+def clone_repo(repo_url, main_tex="main.tex", email = "valerybriz@gmail.com"):
     #https://username:password@github.com/Prescrypto/cryptosign_whitepaper.git
     repo_name = ''
     new_name = ''
-    clone = "git clone " + repo_url
+    clone = 'git clone ' + repo_url
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            print("repourl", repo_url)
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             #print("response",run_latex_result)
             new_name = main_tex.split(".")[0]+ ".pdf"
-            write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , filesdir+"/")
+            write_email([email], "testing pdflatex",new_name , filesdir+"/")
 
             return("Email Sent")
 
@@ -294,14 +296,13 @@ class PostRepo(BaseHandler):
 
     def post(self, userid):
         json_data = json.loads(self.request.body.decode('utf-8'))
-        #repo_url = 'https://github.com/Prescrypto/cryptosign_whitepaper.git'
         try:
             if json_data.get("main_tex") is None or json_data.get("main_tex") == "":
                 main_tex = "main.tex"
             else:
                 main_tex = json_data.get("main_tex")
-
-            result = clone_repo(json_data.get("remote_url"),main_tex )
+            userjson = ast.literal_eval(userid)
+            result = clone_repo(json_data.get("remote_url"),main_tex, userjson.get('username'))
             self.write(json.dumps({"response": result}))
         except Exception as e:
             print("error on clone", e)
@@ -317,9 +318,3 @@ class HelloWorld(BaseHandler):
 
 
 
-application = Application([
-        (r"/api/v1/helloworld", HelloWorld),
-        (r"/api/v1/renderrepo", PostRepo),
-        (r"/api/v1/auth/login", AuthLoginHandler),
-        (r"/api/v1/auth/signin", RegisterUser),
-        (r'.*', APINotFoundHandler)], debug=True)
