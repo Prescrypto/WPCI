@@ -155,6 +155,7 @@ def jwtauth(handler_class):
 
 
 def authenticate_json(json_data):
+    '''gets the information from the payload and verificates if it is registered'''
     try:
         username = json_data.get("username")
         password = json_data.get("password")
@@ -175,7 +176,7 @@ def authenticate_json(json_data):
         return False
 
 def clone_repo(repo_url, main_tex="main.tex", email = "valerybriz@gmail.com"):
-    #https://username:password@github.com/Prescrypto/cryptosign_whitepaper.git
+    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
     clone = 'git clone ' + repo_url
@@ -201,6 +202,7 @@ def clone_repo(repo_url, main_tex="main.tex", email = "valerybriz@gmail.com"):
             return("ERROR")
 
 def clone_repo_all(repo_url):
+    '''renders one by one all the .tex on a repo'''
     repo_name = ''
     new_name = ''
     clone = "git clone " + repo_url
@@ -237,11 +239,13 @@ def clone_repo_all(repo_url):
 
 @jwtauth
 class APINotFoundHandler(BaseHandler):
+    '''if the endpoint doesn't exists then it will response with this code'''
     def options(self, *args, **kwargs):
         self.set_status(200)
         self.finish()
 
 class AuthLoginHandler(BaseHandler):
+    '''receives the username and password to retrive a token'''
     def post(self):
         json_data = json.loads(self.request.body.decode('utf-8'))
         token_auth = authenticate_json(json_data)
@@ -261,6 +265,7 @@ class AuthLoginHandler(BaseHandler):
             self.clear_cookie("user")
 
 class RegisterUser(BaseHandler):
+    '''receives a payload with the user data and stores it on the bd'''
     def post(self):
         try:
             json_data = json.loads(self.request.body.decode('utf-8'))
@@ -283,6 +288,7 @@ class HelloWorld2(BaseHandler):
 
 @jwtauth
 class PostRepo(BaseHandler):
+    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
     def get(self, userid):
         self.write(json.dumps({"response": "GET not found"}))
 
@@ -300,7 +306,7 @@ class PostRepo(BaseHandler):
             print("error on clone", e)
 
 
-"""No autentication"""
+"""No autentication endpoint"""
 class HelloWorld(BaseHandler):
     def get(self):
         self.write(json.dumps({"response": "hello world"}))

@@ -29,6 +29,7 @@ class User(object):
         return pwd_context.verify(self.password, hashed)
 
     def find(self):
+        '''finds a user'''
         result = False
         mydb = None
         try:
@@ -48,6 +49,7 @@ class User(object):
         return result
 
     def check(self):
+        '''checks if username and password exists'''
         result = False
         mydb = None
         try:
@@ -68,6 +70,7 @@ class User(object):
         return result
 
     def create(self):
+        '''creates a new user on the bd'''
         result = False
         mydb = None
         try:
