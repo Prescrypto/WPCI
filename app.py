@@ -14,9 +14,13 @@ from handlers.routes import clone_repo
 
 # execute asynchronously action
 # print('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
-application = Application([
+web_app = Application([
         (r"/api/v1/helloworld", routes.HelloWorld),
         (r"/api/v1/renderrepo", routes.PostRepo),
         (r"/api/v1/auth/login", routes.AuthLoginHandler),
         (r"/api/v1/auth/signin", routes.RegisterUser),
         (r'.*', routes.APINotFoundHandler)], debug=True)
+
+application = WSGIAdapter(web_app)
+
+
