@@ -12,21 +12,11 @@ from handlers.routes import clone_repo
 
 
 
-try:
-    # execute asynchronously action
-    # print('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
-    application = Application([
-            (r"/api/v1/helloworld", routes.HelloWorld),
-            (r"/api/v1/renderrepo", routes.PostRepo),
-            (r"/api/v1/auth/login", routes.AuthLoginHandler),
-            (r"/api/v1/auth/signin", routes.RegisterUser),
-            (r'.*', routes.APINotFoundHandler)], debug=True)
-
-    #PORT = int(os.environ.get("PORT", 8000))
-    #application.listen(PORT)
-    IOLoop.instance().start()
-except KeyboardInterrupt:
-    IOLoop.instance().stop()
-    print("keyboard interrupt")
-except Exception as e:
-    print(e)
+# execute asynchronously action
+# print('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
+application = Application([
+        (r"/api/v1/helloworld", routes.HelloWorld),
+        (r"/api/v1/renderrepo", routes.PostRepo),
+        (r"/api/v1/auth/login", routes.AuthLoginHandler),
+        (r"/api/v1/auth/signin", routes.RegisterUser),
+        (r'.*', routes.APINotFoundHandler)], debug=True)
