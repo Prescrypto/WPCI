@@ -9,6 +9,7 @@ import json
 import fitz
 from models import User
 import tempfile
+import time
 import hashlib
 import os
 import subprocess
@@ -173,11 +174,12 @@ def authenticate_json(json_data):
     else:
         return False
 
-def get_hash(payload):
+def get_hash(email, git_sha):
     hashed_payload = None
-    hash_object = hashlib.sha256(payload) #if string then str.encode('utf-8')
+    timestamp = str(time.time())
+    payload = hashlib.sha256(timestamp.encode('utf-8')).hexdigest() + hashlib.sha256(email.encode('utf-8')).hexdigest() + git_sha
+    hash_object = hashlib.sha256(payload.encode('utf-8'))
     hashed_payload = hash_object.hexdigest()
-
 
     return hashed_payload
 
@@ -211,18 +213,21 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
     new_name = ''
     img_filename = 'testimage.jpg'
     clone = 'git clone ' + repo_url
+    rev_parse = 'git rev-parse master'
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
+            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
-            point = fitz.Point(450,50)
+            point = fitz.Point(50,50)
             document = fitz.open(new_name)
             for page in document:
-                page.insertText(point, text="HASH AQUI>>>>>>>>>>>>>>>>>>>>>>>>>", fontsize = 11, fontname = "Helvetica")
+                page.insertText(point, text=complete_hash, fontsize = 11, fontname = "Helvetica")
             #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #Estos parametros resultan en compresion del pdf
             document.save(new_name, incremental=1)
             document.close()
