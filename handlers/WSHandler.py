@@ -4,7 +4,6 @@ import sys
 import config as conf
 
 from tornado.httpclient import AsyncHTTPClient
-from tornado.ioloop import IOLoop
 
 headers = conf.headers
 GIT_BASE_URI = conf.GITHUB_API_URL

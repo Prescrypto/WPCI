@@ -1,10 +1,6 @@
-from tornado.wsgi import WSGIContainer
-from tornado.web import Application, FallbackHandler, RequestHandler, HTTPError, os, asynchronous
-from tornado.websocket import WebSocketHandler
+from tornado.web import  os
 import tornado
 import ast
-from tornado.ioloop import IOLoop
-from tornado.options import define, options
 from handlers.apiBaseHandler import BaseHandler
 import jwt
 import config as conf
@@ -175,7 +171,7 @@ def authenticate_json(json_data):
     else:
         return False
 
-def create_pdf(repo_url, email, main_tex="main.tex"):
+def create_email_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
@@ -183,16 +179,37 @@ def create_pdf(repo_url, email, main_tex="main.tex"):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
-            print("repourl", repo_url)
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            #print("response",run_latex_result)
             new_name = main_tex.split(".")[0]+ ".pdf"
             write_email([email], "testing pdflatex",new_name , filesdir+"/")
 
             return("Email Sent")
+
+        except IOError as e:
+            print('IOError', e)
+            return("IO ERROR")
+        except Exception as e:
+            print("other error", e)
+            return("ERROR")
+
+def create_download_pdf(repo_url, email, main_tex="main.tex"):
+    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    repo_name = ''
+    new_name = ''
+    clone = 'git clone ' + repo_url
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            repo_name = os.listdir(tmpdir)[0]
+            filesdir = os.path.join(tmpdir, repo_name)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
+            new_name = main_tex.split(".")[0]+ ".pdf"
+            pdffile = open(filesdir+"/"+new_name, 'rb').read()
+            return(pdffile)
 
         except IOError as e:
             print('IOError', e)
@@ -219,7 +236,7 @@ def create_each_pdf(repo_url):
             files = glob.glob(filesdir + '/*.tex')
 
             for name in files:
-                print("response", subprocess.call("pdflatex "+ name, shell=True, cwd=tmpdir))
+                subprocess.call("pdflatex "+ name, shell=True, cwd=tmpdir)
                 try:
                     new_name = name.split("/")[-1].split(".")[0] + ".pdf"
                 except:
@@ -227,9 +244,7 @@ def create_each_pdf(repo_url):
                     return("ERROR ON MAIN FILE")
 
                 write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , tmpdir+"/")
-                #print('name', name)
-                #with open(name) as tmp:
-                #    print(tmp)
+
             return("Email Sent")
 
         except IOError as e:
@@ -300,8 +315,8 @@ class PostRepo(BaseHandler):
             else:
                 main_tex = json_data.get("main_tex")
             userjson = ast.literal_eval(userid)
-            result = create_pdf(json_data.get("remote_url"),userjson.get('username'), main_tex)
-            self.write(json.dumps({"response": result}))
+            result = create_download_pdf(json_data.get("remote_url"),userjson.get('username'), main_tex)
+            self.write(result)
         except Exception as e:
             print("error on clone", e)
 

@@ -1,10 +1,8 @@
 import config as conf
-from tornado.httpserver import HTTPServer
-from tornado.ioloop import IOLoop
 from handlers import WSHandler, routes
 from models import mongoManager
 from tornado.wsgi import WSGIContainer, WSGIAdapter
-from tornado.web import Application, FallbackHandler, RequestHandler, HTTPError, os
+from tornado.web import Application
 
 # execute asynchronously action
 # print('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
