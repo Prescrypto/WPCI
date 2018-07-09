@@ -6,8 +6,10 @@ import jwt
 import config as conf
 import datetime
 import json
+import fitz
 from models import User
 import tempfile
+import hashlib
 import os
 import subprocess
 import glob
@@ -171,6 +173,14 @@ def authenticate_json(json_data):
     else:
         return False
 
+def get_hash(payload):
+    hashed_payload = None
+    hash_object = hashlib.sha256(payload) #if string then str.encode('utf-8')
+    hashed_payload = hash_object.hexdigest()
+
+
+    return hashed_payload
+
 def create_email_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
@@ -199,6 +209,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
+    img_filename = 'testimage.jpg'
     clone = 'git clone ' + repo_url
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -207,8 +218,16 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            new_name = main_tex.split(".")[0]+ ".pdf"
-            pdffile = open(filesdir+"/"+new_name, 'rb').read()
+            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            point = fitz.Point(450,50)
+            document = fitz.open(new_name)
+            for page in document:
+                page.insertText(point, text="HASH AQUI>>>>>>>>>>>>>>>>>>>>>>>>>", fontsize = 11, fontname = "Helvetica")
+            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #Estos parametros resultan en compresion del pdf
+            document.save(new_name, incremental=1)
+            document.close()
+
+            pdffile = open(new_name, 'rb').read()
             return(pdffile)
 
         except IOError as e:
@@ -217,6 +236,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
         except Exception as e:
             print("other error", e)
             return("ERROR")
+
 
 def create_each_pdf(repo_url):
     '''renders one by one all the .tex on a repo'''
