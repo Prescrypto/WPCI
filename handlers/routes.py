@@ -343,9 +343,10 @@ class PostRepo(BaseHandler):
             userjson = ast.literal_eval(userid)
             result = create_download_pdf(json_data.get("remote_url"),userjson.get('username'), main_tex)
             #self.write(json.dumps({"pdf": base64.b64encode(result)}))
-	    self.write(result)
+            self.write(result)
         except Exception as e:
             print("error on clone", e)
+            self.write(json.dumps({"response": "Error"}))
 
 
 """No autentication endpoint"""
