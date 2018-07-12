@@ -1,0 +1,257 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #444;
+}
+
+/*
+ * Create dark grey header with a white logo
+ */
+
+header {
+  background-color: #005B5B;
+  height: 75px;
+  width: 100%;
+  opacity: .9;
+  margin-bottom: 10px;
+}
+
+header h1.logo {
+  margin: 0;
+  font-size: 1.8em;
+  color: #fff;
+  text-transform: uppercase;
+  float: left;
+}
+
+header h1.logo:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Message flashing */
+.flash {
+  background-color: #FF9238;
+  padding: 10px;
+  width: 400px;
+}
+
+.errors {
+  background-color: #FF6A62;
+  margin-bottom: 10px;
+  margin-right: 10px;
+  width: 400px;
+}
+
+/*
+ * Display navigation links inline
+ */
+
+.menu {
+  float: right;
+  margin-top: 30px;
+}
+
+.menu ul{
+   list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+
+
+}
+
+.menu li {
+  display: inline;
+}
+
+.menu li + li {
+  margin-left: 10px;
+}
+
+.menu li a {
+    color: white;
+    text-align: center;
+    text-decoration: none;
+}
+.menu li a:hover, .menu li .current {
+
+  color: white;
+  background-color: #019494;
+
+}
+
+/*
+ * Center the body content
+ */
+
+.container {
+  width: 940px;
+  margin: 0 auto;
+}
+
+div.jumbo {
+  padding: 10px 0 30px 0;
+  background-color: #eeeeee;
+  -webkit-border-radius: 6px;
+     -moz-border-radius: 6px;
+          border-radius: 6px;
+}
+div.graybk {
+  padding: 20px 30px 20px 30px;
+  background-color: #eeeeee;
+  -webkit-border-radius: 6px;
+     -moz-border-radius: 6px;
+          border-radius: 6px;
+}
+
+h2 {
+  font-size: 3em;
+  margin-top: 40px;
+  text-align: center;
+  letter-spacing: -2px;
+}
+
+h3 {
+  font-size: 1.7em;
+  font-weight: 100;
+  margin-top: 30px;
+  text-align: center;
+  letter-spacing: -1px;
+  color: #999;
+}
+
+/* Contact form */
+form label {
+  font-size: 1.2em;
+  font-weight: bold;
+  display: block;
+  padding: 10px 0;
+}
+
+form input[type=text] {
+  background-color: #fafafa;
+  -webkit-border-radius: 3px;
+     -moz-border-radius: 3px;
+          border-radius: 3px;
+  border: 1px solid #cccccc;
+  padding: 5px;
+}
+form input[type=text]:hover {
+  background-color: #eeeeee;
+  -webkit-border-radius: 3px;
+     -moz-border-radius: 3px;
+          border-radius: 3px;
+  border: 1px solid #cccccc;
+  padding: 5px;
+}
+
+form textarea{
+  width: 500px;
+  height: 100px;
+  background-color: #fafafa;
+  -webkit-border-radius: 3px;
+     -moz-border-radius: 3px;
+          border-radius: 3px;
+  border: 1px solid #cccccc;
+  margin-bottom: 10px;
+  padding: 5px;
+  font-size: 1.1em;
+}
+form textarea:hover{
+  width: 500px;
+  height: 100px;
+  background-color: #eeeeee;
+  -webkit-border-radius: 3px;
+     -moz-border-radius: 3px;
+          border-radius: 3px;
+  border: 1px solid #cccccc;
+  margin-bottom: 10px;
+  padding: 5px;
+  font-size: 1.1em;
+}
+
+form input[type=submit] {
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0px;
+  text-shadow: 1px 1px 1px #666666;
+  font-family: Arial;
+  color: #423d42;
+  font-size: 20px;
+  background: #edb90c;
+  padding: 10px 20px 10px 20px;
+  text-decoration: none;
+}
+
+form input[type=submit]:hover{
+  cursor : pointer;
+  background: #f5c423;
+  text-decoration: none;
+}
+
+/*Tables*/
+
+table {
+    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    text-align: left;
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+tr:nth-child(even){background-color: #f2f2f2}
+
+tr:hover {background-color: #ddd;}
+
+th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #082465;
+    color: white;
+}
+.tab { display:inline-block;
+       margin-left: 40px; }
+
+.space50 { margin-top: 50px; }
+
+.space30 { margin-top: 30px; }
+
+.btn {
+  border: none;
+  font-family: Arial;
+  color: #423d42;
+  background: #999fa3;
+  padding: 10px 10px 10px 10px;
+  text-decoration: none;
+}
+
+.btn:hover {
+  cursor : pointer;
+  background: #bbbdb7;
+  text-decoration: none;
+}
+
+.login-screen {
+background-color: #FFF;
+padding: 20px;
+border-radius: 5px
+}
+
+.app-title {
+text-align: center;
+color: #777;
+}
+
+.login-form {
+text-align: center;
+}
+.control-group {
+margin-bottom: 10px;
+}

@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class= 'graybk'>
+      <h1>Please login</h1>
+      <br>
+        <div class="login-form">
+              <form action="{{ url_for('login') }}" method="post">
+
+                        <div class="control-group">
+                <input type="text" placeholder="Username" name="username" value="{{
+                  request.form.username }}">
+                        </div>
+
+                        <div class="control-group">
+                 <input type="password" placeholder="Password" name="password" value="{{
+                  request.form.password }}">
+                            </div>
+                <input class="btn btn-default" type="submit" value="Login">
+              </form>
+        </div>
+      {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}
+      {% endif %}
+    </div>
+{% endblock %}

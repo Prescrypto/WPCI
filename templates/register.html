@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class= 'graybk'>
+      <h1>Please enter your data</h1>
+      <br>
+         <div class="login-form">
+          <form action="{{ url_for('register') }}" method="post">
+              <div class="control-group">
+            <input type="text" placeholder="Username" name="username" value="{{
+              request.form.username }}">
+              </div>
+              <div class="control-group">
+             <input type="password" placeholder="Password" name="password" value="{{
+              request.form.password }}">
+              </div>
+              <div class="control-group">
+              <input type="password" placeholder="Confirm Password" name="cpassword" value="{{
+              request.form.cpassword }}">
+              </div>
+
+            <input class="btn btn-default" type="submit" value="Register">
+          </form>
+         </div>
+      {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}
+      {% endif %}
+    </div>
+{% endblock %}

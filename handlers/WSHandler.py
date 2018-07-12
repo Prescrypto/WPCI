@@ -7,7 +7,6 @@ from tornado.httpclient import AsyncHTTPClient
 
 headers = conf.headers
 GIT_BASE_URI = conf.GITHUB_API_URL
-#AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")#configure the Httpclient as a curlAsyncHttpClient
 
 class WSHandler(object):
     http_client = AsyncHTTPClient()

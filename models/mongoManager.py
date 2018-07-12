@@ -1,5 +1,3 @@
-#USER
-#META-DATA
 from pymongo import MongoClient
 from pymongo.collation import Collation
 from bson.objectid import ObjectId
