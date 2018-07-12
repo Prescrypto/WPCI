@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block body %}
+    <div class="container">
+      <h1>Please enter your data</h1>
+      <br>
+      <form action="{{ url_for('register') }}" method="post">
+        <input type="text" placeholder="Username" name="username" value="{{
+          request.form.username }}">
+         <input type="password" placeholder="Password" name="password" value="{{
+          request.form.password }}">
+          <input type="password" placeholder="Confirm Password" name="cpassword" value="{{
+          request.form.cpassword }}">
+        <input class="btn btn-default" type="submit" value="Register">
+      </form>
+      {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}
+      {% endif %}
+    </div>
+{% endblock %}

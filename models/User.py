@@ -15,9 +15,11 @@ pwd_context = CryptContext(
 
 
 class User(object):
+
     def __init__(self, username, password):
         self.username = username
         self.password = password
+        self.github_token = None
 
     def __str__(self):
         return "User(id='%s')" % self.username
@@ -87,3 +89,36 @@ class User(object):
                 mydb.close()
 
         return result
+
+    def update(self):
+        '''updates a user on the bd'''
+        result = False
+        mydb = None
+        try:
+            collection = "User"
+            mydb = ManageDB(collection)
+            temp_user= self.__dict__
+            temp_user.pop("password")
+            result = mydb.update({"username": self.username}, temp_user)
+
+        except Exception as error:
+            print("updating user", error)
+
+        finally:
+            if mydb is not None:
+                mydb.close()
+
+        return result
+
+    def get_attribute(self, attribute_name):
+        '''gets the attribute from the bd'''
+        result = False
+        mydb = None
+        try:
+            collection = "User"
+            mydb = ManageDB(collection)
+            docs = mydb.select("username", self.username)
+            if len(docs) > 0:
+                return docs[0].get(attribute_name)
+        except:
+            return None

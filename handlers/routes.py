@@ -208,11 +208,20 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
             print("other error", e)
             return("ERROR")
 
-def create_download_pdf(repo_url, email, main_tex="main.tex"):
+def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
-    img_filename = 'testimage.jpg'
+    user = User.User(userjson.get("username"), userjson.get("password"))
+    github_token = user.get_attribute('github_token')
+    if github_token is None or github_token == '':
+        return("ERROR NO GITHUB TOKEN")
+
+    try:
+        repo_url = "https://"+github_token+":x-oauth-basic@"+repo_url.split("://")[1]
+    except:
+        return("Invalid GIT Repository URL")
+
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
 
@@ -222,14 +231,14 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash(user.username, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             point = fitz.Point(50,50)
             document = fitz.open(new_name)
             for page in document:
                 page.insertText(point, text=complete_hash, fontsize = 11, fontname = "Helvetica")
-            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #Estos parametros resultan en compresion del pdf
+            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
             document.save(new_name, incremental=1)
             document.close()
 
@@ -319,13 +328,6 @@ class RegisterUser(BaseHandler):
         except:
             self.write(json.dumps({"response": "error registering user"}))
 
-@jwtauth
-class HelloWorld2(BaseHandler):
-    def get(self, userid):
-        self.write(json.dumps({"response": "hello world2"}))
-
-    def post(self, userid):
-        self.write(json.dumps({"response": "hello world2"}))
 
 @jwtauth
 class PostRepo(BaseHandler):
@@ -341,8 +343,7 @@ class PostRepo(BaseHandler):
             else:
                 main_tex = json_data.get("main_tex")
             userjson = ast.literal_eval(userid)
-            result = create_download_pdf(json_data.get("remote_url"),userjson.get('username'), main_tex)
-            #self.write(json.dumps({"pdf": base64.b64encode(result)}))
+            result = create_download_pdf(json_data.get("remote_url"),userjson, main_tex)
             self.write(result)
         except Exception as e:
             print("error on clone", e)
