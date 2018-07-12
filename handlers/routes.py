@@ -14,7 +14,6 @@ import hashlib
 import os
 import subprocess
 import glob
-import base64
 from handlers.emailHandler import write_email
 
 SECRET = conf.SECRET

@@ -1,8 +1,6 @@
 from models.mongoManager import ManageDB
 import pymongo
 from pymongo import MongoClient
-from pymongo.collation import Collation
-from bson.objectid import ObjectId
 import config as conf
 from passlib.context import CryptContext
 
