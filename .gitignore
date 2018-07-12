@@ -1,0 +1,10 @@
+# tmp files
+*~
+# Compile files
+*__pycache__/
+*.py[cod]
+*$py.class
+# Config settings
+config/
+# Vagrant files
+.vagrant/
