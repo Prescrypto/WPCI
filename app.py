@@ -1,9 +1,10 @@
 from handlers import routes
 from tornado.wsgi import WSGIAdapter
-from tornado.web import Application, FallbackHandler
+from tornado.web import Application, FallbackHandler, StaticFileHandler
 from oauthApi import oauth_app
+import os
 
-
+cwd = os.getcwd() # used by static file server
 # execute asynchronously action
 # print('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
 
@@ -14,6 +15,7 @@ web_app = Application([
         (r"/api/v1/auth/login", routes.AuthLoginHandler),
         (r"/api/v1/auth/signin", routes.RegisterUser),
         (r"/api/v1/git/(.*)", FallbackHandler, dict(fallback=oauth_app)),
+        (r"/(.*\.css)", StaticFileHandler, {"path": cwd}),
         (r'.*', routes.APINotFoundHandler)],
         debug=True)
 
