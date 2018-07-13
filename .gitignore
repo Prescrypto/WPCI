@@ -8,3 +8,4 @@
 config/
 # Vagrant files
 .vagrant/
+build/.texlive

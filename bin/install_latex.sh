@@ -7,7 +7,7 @@ else
     sudo apt-get update
     sudo apt-get install -y wget
 
-    mkdir -p $TEXLIVE_HOME/.texlive
+    mkdir -p /vagrant/build/.texlive
 
     echo "*******************************************"
     echo "Installing Latex 2018 "
@@ -28,7 +28,7 @@ else
     echo "*******************************************"
     echo " Update path "
     echo "*******************************************"
-    echo 'PATH="$TEXLIVE_HOME/.texlive/bin/x86_64-linux:$PATH"' >> ~/.profile
+    echo 'PATH="/vagrant/build/.texlive/bin/x86_64-linux:$PATH"' >> ~/.profile
     source ~/.profile
 
     echo "LaTeX Installed"

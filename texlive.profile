@@ -19,4 +19,4 @@ option_sys_man /usr/local/share/man
 option_w32_multi_user 0
 option_write18_restricted 1
 portable 0
-TEXDIR $TEXLIVE_HOME/.texlive
+TEXDIR /vagrant/build/.texlive
