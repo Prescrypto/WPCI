@@ -1,0 +1,8 @@
+# !/usr/bin/env bash
+# File path should be ./bin/post_compile
+# This script executes migrations automatically after deployment to Heroku
+
+echo "=> Performing database initialization..."
+python3 initialize_db.py
+echo "=> End post compile"
+
