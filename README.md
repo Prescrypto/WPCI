@@ -21,3 +21,15 @@ and finally you can post a url and recieve an email in your user email with the 
   -H 'Authorization: Bearer <TOKEN>' \
   -d '{"remote_url":"<URL FROM GITHUB OR OVERLEAF>", "main_tex":"main.tex"}'
 ```
+
+### For Development
+
+Install vagrant, virtualbox, comandline tools, git. Then!
+
+```
+
+$ vagrant up
+$ vagrant ssh
+$ cd /vagrant/
+$ gunicorn app:application --bind=0.0.0.0:8000
+```

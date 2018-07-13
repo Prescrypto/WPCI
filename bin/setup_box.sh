@@ -16,5 +16,13 @@ pip3 --version
 echo "Installing python requirements"
 sudo pip3 install -r /vagrant/requirements.txt
 
+echo "*******************************************"
+echo "Install texlive packages "
+echo "*******************************************"
+cd /vagrant/
+sudo env PATH="$PATH" tlmgr install $(cat texlive.packages)
+
+echo "Installed Latex with Packages!!"
+
 
 echo "=> End config box..."
