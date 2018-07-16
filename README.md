@@ -31,5 +31,11 @@ Install vagrant, virtualbox, comandline tools, git. Then!
 $ vagrant up
 $ vagrant ssh
 $ cd /vagrant/
-$ gunicorn app:application --bind=0.0.0.0:8000
+$ gunicorn app:application --bind=0.0.0.0:8000 --timeout 120
 ```
+
+## Latex Notes
+
+- TO ADD new package => Just add the package on `texlive.packages` file and do a vagrant up
+- TexLive install Dir => `./build/.texlive` on vagrant `/vagrant/build/.textlive`
+
