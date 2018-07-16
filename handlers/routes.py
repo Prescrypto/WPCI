@@ -8,6 +8,7 @@ import datetime
 import json
 import fitz
 from models import User
+from models.mongoManager import ManageDB
 import tempfile
 import time
 import hashlib
@@ -17,6 +18,10 @@ import glob
 from handlers.emailHandler import write_email
 
 SECRET = conf.SECRET
+RENDER_EMAIL = "render_and_send_by_email"
+RENDER_HASH = "render_sethash_and_download"
+RENDER_NOHASH = "render_and_download"
+RENDER_URL= "render_by_url_parameters"
 
 
 def encode_auth_token(user):
@@ -183,7 +188,26 @@ def get_hash(email, git_sha):
 
     return hashed_payload
 
+def store_petition(remote_url, petition_type, username='anonymous'):
+    result = False
+    mydb = None
+    try:
+        collection = "Petitions"
+        mydb = ManageDB(collection)
+        result = mydb.insert_json({"username": username, "timestamp": time.time(), "remote_url": remote_url, "petition_type": petition_type})
+
+    except Exception as error:
+        print("storing petition", error)
+
+    finally:
+        if mydb is not None:
+            mydb.close()
+
+    return result
+
+
 def create_email_pdf(repo_url, email, main_tex="main.tex"):
+    store_petition(repo_url, RENDER_EMAIL, email)
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
@@ -221,6 +245,7 @@ def create_download_pdf_hash(repo_url, userjson, main_tex="main.tex"):
     except:
         return("Invalid GIT Repository URL")
 
+    store_petition(repo_url, RENDER_HASH, user.username)
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
 
@@ -258,6 +283,7 @@ def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
     repo_name = ''
     new_name = ''
     if userjson is None:
+        store_petition(repo_url, RENDER_NOHASH)
         print("No private access")
     else:
         user = User.User(userjson.get("username"), userjson.get("password"))
@@ -269,6 +295,8 @@ def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
             repo_url = "https://"+github_token+":x-oauth-basic@"+repo_url.split("://")[1]
         except:
             return("Invalid GIT Repository URL")
+        store_petition(repo_url, RENDER_NOHASH, user.username)
+
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
