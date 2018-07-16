@@ -12,4 +12,4 @@ SMTP_ADDRESS= os.environ.get('SMTP_ADDRESS', '')
 SMTP_PORT= os.environ.get('SMTP_PORT', '')
 CONSUMER_KEY = os.environ.get('CONSUMER_KEY', '')
 CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET', '')
-GITHUB_OAUTH_URI = os.environ.get('GITHUB_OAUTH_URI', '') #https://github.com/login/oauth/
+GITHUB_OAUTH_URI = os.environ.get('GITHUB_OAUTH_URI', '') #https://github.com/login/oauth/ 
