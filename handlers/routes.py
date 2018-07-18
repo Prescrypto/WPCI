@@ -278,7 +278,7 @@ def create_download_pdf_hash(repo_url, userjson, main_tex="main.tex"):
             print("other error", e)
             return("ERROR")
 
-def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
+def create_download_pdf(repo_url, userjson, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
@@ -297,6 +297,10 @@ def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
             return("Invalid GIT Repository URL")
         store_petition(repo_url, RENDER_NOHASH, user.username)
 
+    if email == "":
+        watermark = "RENDERED BY WPCI"
+    else:
+        watermark = "Generado por "+ email
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
@@ -307,7 +311,7 @@ def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            watermark= "RENDERED BY WPCI"
+
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             point = fitz.Point(50,50)
@@ -447,9 +451,10 @@ class RenderUrl(BaseHandler):
         try:
             repo_url = self.get_argument('url', "")
             main_tex = self.get_argument('maintex', "main.tex")
+            email = self.get_argument('email', "")
             userjson = None
-            result = create_download_pdf(repo_url, userjson, main_tex)
-            self.set_header("Content-Type", "appgit add lication/pdf")
+            result = create_download_pdf(repo_url, userjson, email, main_tex)
+            self.set_header("Content-Type", "application/pdf")
             self.write(result)
 
 
