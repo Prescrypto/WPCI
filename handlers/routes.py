@@ -428,7 +428,7 @@ class PostRepoHash(BaseHandler):
         except Exception as e:
             print("error on clone", e)
             self.write(json.dumps({"response": "Error"}))
-            
+
 
 class RenderUrl(BaseHandler):
     '''recives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
