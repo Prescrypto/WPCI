@@ -12,7 +12,6 @@ cwd = os.getcwd() # used by static file server
 web_app = Application([
         (r"/api/v1/helloworld", routes.HelloWorld),
         (r"/api/v1/renderrepohash", routes.PostRepoHash),
-        (r"/api/v1/renderurlpriv", routes.RenderUrlPrivate),
         (r"/api/v1/renderurl", routes.RenderUrl),
         (r"/api/v1/auth/login", routes.AuthLoginHandler),
         (r"/api/v1/auth/signin", routes.RegisterUser),

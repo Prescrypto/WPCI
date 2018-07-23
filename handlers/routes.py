@@ -1,5 +1,6 @@
 from tornado.web import  os
 import tornado
+from tornado import gen, ioloop
 import ast
 from handlers.apiBaseHandler import BaseHandler
 import jwt
@@ -326,6 +327,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
 
 
+
 def create_each_pdf(repo_url):
     '''renders one by one all the .tex on a repo'''
     repo_name = ''
@@ -426,22 +428,7 @@ class PostRepoHash(BaseHandler):
         except Exception as e:
             print("error on clone", e)
             self.write(json.dumps({"response": "Error"}))
-
-
-@jwtauth
-class RenderUrlPrivate(BaseHandler):
-    '''recives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
-    def post(self, userid):
-        try:
-            repo_url = self.get_argument('url', "")
-            main_tex = self.get_argument('maintex', "main.tex")
-            userjson = ast.literal_eval(userid)
-            result = create_download_pdf(repo_url, userjson, main_tex)
-            self.write(result)
-        except Exception as e:
-            print("error on clone", e)
-            self.write(json.dumps({"response": "Error"}))
-
+            
 
 class RenderUrl(BaseHandler):
     '''recives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
