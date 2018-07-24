@@ -1,0 +1,68 @@
+{
+  "name": "WPCI",
+  "description": "White Paper Continuous Integration",
+  "scripts": {
+  },
+  "env": {
+    "ADMIN_PASS": {
+      "required": true
+    },
+    "ADMIN_USER": {
+      "required": true
+    },
+    "CONSUMER_KEY": {
+      "required": true
+    },
+    "CONSUMER_SECRET": {
+      "required": true
+    },
+    "GITHUB_OAUTH_URI": {
+      "required": true
+    },
+    "GITHUB_TOKEN": {
+      "required": true
+    },
+    "MONGODB_URI": {
+      "required": true
+    },
+    "PAPERTRAIL_API_TOKEN": {
+      "required": true
+    },
+    "SECRET": {
+      "required": true
+    },
+    "SMTP_ADDRESS": {
+      "required": true
+    },
+    "SMTP_EMAIL": {
+      "required": true
+    },
+    "SMTP_PASS": {
+      "required": true
+    },
+    "SMTP_PORT": {
+      "required": true
+    },
+    "SMTP_USER": {
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "addons": [
+    "mongolab",
+    "papertrail",
+    "scheduler"
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    },
+    {
+      "url": "https://github.com/Thermondo/heroku-buildpack-tex"
+    }
+  ]
+}
