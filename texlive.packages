@@ -27,3 +27,6 @@ texliveonfly
 algorithmicx
 lipsum
 wrapfig
+relsize 
+ifoddpage
+bigfoot
