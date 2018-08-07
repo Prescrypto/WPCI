@@ -26,3 +26,6 @@ algorithm2e
 texliveonfly
 algorithmicx
 lipsum
+relsize 
+ifoddpage
+bigfoot
