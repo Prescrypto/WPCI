@@ -1,5 +1,6 @@
 from tornado.web import  os
 import tornado
+from tornado import gen, ioloop
 import ast
 from handlers.apiBaseHandler import BaseHandler
 import jwt
@@ -8,6 +9,7 @@ import datetime
 import json
 import fitz
 from models import User
+from models.mongoManager import ManageDB
 import tempfile
 import time
 import hashlib
@@ -17,6 +19,10 @@ import glob
 from handlers.emailHandler import write_email
 
 SECRET = conf.SECRET
+RENDER_EMAIL = "render_and_send_by_email"
+RENDER_HASH = "render_sethash_and_download"
+RENDER_NOHASH = "render_and_download"
+RENDER_URL= "render_by_url_parameters"
 
 
 def encode_auth_token(user):
@@ -183,7 +189,26 @@ def get_hash(email, git_sha):
 
     return hashed_payload
 
+def store_petition(remote_url, petition_type, username='anonymous'):
+    result = False
+    mydb = None
+    try:
+        collection = "Petitions"
+        mydb = ManageDB(collection)
+        result = mydb.insert_json({"username": username, "timestamp": time.time(), "remote_url": remote_url, "petition_type": petition_type})
+
+    except Exception as error:
+        print("storing petition", error)
+
+    finally:
+        if mydb is not None:
+            mydb.close()
+
+    return result
+
+
 def create_email_pdf(repo_url, email, main_tex="main.tex"):
+    store_petition(repo_url, RENDER_EMAIL, email)
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
@@ -207,7 +232,7 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
             print("other error", e)
             return("ERROR")
 
-def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
+def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
@@ -221,8 +246,12 @@ def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
     except:
         return("Invalid GIT Repository URL")
 
+    store_petition(repo_url, RENDER_HASH, user.username)
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
+    if email is None or email == "":
+        email = user.username
+    watermark = "Copy generated for: " + email
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
@@ -230,13 +259,15 @@ def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(user.username, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
-            point = fitz.Point(50,50)
+            pointa = fitz.Point(35,35)
+            pointb = fitz.Point(35, 50)
             document = fitz.open(new_name)
             for page in document:
-                page.insertText(point, text=complete_hash, fontsize = 11, fontname = "Helvetica")
+                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
+                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
             #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
             document.save(new_name, incremental=1)
             document.close()
@@ -250,6 +281,51 @@ def create_download_pdf(repo_url, userjson, main_tex="main.tex"):
         except Exception as e:
             print("other error", e)
             return("ERROR")
+
+def create_download_pdf(repo_url, email, main_tex="main.tex"):
+    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    repo_name = ''
+    new_name = ''
+    if email is None or email== "":
+        return("NO EMAIL TO HASH")
+
+    store_petition(repo_url, RENDER_HASH, email)
+    print("No private access")
+
+    watermark = "Copy generated for: "+ email
+
+    clone = 'git clone ' + repo_url
+    rev_parse = 'git rev-parse master'
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            repo_name = os.listdir(tmpdir)[0]
+            filesdir = os.path.join(tmpdir, repo_name)
+            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
+            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            pointa = fitz.Point(35,35)
+            pointb = fitz.Point(35, 50)
+            document = fitz.open(new_name)
+            for page in document:
+                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
+                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
+            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
+            document.save(new_name, incremental=1)
+            document.close()
+
+            pdffile = open(new_name, 'rb').read()
+            return(pdffile)
+
+        except IOError as e:
+            print('IOError', e)
+            return("IO ERROR")
+        except Exception as e:
+            print("other error", e)
+            return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
+
 
 
 def create_each_pdf(repo_url):
@@ -329,7 +405,7 @@ class RegisterUser(BaseHandler):
 
 
 @jwtauth
-class PostRepo(BaseHandler):
+class PostRepoHash(BaseHandler):
     '''recives a post with the github repository url and renders it to PDF with clone_repo'''
     def get(self, userid):
         self.write(json.dumps({"response": "GET not found"}))
@@ -341,9 +417,31 @@ class PostRepo(BaseHandler):
                 main_tex = "main.tex"
             else:
                 main_tex = json_data.get("main_tex")
+
+            if json_data.get("email") is None or json_data.get("email") == "":
+                email = ""
+            else:
+                email = json_data.get("email")
             userjson = ast.literal_eval(userid)
-            result = create_download_pdf(json_data.get("remote_url"),userjson, main_tex)
+            result = create_download_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
             self.write(result)
+        except Exception as e:
+            print("error on clone", e)
+            self.write(json.dumps({"response": "Error"}))
+
+
+class RenderUrl(BaseHandler):
+    '''recives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
+    def get(self):
+        try:
+            repo_url = self.get_argument('url', "")
+            main_tex = self.get_argument('maintex', "main.tex")
+            email = self.get_argument('email', "")
+            result = create_download_pdf(repo_url, email, main_tex)
+            self.set_header("Content-Type", "application/pdf")
+            self.write(result)
+
+
         except Exception as e:
             print("error on clone", e)
             self.write(json.dumps({"response": "Error"}))

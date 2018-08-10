@@ -1,5 +1,8 @@
 eso-pic
 overpic
+everypage
+background
+breakcites
 pict2e
 xcolor
 varwidth
@@ -25,3 +28,8 @@ pdfpages
 algorithm2e
 texliveonfly
 algorithmicx
+lipsum
+wrapfig
+relsize 
+ifoddpage
+bigfoot
