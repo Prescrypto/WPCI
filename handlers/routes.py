@@ -1,6 +1,7 @@
 from tornado.web import  os
 import tornado
 from tornado import gen, ioloop
+from tornado.web import asynchronous
 import ast
 from handlers.apiBaseHandler import BaseHandler
 import jwt
@@ -17,12 +18,17 @@ import os
 import subprocess
 import glob
 from handlers.emailHandler import write_email
+from tornado.concurrent import run_on_executor
+from concurrent.futures import ThreadPoolExecutor
+
 
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
 RENDER_HASH = "render_sethash_and_download"
 RENDER_NOHASH = "render_and_download"
 RENDER_URL= "render_by_url_parameters"
+MAX_WORKERS = 4
+
 
 
 def encode_auth_token(user):
@@ -207,7 +213,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
     return result
 
 
-def create_email_pdf(repo_url, email, main_tex="main.tex"):
+def create_email_pdfn(repo_url, email, main_tex="main.tex"):
     store_petition(repo_url, RENDER_EMAIL, email)
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
@@ -231,6 +237,105 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
         except Exception as e:
             print("other error", e)
             return("ERROR")
+
+
+def create_email_pdf(repo_url, email, main_tex="main.tex"):
+    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    repo_name = ''
+    new_name = ''
+    if email is None or email== "":
+        return("NO EMAIL TO HASH")
+
+    store_petition(repo_url, RENDER_HASH, email)
+    print("No private access")
+
+    watermark = "Copy generated for: "+ email
+
+    clone = 'git clone ' + repo_url
+    rev_parse = 'git rev-parse master'
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            repo_name = os.listdir(tmpdir)[0]
+            filesdir = os.path.join(tmpdir, repo_name)
+            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
+            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            pointa = fitz.Point(35,35)
+            pointb = fitz.Point(35, 50)
+            document = fitz.open(new_name)
+            for page in document:
+                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
+                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
+            document.save(new_name, incremental=1)
+            document.close()
+
+            #pdffile = open(new_name, 'rb').read()
+            write_email([email], "testing pdflatex", repo_name, new_name)
+            #return "done"
+
+        except IOError as e:
+            print('IOError', e)
+            return("IO ERROR")
+        except Exception as e:
+            print("other error", e)
+            return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
+
+
+def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
+    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    repo_name = ''
+    new_name = ''
+    user = User.User(userjson.get("username"), userjson.get("password"))
+    github_token = user.get_attribute('github_token')
+    if github_token is None or github_token == '':
+        return ("ERROR NO GITHUB TOKEN")
+
+    try:
+        repo_url = "https://" + github_token + ":x-oauth-basic@" + repo_url.split("://")[1]
+    except:
+        return ("Invalid GIT Repository URL")
+
+    store_petition(repo_url, RENDER_HASH, user.username)
+    clone = 'git clone ' + repo_url
+    rev_parse = 'git rev-parse master'
+    if email is None or email == "":
+        email = user.username
+    watermark = "Copy generated for: " + email
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            repo_name = os.listdir(tmpdir)[0]
+            filesdir = os.path.join(tmpdir, repo_name)
+            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True,
+                                               cwd=filesdir)
+            new_name = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
+            pointa = fitz.Point(35, 35)
+            pointb = fitz.Point(35, 50)
+            document = fitz.open(new_name)
+            for page in document:
+                page.insertText(pointa, text=watermark, fontsize=11, fontname="Helvetica")
+                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
+            # document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
+            document.save(new_name, incremental=1)
+            document.close()
+
+            write_email([email], "testing pdflatex", repo_name, new_name)
+            return "done"
+            # return(pdffile)
+
+        except IOError as e:
+            print('IOError', e)
+            return ("IO ERROR")
+        except Exception as e:
+            print("other error", e)
+            return ("ERROR")
+
 
 def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
@@ -407,9 +512,12 @@ class RegisterUser(BaseHandler):
 @jwtauth
 class PostRepoHash(BaseHandler):
     '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+    executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
+
     def get(self, userid):
         self.write(json.dumps({"response": "GET not found"}))
 
+    @gen.coroutine
     def post(self, userid):
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
@@ -423,23 +531,38 @@ class PostRepoHash(BaseHandler):
             else:
                 email = json_data.get("email")
             userjson = ast.literal_eval(userid)
-            result = create_download_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
-            self.write(result)
+            #result = create_download_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
+            res = yield self.blocking_task(json_data.get("remote_url"),userjson, email, main_tex)
+            #create_email_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
+            self.write(json.dumps({"response":"done"}))
         except Exception as e:
             print("error on clone", e)
             self.write(json.dumps({"response": "Error"}))
 
+    @run_on_executor
+    def blocking_task(self,remote_url,userjson, email, main_tex):
+        try:
+            create_email_pdf_auth(remote_url, userjson, email, main_tex)
+            return json.dumps({"response":"done"})
+        except Exception as e:
+            print(e)
+
+
+
 
 class RenderUrl(BaseHandler):
     '''recives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
+
+    @gen.engine
     def get(self):
         try:
             repo_url = self.get_argument('url', "")
             main_tex = self.get_argument('maintex', "main.tex")
             email = self.get_argument('email', "")
-            result = create_download_pdf(repo_url, email, main_tex)
-            self.set_header("Content-Type", "application/pdf")
-            self.write(result)
+            #result = create_download_pdf(repo_url, email, main_tex)
+            #self.set_header("Content-Type", "application/pdf")
+            yield gen.Task(create_email_pdf(repo_url, email, main_tex))
+            self.write({"response":"done"})
 
 
         except Exception as e:
