@@ -8,8 +8,9 @@ cwd = os.getcwd() # used by static file server
 # execute asynchronously action
 # print('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
 
-'''Initializing the application with routes'''
-web_app = Application([
+try:
+    '''Initializing the application with routes'''
+    web_app = Application([
         (r"/api/v1/helloworld", routes.HelloWorld),
         (r"/api/v1/renderrepohash", routes.PostRepoHash),
         (r"/api/v1/renderurl", routes.RenderUrl),
@@ -20,6 +21,10 @@ web_app = Application([
         (r'.*', routes.APINotFoundHandler)],
         debug=True)
 
-application = WSGIAdapter(web_app)
+
+    application = WSGIAdapter(web_app)
+except Exception as e:
+    print(e)
+
 
 
