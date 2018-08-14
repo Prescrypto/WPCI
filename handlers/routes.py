@@ -211,8 +211,14 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
+    # Axis for the pdf header
+    AXIS_X = 35
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
+
     if email is None or email== "":
         return("NO EMAIL TO HASH")
+    email = email.strip()
 
     store_petition(repo_url, RENDER_HASH, email)
     print("No private access")
@@ -231,8 +237,8 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
             complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
-            pointa = fitz.Point(35,35)
-            pointb = fitz.Point(35, 50)
+            pointa = fitz.Point(AXIS_X,AXIS_Y)
+            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
@@ -255,6 +261,11 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
+    #Axis for the pdf header
+    AXIS_X = 35
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
+
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
     if github_token is None or github_token == '':
@@ -270,6 +281,7 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     rev_parse = 'git rev-parse master'
     if email is None or email == "":
         email = user.username
+    email = email.strip()
     watermark = "Copy generated for: " + email
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -282,8 +294,8 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True,
                                                cwd=filesdir)
             new_name = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
-            pointa = fitz.Point(35, 35)
-            pointb = fitz.Point(35, 50)
+            pointa = fitz.Point(AXIS_X, AXIS_Y)
+            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize=11, fontname="Helvetica")
