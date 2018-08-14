@@ -269,7 +269,7 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
             document.save(new_name, incremental=1)
             document.close()
 
-            write_email([email], "testing pdflatex", repo_name, new_name)
+            write_email([email], "Documentation", "documentation.pdf", new_name)
             return True
 
         except IOError as e:
@@ -321,7 +321,7 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             document.save(new_name, incremental=1)
             document.close()
 
-            write_email([email], "testing pdflatex", repo_name, new_name)
+            write_email([email], "Documentation", "documentation.pdf", new_name)
             return True
 
         except IOError as e:
