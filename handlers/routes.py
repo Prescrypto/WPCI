@@ -18,14 +18,11 @@ import subprocess
 import glob
 from handlers.emailHandler import write_email
 
-
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
 RENDER_HASH = "render_sethash_and_download"
 RENDER_NOHASH = "render_and_download"
 RENDER_URL= "render_by_url_parameters"
-MAX_WORKERS = 4
-
 
 
 def encode_auth_token(user):
@@ -208,32 +205,6 @@ def store_petition(remote_url, petition_type, username='anonymous'):
             mydb.close()
 
     return result
-
-
-def create_email_pdfn(repo_url, email, main_tex="main.tex"):
-    store_petition(repo_url, RENDER_EMAIL, email)
-    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
-    repo_name = ''
-    new_name = ''
-    clone = 'git clone ' + repo_url
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            repo_name = os.listdir(tmpdir)[0]
-            filesdir = os.path.join(tmpdir, repo_name)
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            new_name = main_tex.split(".")[0]+ ".pdf"
-            write_email([email], "testing pdflatex",new_name , filesdir+"/")
-
-            return("Email Sent")
-
-        except IOError as e:
-            print('IOError', e)
-            return("IO ERROR")
-        except Exception as e:
-            print("other error", e)
-            return("ERROR")
 
 
 def create_email_pdf(repo_url, email, main_tex="main.tex"):
