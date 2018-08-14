@@ -270,7 +270,6 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
             document.close()
 
             write_email([email], "Documentation", "documentation.pdf", new_name)
-            return True
 
         except IOError as e:
             print('IOError', e)
@@ -322,7 +321,7 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             document.close()
 
             write_email([email], "Documentation", "documentation.pdf", new_name)
-            return True
+
 
         except IOError as e:
             print('IOError', e)
@@ -330,6 +329,7 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
         except Exception as e:
             print("other error", e)
             return ("ERROR")
+    return True
 
 
 def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
