@@ -2,7 +2,7 @@
   "name": "WPCI API",
   "description": "Withepaper continuous integration",
   "scripts": {
-    "postdeploy": "bin/post_compile"
+    "postdeploy": "bin/postcompile"
   },
   "env": {
     "GITHUB_TOKEN": {
