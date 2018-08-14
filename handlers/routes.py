@@ -1,7 +1,6 @@
 from tornado.web import  os
 import tornado
 from tornado import gen, ioloop
-from tornado.web import asynchronous
 import ast
 from handlers.apiBaseHandler import BaseHandler
 import jwt
@@ -18,8 +17,6 @@ import os
 import subprocess
 import glob
 from handlers.emailHandler import write_email
-from tornado.concurrent import run_on_executor
-from concurrent.futures import ThreadPoolExecutor
 
 
 SECRET = conf.SECRET
@@ -272,9 +269,8 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
             document.save(new_name, incremental=1)
             document.close()
 
-            #pdffile = open(new_name, 'rb').read()
             write_email([email], "testing pdflatex", repo_name, new_name)
-            #return "done"
+            return True
 
         except IOError as e:
             print('IOError', e)
@@ -282,6 +278,7 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
         except Exception as e:
             print("other error", e)
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
+    return True
 
 
 def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
@@ -321,13 +318,11 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize=11, fontname="Helvetica")
                 page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
-            # document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
             document.save(new_name, incremental=1)
             document.close()
 
             write_email([email], "testing pdflatex", repo_name, new_name)
-            return "done"
-            # return(pdffile)
+            return True
 
         except IOError as e:
             print('IOError', e)
@@ -512,12 +507,10 @@ class RegisterUser(BaseHandler):
 @jwtauth
 class PostRepoHash(BaseHandler):
     '''recives a post with the github repository url and renders it to PDF with clone_repo'''
-    executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
     def get(self, userid):
         self.write(json.dumps({"response": "GET not found"}))
 
-    @gen.coroutine
     def post(self, userid):
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
@@ -531,38 +524,30 @@ class PostRepoHash(BaseHandler):
             else:
                 email = json_data.get("email")
             userjson = ast.literal_eval(userid)
-            #result = create_download_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
-            res = yield self.blocking_task(json_data.get("remote_url"),userjson, email, main_tex)
-            #create_email_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
-            self.write(json.dumps({"response":"done"}))
+            result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
+            if result:
+                self.write(json.dumps({"response": "done"}))
+            else:
+                self.write(json.dumps({"response": "Error"}))
+
         except Exception as e:
             print("error on clone", e)
             self.write(json.dumps({"response": "Error"}))
-
-    @run_on_executor
-    def blocking_task(self,remote_url,userjson, email, main_tex):
-        try:
-            create_email_pdf_auth(remote_url, userjson, email, main_tex)
-            return json.dumps({"response":"done"})
-        except Exception as e:
-            print(e)
-
-
 
 
 class RenderUrl(BaseHandler):
     '''recives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
 
-    @gen.engine
     def get(self):
         try:
             repo_url = self.get_argument('url', "")
             main_tex = self.get_argument('maintex', "main.tex")
             email = self.get_argument('email', "")
-            #result = create_download_pdf(repo_url, email, main_tex)
-            #self.set_header("Content-Type", "application/pdf")
-            yield gen.Task(create_email_pdf(repo_url, email, main_tex))
-            self.write({"response":"done"})
+            result = create_email_pdf(repo_url, email, main_tex)
+            if result:
+                self.write(json.dumps({"response":"done"}))
+            else:
+                self.write(json.dumps({"response": "Error"}))
 
 
         except Exception as e:
