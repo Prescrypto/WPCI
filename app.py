@@ -8,7 +8,6 @@ cwd = os.getcwd() # used by static file server
 # execute asynchronously action
 # print('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
 
-
 '''Initializing the application with routes'''
 web_app = Application([
     (r"/api/v1/helloworld", routes.HelloWorld),
