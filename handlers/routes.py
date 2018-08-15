@@ -208,34 +208,122 @@ def store_petition(remote_url, petition_type, username='anonymous'):
 
 
 def create_email_pdf(repo_url, email, main_tex="main.tex"):
-    store_petition(repo_url, RENDER_EMAIL, email)
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
+    # Axis for the pdf header
+    AXIS_X = 35
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
+
+    if email is None or email== "":
+        return("NO EMAIL TO HASH")
+    email = email.strip()
+
+    store_petition(repo_url, RENDER_HASH, email)
+    print("No private access")
+
+    watermark = "Copy generated for: "+ email
+
     clone = 'git clone ' + repo_url
+    rev_parse = 'git rev-parse master'
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
+            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            new_name = main_tex.split(".")[0]+ ".pdf"
-            write_email([email], "testing pdflatex",new_name , filesdir+"/")
+            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            pointa = fitz.Point(AXIS_X,AXIS_Y)
+            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
+            document = fitz.open(new_name)
+            for page in document:
+                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
+                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
+            document.save(new_name, incremental=1)
+            document.close()
 
-            return("Email Sent")
+            write_email([email], "Documentation", "documentation.pdf", new_name)
 
         except IOError as e:
             print('IOError', e)
             return("IO ERROR")
         except Exception as e:
             print("other error", e)
-            return("ERROR")
+            return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
+    return True
+
+
+def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
+    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    repo_name = ''
+    new_name = ''
+    #Axis for the pdf header
+    AXIS_X = 35
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
+
+    user = User.User(userjson.get("username"), userjson.get("password"))
+    github_token = user.get_attribute('github_token')
+    if github_token is None or github_token == '':
+        return ("ERROR NO GITHUB TOKEN")
+
+    try:
+        repo_url = "https://" + github_token + ":x-oauth-basic@" + repo_url.split("://")[1]
+    except:
+        return ("Invalid GIT Repository URL")
+
+    store_petition(repo_url, RENDER_HASH, user.username)
+    clone = 'git clone ' + repo_url
+    rev_parse = 'git rev-parse master'
+    if email is None or email == "":
+        email = user.username
+    email = email.strip()
+    watermark = "Copy generated for: " + email
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            repo_name = os.listdir(tmpdir)[0]
+            filesdir = os.path.join(tmpdir, repo_name)
+            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True,
+                                               cwd=filesdir)
+            new_name = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
+            pointa = fitz.Point(AXIS_X, AXIS_Y)
+            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
+            document = fitz.open(new_name)
+            for page in document:
+                page.insertText(pointa, text=watermark, fontsize=11, fontname="Helvetica")
+                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
+            document.save(new_name, incremental=1)
+            document.close()
+
+            write_email([email], "Documentation", "documentation.pdf", new_name)
+
+
+        except IOError as e:
+            print('IOError', e)
+            return ("IO ERROR")
+        except Exception as e:
+            print("other error", e)
+            return ("ERROR")
+    return True
+
 
 def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
+    # Axis for the pdf header
+    AXIS_X = 35
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
+
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
     if github_token is None or github_token == '':
@@ -262,8 +350,8 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
-            pointa = fitz.Point(35,35)
-            pointb = fitz.Point(35, 50)
+            pointa = fitz.Point(AXIS_X, AXIS_Y)
+            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
@@ -286,6 +374,11 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
+    # Axis for the pdf header
+    AXIS_X = 35
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
+
     if email is None or email== "":
         return("NO EMAIL TO HASH")
 
@@ -306,8 +399,8 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
-            pointa = fitz.Point(35,35)
-            pointb = fitz.Point(35, 50)
+            pointa = fitz.Point(AXIS_X, AXIS_Y)
+            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
@@ -325,41 +418,6 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
         except Exception as e:
             print("other error", e)
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
-
-
-
-def create_each_pdf(repo_url):
-    '''renders one by one all the .tex on a repo'''
-    repo_name = ''
-    new_name = ''
-    clone = "git clone " + repo_url
-    try:
-        repo_name= repo_url.split("/")[-1].split(".")[0]
-    except Exception as e:
-        print('couldnt find the name or not valid url')
-        return("ERROR")
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            filesdir = os.path.join(tmpdir, repo_name)
-            subprocess.call(clone, shell=True, cwd=tmpdir)
-            files = glob.glob(filesdir + '/*.tex')
-
-            for name in files:
-                subprocess.call("pdflatex "+ name, shell=True, cwd=tmpdir)
-                try:
-                    new_name = name.split("/")[-1].split(".")[0] + ".pdf"
-                except:
-                    print("main file name not found")
-                    return("ERROR ON MAIN FILE")
-
-                write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , tmpdir+"/")
-
-            return("Email Sent")
-
-        except IOError as e:
-            print('IOError', e)
-            return("IO ERROR")
 
 
 @jwtauth
@@ -407,6 +465,7 @@ class RegisterUser(BaseHandler):
 @jwtauth
 class PostRepoHash(BaseHandler):
     '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+
     def get(self, userid):
         self.write(json.dumps({"response": "GET not found"}))
 
@@ -423,8 +482,12 @@ class PostRepoHash(BaseHandler):
             else:
                 email = json_data.get("email")
             userjson = ast.literal_eval(userid)
-            result = create_download_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
-            self.write(result)
+            result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
+            if result:
+                self.write(json.dumps({"response": "done"}))
+            else:
+                self.write(json.dumps({"response": "Error"}))
+
         except Exception as e:
             print("error on clone", e)
             self.write(json.dumps({"response": "Error"}))
@@ -432,14 +495,17 @@ class PostRepoHash(BaseHandler):
 
 class RenderUrl(BaseHandler):
     '''recives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
+
     def get(self):
         try:
             repo_url = self.get_argument('url', "")
             main_tex = self.get_argument('maintex', "main.tex")
             email = self.get_argument('email', "")
-            result = create_download_pdf(repo_url, email, main_tex)
-            self.set_header("Content-Type", "application/pdf")
-            self.write(result)
+            result = create_email_pdf(repo_url, email, main_tex)
+            if result:
+                self.write(json.dumps({"response":"done"}))
+            else:
+                self.write(json.dumps({"response": "Error"}))
 
 
         except Exception as e:

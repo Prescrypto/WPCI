@@ -34,7 +34,7 @@ def write_email(to_addr_list, subject, filename,path):
 
     # ATTACHMENT
     part = MIMEBase('application', "octet-stream")
-    part.set_payload(open(path+filename, "rb").read())
+    part.set_payload(open(path, "rb").read())
     encoders.encode_base64(part)
     part.add_header('Content-Disposition', 'attachment; filename="'+filename+'"')
     msg.attach(part)
