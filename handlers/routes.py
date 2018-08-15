@@ -319,6 +319,11 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
+    # Axis for the pdf header
+    AXIS_X = 35
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
+
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
     if github_token is None or github_token == '':
@@ -345,8 +350,8 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
-            pointa = fitz.Point(35,35)
-            pointb = fitz.Point(35, 50)
+            pointa = fitz.Point(AXIS_X, AXIS_Y)
+            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
@@ -369,6 +374,11 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
+    # Axis for the pdf header
+    AXIS_X = 35
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
+
     if email is None or email== "":
         return("NO EMAIL TO HASH")
 
@@ -389,8 +399,8 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
-            pointa = fitz.Point(35,35)
-            pointb = fitz.Point(35, 50)
+            pointa = fitz.Point(AXIS_X, AXIS_Y)
+            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
@@ -408,41 +418,6 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
         except Exception as e:
             print("other error", e)
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
-
-
-
-def create_each_pdf(repo_url):
-    '''renders one by one all the .tex on a repo'''
-    repo_name = ''
-    new_name = ''
-    clone = "git clone " + repo_url
-    try:
-        repo_name= repo_url.split("/")[-1].split(".")[0]
-    except Exception as e:
-        print('couldnt find the name or not valid url')
-        return("ERROR")
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            filesdir = os.path.join(tmpdir, repo_name)
-            subprocess.call(clone, shell=True, cwd=tmpdir)
-            files = glob.glob(filesdir + '/*.tex')
-
-            for name in files:
-                subprocess.call("pdflatex "+ name, shell=True, cwd=tmpdir)
-                try:
-                    new_name = name.split("/")[-1].split(".")[0] + ".pdf"
-                except:
-                    print("main file name not found")
-                    return("ERROR ON MAIN FILE")
-
-                write_email(["valerybriz@gmail.com"], "testing pdflatex",new_name , tmpdir+"/")
-
-            return("Email Sent")
-
-        except IOError as e:
-            print('IOError', e)
-            return("IO ERROR")
 
 
 @jwtauth
