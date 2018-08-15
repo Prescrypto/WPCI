@@ -86,7 +86,6 @@ def gitlogin():
     return github.authorize(callback=url_for('authorized', _external=True))
 
 
-
 @app.route('/api/v1/git/logout')
 def logout():
     session.pop('user', None)
@@ -118,8 +117,17 @@ def authorized():
     #me = github.get('user') return jsonify(me.data)  #we can get the user information from github
     return redirect(url_for('index', error=error))
 
-
 @github.tokengetter
 def get_github_oauth_token():
     return session.get('github_token')
+
+@app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
+def show_pdf(id):
+    error = None
+    if request.method == 'GET':
+        print("inside request get", id)
+    return render_template('pdf_form.html', id=id, error=error)
+
+
+
 

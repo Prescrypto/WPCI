@@ -8,7 +8,7 @@ import config as conf
 import datetime
 import json
 import fitz
-from models import User
+from models import User, Nda
 from models.mongoManager import ManageDB
 import tempfile
 import time
@@ -17,6 +17,7 @@ import os
 import subprocess
 import glob
 from handlers.emailHandler import write_email
+import config as conf
 
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
@@ -420,6 +421,53 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
 
 
+def render_pdf(repo_url, main_tex= "main.tex"):
+    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    repo_name = ''
+    new_name = ''
+    store_petition(repo_url, RENDER_NOHASH, "")
+    print("No private access")
+
+    clone = 'git clone ' + repo_url
+    rev_parse = 'git rev-parse master'
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            repo_name = os.listdir(tmpdir)[0]
+            filesdir = os.path.join(tmpdir, repo_name)
+            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True, cwd=filesdir)
+            new_name = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
+            pdffile = open(new_name, 'rb').read()
+            return (pdffile)
+
+
+        except IOError as e:
+            print('IOError', e)
+            return False
+        except Exception as e:
+            print("other error", e)
+            return False
+
+
+def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name):
+    base_url= conf.BASE_URL
+    PDF_VIEW_URL = 'pdf/'
+    try:
+        nda = Nda.Nda(pdf, pdf_url, wp_url, wp_main_tex, org_name)
+        if not nda.find():
+            nda.create()
+        else:
+            nda.update()
+
+        return base_url+PDF_VIEW_URL+nda.id
+
+    except Exception as e:
+        print("error creating nda",e)
+        return False
+
+
 @jwtauth
 class APINotFoundHandler(BaseHandler):
     '''if the endpoint doesn't exists then it will response with this code'''
@@ -510,6 +558,49 @@ class RenderUrl(BaseHandler):
 
         except Exception as e:
             print("error on clone", e)
+            self.write(json.dumps({"response": "Error"}))
+
+@jwtauth
+class PostWpNda(BaseHandler):
+    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+
+    def post(self, userid):
+        wp_url = None
+        pdf_contract = None
+        pdf_url = None
+        wp_main_tex = "main.tex"
+        org_name = None
+        json_data = json.loads(self.request.body.decode('utf-8'))
+        try:
+            if json_data.get("wp_url") is None or json_data.get("wp_url") == "":
+                self.write(json.dumps({"response": "Error, White paper url not found"}))
+            else:
+                wp_url = json_data.get("wp_url")
+
+            if json_data.get("org_name") is None or json_data.get("org_name") == "":
+                self.write(json.dumps({"response": "Error, organization name not found"}))
+            else:
+                org_name = json_data.get("org_name")
+
+            if json_data.get("wp_main_tex") is not None and json_data.get("wp_main_tex") != "":
+                wp_main_tex = json_data.get("wp_main_tex")
+
+
+            if json_data.get("pdf") is not None and json_data.get("pdf") != "":
+                pdf_contract = json_data.get("pdf")
+
+            if json_data.get("pdf_url") is not None and json_data.get("pdf_url") != "":
+                pdf_url = json_data.get("pdf_url")
+
+            userjson = ast.literal_eval(userid)
+            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name)
+            if result is not False:
+                self.write(json.dumps({"endpoint": result}))
+            else:
+                self.write(json.dumps({"response": "Error"}))
+
+        except Exception as e:
+            print("error creating endpoint", e)
             self.write(json.dumps({"response": "Error"}))
 
 

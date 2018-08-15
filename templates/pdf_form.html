@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="jumbo">
+    {% if error %}
+        < class="error"><strong>Error:</strong> {{ error }}
+    {% endif %}
+        </div>
+    <h1>Your id is: {{ id }}</h1>
+
+{% endblock %}
