@@ -1,10 +1,89 @@
-{% extends "layout.html" %}
+{% extends "pdflayout.html" %}
 {% block content %}
     <div class="jumbo">
     {% if error %}
-        < class="error"><strong>Error:</strong> {{ error }}
-    {% endif %}
+        <div class="error"><strong>Error:</strong> {{ error }}</div>
+    {% elif pdffile %}
+        <h1> Organization name: {{ org_name }}</h1>
+
         </div>
-    <h1>Your id is: {{ id }}</h1>
+        <h1>Please read carefully the next document and then click in sign</h1>
+        <center><button class="btn"  id="signbutton" name="signbutton" >Sign!</button></center>
+        <div id="containern" style="height: 800px;overflow: scroll;"></div>
+
+        <div class="space30"></div>
+
+
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+        <script type="text/javascript">
+
+        var pdfData = atob('{{ pdffile }}');
+
+        var pdfjsLib = window['pdfjs-dist/build/pdf'];
+
+        // The workerSrc property shall be specified.
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+
+         var loadingTask = pdfjsLib.getDocument({data: pdfData});
+        loadingTask.promise.then(function(pdf) {
+
+            // Get div#container and cache it for later use
+            var container = document.getElementById("containern");
+
+            // Loop from 1 to total_number_of_pages in PDF document
+            for (var i = 1; i <= pdf.numPages; i++) {
+
+                // Get desired page
+                pdf.getPage(i).then(function(page) {
+
+                  var scale = 1.5;
+                  var viewport = page.getViewport(scale);
+                  var div = document.createElement("div");
+
+                  // Set id attribute with page-#{pdf_page_number} format
+                  div.setAttribute("id", "page-" + (page.pageIndex + 1));
+
+                  // This will keep positions of child elements as per our needs
+                  div.setAttribute("style", "position: relative");
+
+                  // Append div within div#container
+                  container.appendChild(div);
+
+                  // Create a new Canvas element
+                  var canvas = document.createElement("canvas");
+
+                  // Append Canvas within div#page-#{pdf_page_number}
+                  div.appendChild(canvas);
+
+                  var context = canvas.getContext('2d');
+                  canvas.height = viewport.height;
+                  canvas.width = viewport.width;
+
+                  var renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                  };
+
+                  // Render PDF page
+                  page.render(renderContext);
+                });
+            }
+        }, function (reason) {
+          // PDF loading error
+          console.error(reason);
+        });
+
+
+
+
+
+        </script>
+
+    {% else %}
+        <div class="error"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
 
 {% endblock %}

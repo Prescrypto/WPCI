@@ -18,6 +18,7 @@ import subprocess
 import glob
 from handlers.emailHandler import write_email
 import config as conf
+import base64
 
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
@@ -439,7 +440,14 @@ def render_pdf(repo_url, main_tex= "main.tex"):
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True, cwd=filesdir)
             new_name = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
-            pdffile = open(new_name, 'rb').read()
+            new_name64 = filesdir + "/" + main_tex.split(".")[0] + ".base64"
+            with open(new_name, 'rb') as f:
+                with open(new_name64, 'wb') as ftemp:
+                    # write in a new file the base64
+                    ftemp.write(base64.b64encode(f.read()))
+
+            pdffile = open(new_name64, 'r').read()
+
             return (pdffile)
 
 
@@ -455,11 +463,12 @@ def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name):
     base_url= conf.BASE_URL
     PDF_VIEW_URL = 'pdf/'
     try:
-        nda = Nda.Nda(pdf, pdf_url, wp_url, wp_main_tex, org_name)
-        if not nda.find():
-            nda.create()
-        else:
+        nda = Nda.Nda()
+        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name)
+        if nda.check():
             nda.update()
+        else:
+            nda.create()
 
         return base_url+PDF_VIEW_URL+nda.id
 

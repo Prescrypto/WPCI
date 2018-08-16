@@ -3,8 +3,9 @@ from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
 import config as conf
 from models.mongoManager import ManageDB
-from handlers.routes import jwtauth, validate_token
-from models import User
+from handlers.routes import jwtauth, validate_token, render_pdf
+from models import User, Nda
+
 
 
 app = Flask(__name__)
@@ -125,7 +126,22 @@ def get_github_oauth_token():
 def show_pdf(id):
     error = None
     if request.method == 'GET':
-        print("inside request get", id)
+        try:
+            nda = Nda.Nda()
+            thisnda = nda.find_by_id(id)
+            if thisnda is not None:
+                if thisnda.pdf_url is not None and thisnda.pdf_url != "":
+                    pdffile = render_pdf(thisnda.pdf_url, "main.tex")
+                    return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=thisnda.org_name)
+                else:
+                    error="No valid Pdf url found"
+            else:
+                error = 'ID not found'
+
+        except Exception as e:
+            print(e)
+            error= "Couldn't render the PDF on the page"
+
     return render_template('pdf_form.html', id=id, error=error)
 
 
