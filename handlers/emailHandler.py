@@ -16,7 +16,7 @@ SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
 
-def write_email(to_addr_list, subject, filename,path):
+def write_email(to_addr_list, subject, filename, path):
     msg = MIMEMultipart()
     toaddr_list = []
     from_addr = SMTP_EMAIL
@@ -32,6 +32,7 @@ def write_email(to_addr_list, subject, filename,path):
     login = SMTP_USER
     password = SMTP_PASS
 
+    # Note to Valery, extract from method
     # ATTACHMENT
     part = MIMEBase('application', "octet-stream")
     part.set_payload(open(path, "rb").read())
@@ -44,6 +45,7 @@ def write_email(to_addr_list, subject, filename,path):
         server.starttls()
         server.login(login, password)
         server.sendmail(from_addr, toaddr_list, msg.as_string())
+        # WIP Should NEVER push code to production with print
         print ("email sent")
         print (server.quit())
     except Exception as e:

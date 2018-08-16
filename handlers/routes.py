@@ -223,10 +223,15 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
     store_petition(repo_url, RENDER_HASH, email)
     print("No private access")
 
-    watermark = "Copy generated for: "+ email
+    watermark = "Document generated for: "+ email
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
+
+    # The default message to be sent in the body of the email
+    default_msg = "Hello,\
+        You will find the documentation you requested attached, thank you very much for your interest.\
+        Best regards,"
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
@@ -246,6 +251,9 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
             document.save(new_name, incremental=1)
             document.close()
 
+            # Note to Valery: this method should be send_email
+            # email should be => to_email
+            # new_name should be new_file_name
             write_email([email], "Documentation", "documentation.pdf", new_name)
 
         except IOError as e:
