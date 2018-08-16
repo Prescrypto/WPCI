@@ -38,6 +38,9 @@
     "ADMIN_PASS": {
         "required": true
       },
+    "BASE_URL": {
+        "required": true
+      },
     "GITHUB_OAUTH_URI": {
         "required": true
       }
