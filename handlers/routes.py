@@ -221,7 +221,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
 def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text=""):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
+    file_full_path = ''
     # Axis for the pdf header
     AXIS_X = 35
     AXIS_Y = 35
@@ -278,7 +278,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
 def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_tex="main.tex", email_body_text =""):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
+    file_full_path = ''
     #Axis for the pdf header
     AXIS_X = 35
     AXIS_Y = 35
