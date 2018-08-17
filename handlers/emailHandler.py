@@ -1,52 +1,61 @@
-try:
-    from email.MIMEMultipart import MIMEMultipart
-except:
-    from email.mime.multipart import MIMEMultipart
-try:
-    from email.MIMEBase import MIMEBase
-except:
-    from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from tornado.template import Loader
 from email import encoders
 import config as conf
 import smtplib
 
-SMTP_PASS = conf.SMTP_PASS
-SMTP_USER = conf.SMTP_USER
-SMTP_EMAIL = conf.SMTP_EMAIL
-SMTP_ADDRESS = conf.SMTP_ADDRESS
-SMTP_PORT = conf.SMTP_PORT
 
-def write_email(to_addr_list, subject, filename, path):
-    msg = MIMEMultipart()
-    toaddr_list = []
-    from_addr = SMTP_EMAIL
-    for eaddress in to_addr_list:
-        toaddr_list.append(eaddress)
+class Mailer(object):
+    loader = Loader("templates/email")
+    EMAIL_HTML_TEMPLATE = loader.load("document_send_email.html")
+    def __init__(self, **kwargs):
+        mandatory_args = ["username","password","server","port"]
+        for x in mandatory_args:
+            if kwargs.get(x, False) == False:
+                raise ValueError("%s must be provided" % (x))
+            self.__dict__[x] = kwargs[x]
 
-    if subject == '':
-        subject = 'SUBJECT'
+    def send(self, **kwargs):
 
-    msg['Subject'] = subject
-    msg['From'] = from_addr
-    msg['To'] = ','.join(to_addr_list)
-    login = SMTP_USER
-    password = SMTP_PASS
+        mandatory_args = ["subject","email_from","emails_to","attachments_list"]
+        for x in mandatory_args:
+            if not kwargs.get(x, False):
+                raise ValueError("%s is mandatory" % (x))
 
-    # Note to Valery, extract from method
-    # ATTACHMENT
-    part = MIMEBase('application', "octet-stream")
-    part.set_payload(open(path, "rb").read())
-    encoders.encode_base64(part)
-    part.add_header('Content-Disposition', 'attachment; filename="'+filename+'"')
-    msg.attach(part)
+        toaddr_list = []
+        for eaddress in kwargs['emails_to']:
+            toaddr_list.append(eaddress)
 
-    try:
-        server = smtplib.SMTP(host=SMTP_ADDRESS, port=SMTP_PORT, )
-        server.starttls()
-        server.login(login, password)
-        server.sendmail(from_addr, toaddr_list, msg.as_string())
-        # WIP Should NEVER push code to production with print
-        print ("email sent")
-        print (server.quit())
-    except Exception as e:
-        print("sending email", e)
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = kwargs['subject']
+            msg['From'] = kwargs['email_from']
+            msg['To'] = ','.join(kwargs['emails_to'])
+
+            text = kwargs['text_message']
+            html = kwargs['html_message']
+            attachments_list = kwargs['attachments_list']
+            if text is not None and text != "":
+                msg.attach(MIMEText(text, 'plain'))
+            if html is not None and html != "":
+                html = self.EMAIL_HTML_TEMPLATE.generate(body_msg=html)
+                msg.attach(MIMEText(html.decode("utf-8") , 'html'))
+
+            for attachment in attachments_list:
+                part = MIMEBase('application', attachment.get("file_type"))
+                part.set_payload(open(attachment.get("file_path"), "rb").read())
+                encoders.encode_base64(part)
+                part.add_header('Content-Disposition', 'attachment; filename="' + attachment.get('filename') + '"')
+                msg.attach(part)
+
+            #content = MIMEText(kwargs['content'], kwargs['content_type'])
+
+            s = smtplib.SMTP(host=self.server, port=self.port)
+            s.starttls()
+            s.login(self.username, self.password)
+            s.sendmail(msg['From'], msg['To'], msg.as_string())
+            print(s.quit())
+        except Exception as e:
+            print("sending email", e)
