@@ -13,5 +13,5 @@ echo "deb http://repo.mongodb.org/apt/debian "$(lsb_release -sc)"/mongodb-org/3.
 sudo apt-get update
 # This is the version of mongoLab in heroku
 sudo apt-get install -y mongodb-org
-
+echo "Finish installing mongo@3.4"
 

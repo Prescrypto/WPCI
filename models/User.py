@@ -90,7 +90,7 @@ class User(object):
 
     def update(self):
         '''updates a user on the bd'''
-        result = False
+        result = None
         mydb = None
         try:
             collection = "User"
@@ -101,6 +101,7 @@ class User(object):
 
         except Exception as error:
             print("updating user", error)
+            result = None
 
         finally:
             if mydb is not None:
@@ -117,6 +118,12 @@ class User(object):
             mydb = ManageDB(collection)
             docs = mydb.select("username", self.username)
             if len(docs) > 0:
-                return docs[0].get(attribute_name)
+                result = docs[0].get(attribute_name)
         except:
-            return None
+            result = None
+
+        finally:
+            if mydb is not None:
+                mydb.close()
+
+        return result

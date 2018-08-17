@@ -40,7 +40,6 @@ def index():
         return redirect(url_for('login'))
 
 
-
 @app.route('/api/v1/git/login', methods=['GET', 'POST'])
 def login():
     error=''

@@ -1,5 +1,8 @@
 eso-pic
 overpic
+everypage
+background
+breakcites
 pict2e
 xcolor
 varwidth
@@ -26,6 +29,7 @@ algorithm2e
 texliveonfly
 algorithmicx
 lipsum
+wrapfig
 relsize 
 ifoddpage
 bigfoot

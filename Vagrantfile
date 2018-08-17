@@ -41,7 +41,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Provider-specific configuration so you can fine-tune various
   # backing providers for rant. These expose provider-specific options.
   config.vm.provider 'virtualbox' do |vb|
-    vb.customize ['modifyvm', :id, '--memory', '2048']
+    vb.customize ['modifyvm', :id, '--memory', '1024']
   end
 
   # Provision application
@@ -49,6 +49,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Run only one time
   config.vm.provision "shell", privileged: false, path: "bin/install_mongodb.sh"
   config.vm.provision "shell", privileged: false, path: "bin/install_python3.6.sh"
+  config.vm.provision "shell", privileged: false, path: "bin/install_latex.sh"
   # Run always
   config.vm.provision "shell", privileged: false, run: "always", path: "bin/setup_box.sh"
 
