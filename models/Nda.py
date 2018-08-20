@@ -24,13 +24,14 @@ class Nda(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, org_name):
+    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, org_name, email):
         try:
             self.pdf = pdf
             self.pdf_url = pdf_url
             self.wp_url = wp_url
             self.wp_main_tex = wp_main_tex
             self.org_name = org_name
+            self.email = email
             if self.id is None:
                 self.id = '{}_nda_{}'.format(org_name.strip(), str(int(time.time() * 1000)))
 

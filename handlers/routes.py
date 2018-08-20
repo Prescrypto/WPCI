@@ -19,6 +19,7 @@ import glob
 from handlers.emailHandler import write_email
 import config as conf
 import base64
+from utils import *
 
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
@@ -182,14 +183,6 @@ def authenticate_json(json_data):
     else:
         return False
 
-def get_hash(email, git_sha):
-    hashed_payload = None
-    timestamp = str(time.time())
-    payload = hashlib.sha256(timestamp.encode('utf-8')).hexdigest() + hashlib.sha256(email.encode('utf-8')).hexdigest() + git_sha
-    hash_object = hashlib.sha256(payload.encode('utf-8'))
-    hashed_payload = hash_object.hexdigest()
-
-    return hashed_payload
 
 def store_petition(remote_url, petition_type, username='anonymous'):
     result = False
@@ -232,11 +225,12 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X,AXIS_Y)
@@ -288,11 +282,12 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True,
                                                cwd=filesdir)
             new_name = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
@@ -345,11 +340,12 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
@@ -394,11 +390,12 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
@@ -407,7 +404,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
                 page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
-            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
+
             document.save(new_name, incremental=1)
             document.close()
 
@@ -459,12 +456,12 @@ def render_pdf(repo_url, main_tex= "main.tex"):
             return False
 
 
-def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name):
+def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, email):
     base_url= conf.BASE_URL
     PDF_VIEW_URL = 'pdf/'
     try:
         nda = Nda.Nda()
-        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name)
+        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, email)
         if nda.check():
             nda.update()
         else:
@@ -579,6 +576,7 @@ class PostWpNda(BaseHandler):
         pdf_url = None
         wp_main_tex = "main.tex"
         org_name = None
+        email = None
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
             if json_data.get("wp_url") is None or json_data.get("wp_url") == "":
@@ -591,6 +589,11 @@ class PostWpNda(BaseHandler):
             else:
                 org_name = json_data.get("org_name")
 
+            if json_data.get("email") is None or json_data.get("email") == "":
+                self.write(json.dumps({"response": "Error, Email not found"}))
+            else:
+                email = json_data.get("email")
+
             if json_data.get("wp_main_tex") is not None and json_data.get("wp_main_tex") != "":
                 wp_main_tex = json_data.get("wp_main_tex")
 
@@ -602,7 +605,7 @@ class PostWpNda(BaseHandler):
                 pdf_url = json_data.get("pdf_url")
 
             userjson = ast.literal_eval(userid)
-            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name)
+            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, email)
             if result is not False:
                 self.write(json.dumps({"endpoint": result}))
             else:

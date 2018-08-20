@@ -2,11 +2,16 @@ import json
 import os
 import sys
 import config as conf
+from requests.auth import HTTPBasicAuth
+import requests
+import base64
 
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
+
 
 headers = conf.headers
 GIT_BASE_URI = conf.GITHUB_API_URL
+
 
 class WSHandler(object):
     http_client = AsyncHTTPClient()
@@ -45,14 +50,28 @@ def handle_response(res):
     else:
         print ("success",res.body)
 
-def get_repo_pages(owner_repo, path):
-    repo_url= 'repos/'+owner_repo+'contents/'+path
-    URL= GIT_BASE_URI + repo_url
-    http_client = AsyncHTTPClient()
-    # Asynchronous request for contet
-    headers['Accept'] = 'application/vnd.github.v3.raw'
+def get_nda(cryptosign_url, payload):
+    URL= cryptosign_url
+    SIGN_URL = 'api/v1/sign/'
+    TOKEN_URL = 'oauth/token/'
 
-    response = http_client.fetch(URL,headers=headers, method="GET", callback=handle_response)
+    #request a token to cryptosign
+    jsondata = {
+        "grant_type": "password",
+        "username": conf.CRYPTO_USERNAME,
+        "password": conf.CRYPTO_PASS
+    }
 
-    return response
+    auth = HTTPBasicAuth(conf.CRYPTO_ID, conf.CRYPTO_SECRET)
+
+    token_result = requests.post(url= URL+TOKEN_URL,json=jsondata, headers=headers, auth=auth)
+    token_json_result = json.loads(token_result.content)
+    print(token_json_result)
+    if token_json_result.get("access_token"):
+        headers["Authorization"] = "Bearer " + token_json_result.get("access_token")
+        sign_result = requests.post(url=URL + SIGN_URL, json=payload, headers=headers)
+        json_result = json.loads(sign_result.content)
+        return json_result.get("pdf")
+
+    return False
 

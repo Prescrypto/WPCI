@@ -3,8 +3,10 @@ from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
 import config as conf
 from models.mongoManager import ManageDB
-from handlers.routes import jwtauth, validate_token, render_pdf
+from handlers.routes import jwtauth, validate_token, render_pdf, create_email_pdf, create_download_pdf
 from models import User, Nda
+from handlers.WSHandler import *
+import base64
 
 
 
@@ -125,6 +127,10 @@ def get_github_oauth_token():
 @app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
 def show_pdf(id):
     error = None
+    message = None
+    pdffile = ""
+    filename = ""
+
     if request.method == 'GET':
         try:
             nda = Nda.Nda()
@@ -142,7 +148,69 @@ def show_pdf(id):
             print(e)
             error= "Couldn't render the PDF on the page"
 
-    return render_template('pdf_form.html', id=id, error=error)
+    if request.method == 'POST':
+        try:
+            nda = Nda.Nda()
+            thisnda = nda.find_by_id(id)
+            wp_main_tex = "main.tex"
+            if thisnda is not None:
+                if thisnda.wp_main_tex is not None and thisnda.wp_main_tex != "":
+                    wp_main_tex = thisnda.wp_main_tex
+                if thisnda.wp_url is not None and thisnda.wp_url != "":
+                    #wpci_result = create_download_pdf(thisnda.wp_url, thisnda.email, wp_main_tex)
+                    #with open('logo.base64', 'wb') as f:
+                        # read file as binary and encode to base64
+                        #f.write(base64.b64encode(pdffile))
+                    print("wpci done")
+
+                    # return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile,
+                    #                      org_name=thisnda.org_name)
+
+
+                else:
+                    error = "No valid wp Pdf url found"
+
+
+
+
+                crypto_sign_payload= {
+                    "timezone": "America/Mexico_City",
+                    "pdf": pdffile,
+                    "signatures": [
+                     {
+                         "hash": "asdldsalkdsaj21j31kl321jk312jk312",
+                         "email": "valerybriz@gmail.com",
+                         "name": "Valery Calderon"
+                     },
+                     {
+                         "hash": "sdaklkk213hkj312jkh123hjk123hj2hjk31h",
+                         "email": "valery@prescrypto.com",
+                         "name": "Valery owner"
+                     }],
+                    "params": {
+                     "title": "My wp",
+                     "file_name": filename,
+                     "logo": ""
+                    }
+                }
+
+                print('response', get_nda('http://www.cryptosign.info/', crypto_sign_payload))
+
+            else:
+                error = 'ID not found'
+
+
+
+
+
+            message = "success on pdf "
+        except Exception as e:
+            print(e)
+            message = "there was an error on your files"
+
+
+
+    return render_template('pdf_form.html', id=id, error=error, message=message)
 
 
 

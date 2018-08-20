@@ -8,7 +8,9 @@
 
         </div>
         <h1>Please read carefully the next document and then click in sign</h1>
+        <form  method="post">
         <center><button class="btn"  id="signbutton" name="signbutton" >Sign!</button></center>
+        </form>
         <div id="containern" style="height: 800px;overflow: scroll;"></div>
 
         <div class="space30"></div>
@@ -76,13 +78,10 @@
         });
 
 
-
-
-
         </script>
 
-    {% else %}
-        <div class="error"><strong>Error:</strong> {{ error }}</div>
+    {% elif message %}
+        <div class="message"><strong> {{ message }} </strong></div>
     {% endif %}
 
 

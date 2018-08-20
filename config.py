@@ -1,7 +1,6 @@
 import os
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
 headers = {'Content-Type' : 'application/json' } #get the content in json format
-headers["Authorization"] = "token " + TOKEN #authentication for github
 GITHUB_API_URL = "https://api.github.com/"
 SECRET = os.environ.get('SECRET', '')
 MONGO_URI= os.environ.get('MONGODB_URI', '')
@@ -14,3 +13,7 @@ CONSUMER_KEY = os.environ.get('CONSUMER_KEY', '')
 CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET', '')
 GITHUB_OAUTH_URI = os.environ.get('GITHUB_OAUTH_URI', '') #https://github.com/login/oauth/
 BASE_URL = os.environ.get('BASE_URL', 'http:localhost:8000/api/v1/')
+CRYPTO_ID = os.environ.get('CRYPTO_ID', 'mINpp44r59ZXB9wQdAyL9s4CZafYhxvJYmknLmn5')
+CRYPTO_SECRET = os.environ.get('CRYPTO_SECRET', '57Vz9HP8PwLljYqafIg6clse5CMpOOj2IpoBwx5ak9YbiOHk1d434iDeyIhVMZ03XBPLsdYB2hmL0uBdk7jC2thkBm6LcfGPTwg6oVthIvMIL9SiMsl2x9psEgljFy8P')
+CRYPTO_USERNAME = os.environ.get('CRYPTO_USERNAME', 'valery@prescrypto.com')
+CRYPTO_PASS = os.environ.get('CRYPTO_PASS', 'mysecret')
