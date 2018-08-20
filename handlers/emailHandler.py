@@ -8,17 +8,17 @@ import smtplib
 
 
 class Mailer(object):
-    loader = Loader("templates/email")
-    EMAIL_HTML_TEMPLATE = loader.load("document_send_email.html")
     def __init__(self, **kwargs):
         mandatory_args = ["username","password","server","port"]
         for x in mandatory_args:
             if kwargs.get(x, False) == False:
                 raise ValueError("%s must be provided" % (x))
             self.__dict__[x] = kwargs[x]
+        loader = Loader("templates/email")
+        self.EMAIL_HTML_TEMPLATE = loader.load("document_send_email.html")
+        self.server = smtplib.SMTP(host=self.server, port=self.port)
 
     def send(self, **kwargs):
-
         mandatory_args = ["subject","email_from","emails_to","attachments_list"]
         for x in mandatory_args:
             if not kwargs.get(x, False):
@@ -50,12 +50,9 @@ class Mailer(object):
                 part.add_header('Content-Disposition', 'attachment; filename="' + attachment.get('filename') + '"')
                 msg.attach(part)
 
-            #content = MIMEText(kwargs['content'], kwargs['content_type'])
-
-            s = smtplib.SMTP(host=self.server, port=self.port)
-            s.starttls()
-            s.login(self.username, self.password)
-            s.sendmail(msg['From'], msg['To'], msg.as_string())
-            print(s.quit())
+            self.server.starttls()
+            self.server.login(self.username, self.password)
+            self.server.sendmail(msg['From'], msg['To'], msg.as_string())
+            print(self.server.quit())
         except Exception as e:
             print("sending email", e)
