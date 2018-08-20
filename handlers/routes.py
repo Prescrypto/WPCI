@@ -225,8 +225,8 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     print("starting")
     # Axis for the pdf header
     AXIS_X = 15
-    AXIS_Y = 770
-    AXIS_Y_LOWER = 785
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
     attachments_list = []
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
@@ -282,8 +282,8 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     file_full_path = ''
     #Axis for the pdf header
     AXIS_X = 15
-    AXIS_Y = 770
-    AXIS_Y_LOWER = 785
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
     attachments_list = []
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
@@ -346,8 +346,8 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     new_name = ''
     # Axis for the pdf header
     AXIS_X = 15
-    AXIS_Y = 770
-    AXIS_Y_LOWER = 785
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
 
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
@@ -400,8 +400,8 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
     new_name = ''
     # Axis for the pdf header
     AXIS_X = 15
-    AXIS_Y = 770
-    AXIS_Y_LOWER = 785
+    AXIS_Y = 35
+    AXIS_Y_LOWER = 50
 
     if email is None or email== "":
         return("NO EMAIL TO HASH")
