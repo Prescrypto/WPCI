@@ -222,10 +222,11 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
+    print("starting")
     # Axis for the pdf header
-    AXIS_X = 35
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
+    AXIS_X = 15
+    AXIS_Y = 820
+    AXIS_Y_LOWER = 835
     attachments_list = []
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
@@ -255,8 +256,8 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
             pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
-                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
+                page.insertText(pointa, text=watermark, fontsize = 10, fontname = "Times-Roman")
+                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
             document.save(file_full_path, incremental=1)
             document.close()
 
@@ -280,9 +281,9 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     repo_name = ''
     file_full_path = ''
     #Axis for the pdf header
-    AXIS_X = 35
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
+    AXIS_X = 15
+    AXIS_Y = 820
+    AXIS_Y_LOWER = 835
     attachments_list = []
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
@@ -319,8 +320,8 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
             pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize=11, fontname="Helvetica")
-                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
+                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
             document.save(file_full_path, incremental=1)
             document.close()
 
@@ -344,9 +345,9 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     repo_name = ''
     new_name = ''
     # Axis for the pdf header
-    AXIS_X = 35
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
+    AXIS_X = 15
+    AXIS_Y = 820
+    AXIS_Y_LOWER = 835
 
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
@@ -378,9 +379,8 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
-                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
-            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
+                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
             document.save(new_name, incremental=1)
             document.close()
 
@@ -399,9 +399,9 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
     repo_name = ''
     new_name = ''
     # Axis for the pdf header
-    AXIS_X = 35
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
+    AXIS_X = 15
+    AXIS_Y = 820
+    AXIS_Y_LOWER = 835
 
     if email is None or email== "":
         return("NO EMAIL TO HASH")
@@ -427,9 +427,8 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
-                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
-            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
+                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
             document.save(new_name, incremental=1)
             document.close()
 
