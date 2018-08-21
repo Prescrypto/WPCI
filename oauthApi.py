@@ -3,9 +3,10 @@ from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
 import config as conf
 from models.mongoManager import ManageDB
-from handlers.routes import jwtauth, validate_token, render_pdf, create_email_pdf, create_download_pdf
+from handlers.routes import jwtauth, validate_token, render_pdf_base64, create_download_pdf
 from models import User, Nda
 from handlers.WSHandler import *
+from utils import *
 import base64
 
 
@@ -14,6 +15,8 @@ app = Flask(__name__)
 app.debug = True
 app.secret_key = conf.SECRET
 oauth = OAuth(app)
+
+DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
 
 oauth_app = WSGIContainer(app)
 
@@ -129,7 +132,7 @@ def show_pdf(id):
     error = None
     message = None
     pdffile = ""
-    filename = ""
+    nda_logo = ""
 
     if request.method == 'GET':
         try:
@@ -137,7 +140,7 @@ def show_pdf(id):
             thisnda = nda.find_by_id(id)
             if thisnda is not None:
                 if thisnda.pdf_url is not None and thisnda.pdf_url != "":
-                    pdffile = render_pdf(thisnda.pdf_url, "main.tex")
+                    pdffile = render_pdf_base64(thisnda.pdf_url, "main.tex")
                     return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=thisnda.org_name)
                 else:
                     error="No valid Pdf url found"
@@ -150,6 +153,8 @@ def show_pdf(id):
 
     if request.method == 'POST':
         try:
+            filename = "nda_contract.pdf"
+            nda_file_base64 = str(request.form.get("nda_file"))
             nda = Nda.Nda()
             thisnda = nda.find_by_id(id)
             wp_main_tex = "main.tex"
@@ -157,57 +162,66 @@ def show_pdf(id):
                 if thisnda.wp_main_tex is not None and thisnda.wp_main_tex != "":
                     wp_main_tex = thisnda.wp_main_tex
                 if thisnda.wp_url is not None and thisnda.wp_url != "":
-                    #wpci_result = create_download_pdf(thisnda.wp_url, thisnda.email, wp_main_tex)
-                    #with open('logo.base64', 'wb') as f:
-                        # read file as binary and encode to base64
-                        #f.write(base64.b64encode(pdffile))
+
+
+                    wpci_result = create_download_pdf(thisnda.wp_url, thisnda.email, wp_main_tex)
+                    with open("temp_wpci.pdf", 'wb') as ftemp:
+                        ftemp.write(wpci_result)
                     print("wpci done")
-
-                    # return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile,
-                    #                      org_name=thisnda.org_name)
-
 
                 else:
                     error = "No valid wp Pdf url found"
-
-
-
-
-                crypto_sign_payload= {
-                    "timezone": "America/Mexico_City",
-                    "pdf": pdffile,
-                    "signatures": [
-                     {
-                         "hash": "asdldsalkdsaj21j31kl321jk312jk312",
-                         "email": "valerybriz@gmail.com",
-                         "name": "Valery Calderon"
-                     },
-                     {
-                         "hash": "sdaklkk213hkj312jkh123hjk123hj2hjk31h",
-                         "email": "valery@prescrypto.com",
-                         "name": "Valery owner"
-                     }],
-                    "params": {
-                     "title": "My wp",
-                     "file_name": filename,
-                     "logo": ""
-                    }
-                }
-
-                print('response', get_nda('http://www.cryptosign.info/', crypto_sign_payload))
+                    return render_template('pdf_form.html', id=id, error=error)
 
             else:
                 error = 'ID not found'
+                return render_template('pdf_form.html', id=id, error=error)
 
+            owner_hash = get_hash([thisnda.org_name, thisnda.wp_url])
+            client_hash = get_hash([thisnda.email, thisnda.wp_url])
+            if thisnda.nda_logo is None:
+                nda_logo = open(DEFAULT_LOGO_PATH, 'r').read()
+            else:
+                nda_logo = thisnda.nda_logo
 
+            crypto_sign_payload = {
+                "timezone": "America/Mexico_City",
+                "pdf": nda_file_base64,
+                "signatures": [
+                    {
+                        "hash": owner_hash,
+                        "email": "owner@company.com",
+                        "name": thisnda.org_name
+                    },
+                    {
+                        "hash": client_hash,
+                        "email": thisnda.email,
+                        "name": thisnda.email
+                    }],
+                "params": {
+                    "title": thisnda.org_name + " contract",
+                    "file_name": filename,
+                    "logo": nda_logo
+                }
+            }
 
+            result = get_nda(crypto_sign_payload)
+            if result is not False:
+                #if the request returned a nda pdf file correctly then store it as pdf
+                message = "successfully sent your files "
+                with open("temp_nda.pdf", 'wb') as ftemp:
+                    ftemp.write(result)
 
+                print("successfully sent your files")
 
-            message = "success on pdf "
+            else:
+                error = "failed loading files"
+                return render_template('pdf_form.html', id=id, error=error)
+
         except Exception as e:
             print(e)
-            message = "there was an error on your files"
-
+            error = "there was an error on your files"
+            return render_template('pdf_form.html', id=id, error=error)
 
 
     return render_template('pdf_form.html', id=id, error=error, message=message)

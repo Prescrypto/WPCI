@@ -419,7 +419,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
 
 
-def render_pdf(repo_url, main_tex= "main.tex"):
+def render_pdf_base64(repo_url, main_tex= "main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     new_name = ''
@@ -456,12 +456,12 @@ def render_pdf(repo_url, main_tex= "main.tex"):
             return False
 
 
-def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, email):
+def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, email, org_email, nda_logo):
     base_url= conf.BASE_URL
     PDF_VIEW_URL = 'pdf/'
     try:
         nda = Nda.Nda()
-        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, email)
+        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, email, org_email, nda_logo)
         if nda.check():
             nda.update()
         else:
@@ -576,6 +576,8 @@ class PostWpNda(BaseHandler):
         pdf_url = None
         wp_main_tex = "main.tex"
         org_name = None
+        org_email = None
+        nda_logo = None
         email = None
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
@@ -598,6 +600,12 @@ class PostWpNda(BaseHandler):
                 wp_main_tex = json_data.get("wp_main_tex")
 
 
+            if json_data.get("logo") is not None and json_data.get("logo") != "":
+                nda_logo = json_data.get("logo")
+
+            if json_data.get("org_email") is not None and json_data.get("org_email") != "":
+                org_email = json_data.get("org_email")
+
             if json_data.get("pdf") is not None and json_data.get("pdf") != "":
                 pdf_contract = json_data.get("pdf")
 
@@ -605,7 +613,7 @@ class PostWpNda(BaseHandler):
                 pdf_url = json_data.get("pdf_url")
 
             userjson = ast.literal_eval(userid)
-            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, email)
+            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, email, org_email, nda_logo)
             if result is not False:
                 self.write(json.dumps({"endpoint": result}))
             else:

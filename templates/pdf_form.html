@@ -9,7 +9,8 @@
         </div>
         <h1>Please read carefully the next document and then click in sign</h1>
         <form  method="post">
-        <center><button class="btn"  id="signbutton" name="signbutton" >Sign!</button></center>
+            <center><button class="btn"  id="signbutton" name="signbutton" >Sign!</button></center>
+             <input type="hidden" id="nda_file" name="nda_file" value="">
         </form>
         <div id="containern" style="height: 800px;overflow: scroll;"></div>
 
@@ -22,6 +23,8 @@
         <script type="text/javascript">
 
         var pdfData = atob('{{ pdffile }}');
+        $('#nda_file').val('{{ pdffile }}');
+
 
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
 
