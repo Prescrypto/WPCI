@@ -1,14 +1,20 @@
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
+import base64
+import tempfile
 import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import jwtauth, validate_token, render_pdf_base64, create_download_pdf
+from handlers.emailHandler import Mailer
 from models import User, Nda
 from handlers.WSHandler import *
 from utils import *
-import base64
 
+
+DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
+        <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
+        <p>Best regards,</p>"
 
 
 app = Flask(__name__)
@@ -17,6 +23,7 @@ app.secret_key = conf.SECRET
 oauth = OAuth(app)
 
 DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
+TIMEZONE = "America/Mexico_City"
 
 oauth_app = WSGIContainer(app)
 
@@ -133,6 +140,8 @@ def show_pdf(id):
     message = None
     pdffile = ""
     nda_logo = ""
+    ATTACH_CONTENT_TYPE = 'octet-stream'
+    mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, server=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
     if request.method == 'GET':
         try:
@@ -152,8 +161,10 @@ def show_pdf(id):
             error= "Couldn't render the PDF on the page"
 
     if request.method == 'POST':
+        attachments_list = []
+        NDA_FILE_NAME = "ndacontract.pdf"
+        WPCI_FILE_NAME = "whitepaper.pdf"
         try:
-            filename = "nda_contract.pdf"
             nda_file_base64 = str(request.form.get("nda_file"))
             nda = Nda.Nda()
             thisnda = nda.find_by_id(id)
@@ -162,12 +173,78 @@ def show_pdf(id):
                 if thisnda.wp_main_tex is not None and thisnda.wp_main_tex != "":
                     wp_main_tex = thisnda.wp_main_tex
                 if thisnda.wp_url is not None and thisnda.wp_url != "":
+                    '''here we create a temporary directory to store the files while the function sends it by email'''
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
+                        nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+                        try:
+                            wpci_result = create_download_pdf(thisnda.wp_url, thisnda.email, wp_main_tex)
 
+                            if wpci_result is False:
+                                error = "Error rendering the white paper"
+                                return render_template('pdf_form.html', id=id, error=error)
 
-                    wpci_result = create_download_pdf(thisnda.wp_url, thisnda.email, wp_main_tex)
-                    with open("temp_wpci.pdf", 'wb') as ftemp:
-                        ftemp.write(wpci_result)
-                    print("wpci done")
+                            with open(wpci_file_path, 'wb') as ftemp:
+                                ftemp.write(wpci_result)
+
+                            owner_hash = get_hash([thisnda.org_name, thisnda.wp_url])
+                            client_hash = get_hash([thisnda.email, thisnda.wp_url])
+                            if thisnda.nda_logo is None:
+                                nda_logo = open(DEFAULT_LOGO_PATH, 'r').read()
+                            else:
+                                nda_logo = thisnda.nda_logo
+
+                            crypto_sign_payload = {
+                                "timezone": TIMEZONE,
+                                "pdf": nda_file_base64,
+                                "signatures": [
+                                    {
+                                        "hash": owner_hash,
+                                        "email": thisnda.org_email,
+                                        "name": thisnda.org_name
+                                    },
+                                    {
+                                        "hash": client_hash,
+                                        "email": thisnda.email,
+                                        "name": thisnda.email
+                                    }],
+                                "params": {
+                                    "title": thisnda.org_name + " contract",
+                                    "file_name": NDA_FILE_NAME,
+                                    "logo": nda_logo
+                                }
+                            }
+
+                            nda_result = get_nda(crypto_sign_payload)
+                            if nda_result is not False:
+                                # if the request returned a nda pdf file correctly then store it as pdf
+                                with open(nda_file_path, 'wb') as ftemp:
+                                    ftemp.write(nda_result)
+
+                            else:
+                                error = "failed loading nda"
+                                return render_template('pdf_form.html', id=id, error=error)
+                            #this is the payload for the white paper file
+                            wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                                   file_path=wpci_file_path,
+                                                   filename=WPCI_FILE_NAME)
+                            attachments_list.append(wpci_attachment)
+                            #this is the payload for the nda file
+                            nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                                   file_path=nda_file_path,
+                                                   filename=NDA_FILE_NAME)
+                            attachments_list.append(nda_attachment)
+
+                            mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL, emails_to=[thisnda.email],
+                                        attachments_list=attachments_list, text_message = "",
+                                        html_message=DEFAULT_HTML_TEXT)
+
+                            message = "successfully sent your files "
+
+                        except Exception as e: #except from temp directory
+                            print(e)
+                            error = "Error sending the email"
+                            return render_template('pdf_form.html', id=id, error=error)
 
                 else:
                     error = "No valid wp Pdf url found"
@@ -177,48 +254,7 @@ def show_pdf(id):
                 error = 'ID not found'
                 return render_template('pdf_form.html', id=id, error=error)
 
-            owner_hash = get_hash([thisnda.org_name, thisnda.wp_url])
-            client_hash = get_hash([thisnda.email, thisnda.wp_url])
-            if thisnda.nda_logo is None:
-                nda_logo = open(DEFAULT_LOGO_PATH, 'r').read()
-            else:
-                nda_logo = thisnda.nda_logo
-
-            crypto_sign_payload = {
-                "timezone": "America/Mexico_City",
-                "pdf": nda_file_base64,
-                "signatures": [
-                    {
-                        "hash": owner_hash,
-                        "email": "owner@company.com",
-                        "name": thisnda.org_name
-                    },
-                    {
-                        "hash": client_hash,
-                        "email": thisnda.email,
-                        "name": thisnda.email
-                    }],
-                "params": {
-                    "title": thisnda.org_name + " contract",
-                    "file_name": filename,
-                    "logo": nda_logo
-                }
-            }
-
-            result = get_nda(crypto_sign_payload)
-            if result is not False:
-                #if the request returned a nda pdf file correctly then store it as pdf
-                message = "successfully sent your files "
-                with open("temp_nda.pdf", 'wb') as ftemp:
-                    ftemp.write(result)
-
-                print("successfully sent your files")
-
-            else:
-                error = "failed loading files"
-                return render_template('pdf_form.html', id=id, error=error)
-
-        except Exception as e:
+        except Exception as e: #function except
             print(e)
             error = "there was an error on your files"
             return render_template('pdf_form.html', id=id, error=error)

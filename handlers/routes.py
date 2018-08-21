@@ -17,7 +17,6 @@ import os
 import subprocess
 import glob
 from handlers.emailHandler import Mailer
-from handlers.emailHandler import write_email
 import config as conf
 import base64
 from utils import *
@@ -246,7 +245,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
+            complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X,AXIS_Y)
@@ -291,7 +290,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
         return ("ERROR NO GITHUB TOKEN")
 
     try:
-        repo_url = "https://" + github_token + ":x-oauth-basic@" + repo_url.split("://")[1]
+        repo_url = "https://{}:x-oauth-basic@{}".format(github_token,repo_url.split("://")[1])
     except:
         return ("Invalid GIT Repository URL")
 
@@ -310,7 +309,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
+            complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True,
                                                cwd=filesdir)
             file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
@@ -353,7 +352,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
         return("ERROR NO GITHUB TOKEN")
 
     try:
-        repo_url = "https://"+github_token+":x-oauth-basic@"+repo_url.split("://")[1]
+        repo_url = "https://{}:x-oauth-basic@{}".format(github_token, repo_url.split("://")[1])
     except:
         return("Invalid GIT Repository URL")
 
@@ -403,7 +402,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
     AXIS_Y_LOWER = 50
 
     if email is None or email== "":
-        return("NO EMAIL TO HASH")
+        return False
 
     store_petition(repo_url, RENDER_HASH, email)
     print("No private access")
@@ -433,14 +432,14 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             document.close()
 
             pdffile = open(new_name, 'rb').read()
-            return(pdffile)
+            return pdffile
 
         except IOError as e:
             print('IOError', e)
-            return("IO ERROR")
+            return False
         except Exception as e:
             print("other error", e)
-            return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
+            return False
 
 
 def render_pdf_base64(repo_url, main_tex= "main.tex"):

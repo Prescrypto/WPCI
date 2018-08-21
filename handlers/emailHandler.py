@@ -55,4 +55,4 @@ class Mailer(object):
             self.server.sendmail(msg['From'], msg['To'], msg.as_string())
             print(self.server.quit())
         except Exception as e:
-            print("sending email", e)
+            print("error sending email", e)

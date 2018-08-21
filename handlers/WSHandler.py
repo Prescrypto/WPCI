@@ -13,7 +13,6 @@ headers = conf.headers
 GIT_BASE_URI = conf.GITHUB_API_URL
 
 def get_nda(payload):
-    print("getting nda")
     URL= conf.CRYPTO_SIGN_URL
     SIGN_URL = 'api/v1/sign/'
     TOKEN_URL = 'oauth/token/'
