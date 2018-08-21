@@ -16,13 +16,24 @@ import hashlib
 import os
 import subprocess
 import glob
-from handlers.emailHandler import write_email
+from handlers.emailHandler import Mailer
 
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
 RENDER_HASH = "render_sethash_and_download"
 RENDER_NOHASH = "render_and_download"
 RENDER_URL= "render_by_url_parameters"
+
+#SMTP VARIABLES
+SMTP_PASS = conf.SMTP_PASS
+SMTP_USER = conf.SMTP_USER
+SMTP_EMAIL = conf.SMTP_EMAIL
+SMTP_ADDRESS = conf.SMTP_ADDRESS
+SMTP_PORT = conf.SMTP_PORT
+# The default message to be sent in the body of the email
+DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
+        <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
+        <p>Best regards,</p>"
 
 
 def encode_auth_token(user):
@@ -207,23 +218,27 @@ def store_petition(remote_url, petition_type, username='anonymous'):
     return result
 
 
-def create_email_pdf(repo_url, email, main_tex="main.tex"):
+def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text=""):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
+    file_full_path = ''
+    print("starting")
     # Axis for the pdf header
-    AXIS_X = 35
+    AXIS_X = 15
     AXIS_Y = 35
     AXIS_Y_LOWER = 50
+    attachments_list = []
+    ATTACH_CONTENT_TYPE = 'octet-stream'
+    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
 
-    if email is None or email== "":
+    if user_email is None or user_email== "":
         return("NO EMAIL TO HASH")
-    email = email.strip()
+    user_email = user_email.strip()
 
-    store_petition(repo_url, RENDER_HASH, email)
+    store_petition(repo_url, RENDER_HASH, user_email)
     print("No private access")
 
-    watermark = "Copy generated for: "+ email
+    watermark = "Document generated for: "+ user_email
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
@@ -234,19 +249,23 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash(user_email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X,AXIS_Y)
             pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
-            document = fitz.open(new_name)
+            document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
-                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
-            document.save(new_name, incremental=1)
+                page.insertText(pointa, text=watermark, fontsize = 10, fontname = "Times-Roman")
+                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
+            document.save(file_full_path, incremental=1)
             document.close()
 
-            write_email([email], "Documentation", "documentation.pdf", new_name)
+            attachment = dict(file_type=ATTACH_CONTENT_TYPE, file_path=file_full_path, filename="documentation.pdf")
+            attachments_list.append(attachment)
+            mymail.send(subject="Documentation",email_from=SMTP_EMAIL,emails_to=[user_email],
+                        attachments_list=attachments_list, text_message=email_body_text,
+                        html_message=email_body_html)
 
         except IOError as e:
             print('IOError', e)
@@ -257,14 +276,17 @@ def create_email_pdf(repo_url, email, main_tex="main.tex"):
     return True
 
 
-def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
+def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_tex="main.tex", email_body_text =""):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
+    file_full_path = ''
     #Axis for the pdf header
-    AXIS_X = 35
+    AXIS_X = 15
     AXIS_Y = 35
     AXIS_Y_LOWER = 50
+    attachments_list = []
+    ATTACH_CONTENT_TYPE = 'octet-stream'
+    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
 
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
@@ -279,10 +301,10 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     store_petition(repo_url, RENDER_HASH, user.username)
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
-    if email is None or email == "":
-        email = user.username
-    email = email.strip()
-    watermark = "Copy generated for: " + email
+    if user_email is None or user_email == "":
+        user_email = user.username
+    user_email = user_email.strip()
+    watermark = "Copy generated for: " + user_email
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
@@ -290,21 +312,24 @@ def create_email_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash(user_email, run_git_rev_parse.decode('UTF-8'))
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True,
                                                cwd=filesdir)
-            new_name = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
+            file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
-            document = fitz.open(new_name)
+            document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize=11, fontname="Helvetica")
-                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
-            document.save(new_name, incremental=1)
+                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
+            document.save(file_full_path, incremental=1)
             document.close()
 
-            write_email([email], "Documentation", "documentation.pdf", new_name)
-
+            attachment = dict(file_type=ATTACH_CONTENT_TYPE, file_path=file_full_path, filename="documentation.pdf")
+            attachments_list.append(attachment)
+            mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[user_email],
+                        attachments_list=attachments_list, text_message=email_body_text,
+                        html_message=email_body_html)
 
         except IOError as e:
             print('IOError', e)
@@ -320,7 +345,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     repo_name = ''
     new_name = ''
     # Axis for the pdf header
-    AXIS_X = 35
+    AXIS_X = 15
     AXIS_Y = 35
     AXIS_Y_LOWER = 50
 
@@ -354,9 +379,8 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
-                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
-            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
+                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
             document.save(new_name, incremental=1)
             document.close()
 
@@ -375,7 +399,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
     repo_name = ''
     new_name = ''
     # Axis for the pdf header
-    AXIS_X = 35
+    AXIS_X = 15
     AXIS_Y = 35
     AXIS_Y_LOWER = 50
 
@@ -403,9 +427,8 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
             document = fitz.open(new_name)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize = 11, fontname = "Helvetica")
-                page.insertText(pointb, text="uid: " + complete_hash, fontsize=11, fontname="Helvetica")
-            #document.save(filesdir+"/temp_"+new_name, garbage=4, deflate=1) #this parameters are used for cleanup the  pdf
+                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
             document.save(new_name, incremental=1)
             document.close()
 
@@ -481,8 +504,19 @@ class PostRepoHash(BaseHandler):
                 email = ""
             else:
                 email = json_data.get("email")
+
+            if json_data.get("email_body_html") is None or json_data.get("email_body_html") == "":
+                email_body_html = DEFAULT_HTML_TEXT
+            else:
+                email_body_html = json_data.get("email_body_html")
+
+            if json_data.get("email_body_text") is None or json_data.get("email_body_text") == "":
+                email_body_text = ""
+            else:
+                email_body_text = json_data.get("email_body_text")
+
             userjson = ast.literal_eval(userid)
-            result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email, main_tex)
+            result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email, email_body_html, main_tex,  email_body_text)
             if result:
                 self.write(json.dumps({"response": "done"}))
             else:
@@ -501,7 +535,10 @@ class RenderUrl(BaseHandler):
             repo_url = self.get_argument('url', "")
             main_tex = self.get_argument('maintex', "main.tex")
             email = self.get_argument('email', "")
-            result = create_email_pdf(repo_url, email, main_tex)
+            email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
+            email_body_text =self.get_argument('email_body_text', "")
+
+            result = create_email_pdf(repo_url, email,email_body_html, main_tex,email_body_text)
             if result:
                 self.write(json.dumps({"response":"done"}))
             else:
