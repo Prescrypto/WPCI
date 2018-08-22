@@ -55,6 +55,9 @@
     "CRYPTO_PASS": {
         "required": true
       },
+    "CRYPTO_SIGN_URL": {
+        "required": true
+      },
     "GITHUB_OAUTH_URI": {
         "required": true
       }
