@@ -165,6 +165,15 @@ def show_pdf(id):
         NDA_FILE_NAME = "ndacontract.pdf"
         WPCI_FILE_NAME = "whitepaper.pdf"
         try:
+            signer_email = request.form.get("signer_email")
+            signer_name = request.form.get("signer_name")
+            if signer_email is None or signer_email == "":
+                error = "Error, you must enter a valid email"
+                return render_template('pdf_form.html', id=id, error=error)
+            if signer_name is None or signer_name == "":
+                error = "Error, you must enter a valid Name"
+                return render_template('pdf_form.html', id=id, error=error)
+
             nda_file_base64 = str(request.form.get("nda_file"))
             nda = Nda.Nda()
             thisnda = nda.find_by_id(id)
@@ -187,8 +196,8 @@ def show_pdf(id):
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
 
-                            owner_hash = get_hash([thisnda.org_name, thisnda.wp_url])
-                            client_hash = get_hash([thisnda.email, thisnda.wp_url])
+                            owner_hash = get_hash([thisnda.org_name,thisnda.org_email, thisnda.wp_url])
+                            client_hash = get_hash([signer_name, signer_email, thisnda.wp_url])
                             if thisnda.nda_logo is None:
                                 nda_logo = open(DEFAULT_LOGO_PATH, 'r').read()
                             else:
@@ -205,8 +214,8 @@ def show_pdf(id):
                                     },
                                     {
                                         "hash": client_hash,
-                                        "email": thisnda.email,
-                                        "name": thisnda.email
+                                        "email": signer_email,
+                                        "name": signer_name
                                     }],
                                 "params": {
                                     "title": thisnda.org_name + " contract",
