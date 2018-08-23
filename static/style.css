@@ -1,7 +1,9 @@
+@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,700");
+
 body {
   margin: 0;
   padding: 0;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: 'Open Sans', sans-serif;
   color: #444;
 }
 
@@ -89,7 +91,7 @@ header h1.logo:hover {
   width: 940px;
   margin: 0 auto;
 }
-.rightcolumn{
+.leftcolumn{
   padding:60px;
   background-color:#333333;
   color:#fff;
@@ -97,6 +99,7 @@ header h1.logo:hover {
 div.jumbo {
   padding: 20px;
   margin:40px;
+  margin-top:60px;
   color:#071323;
   text-align:center;
   background-color: #eeeeee;
@@ -128,8 +131,24 @@ h3 {
   color: #999;
 }
 
+.nda-form{
+  font-size:14px;
+  font-weight:400;
+  width: 60%;
+  margin: 0 auto;
+  padding:20px;
+}
+.nda-form input{
+  border-radius:20px;
+}
+#signbutton{
+  border-radius:20px;
+  text-align:center;
+  font-size:1.5em;
+}
+
 /* Contact form */
-form label {
+/*form label {
   font-size: 1.2em;
   font-weight: bold;
   display: block;
@@ -195,7 +214,7 @@ form input[type=submit]:hover{
   cursor : pointer;
   background: #f5c423;
   text-decoration: none;
-}
+}*/
 
 /*Tables*/
 

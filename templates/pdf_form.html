@@ -2,13 +2,7 @@
 {% block content %}
 
   <div class="row">
-    <div class="col-7">
-      <!--Pdf Container-->
-      <div id="containern" style="height: 800px;overflow: scroll;"></div>
-      <div class="space30"></div>
-      <!-- closing Pdf Container-->
-    </div>
-    <div class="rightcolumn col-5">
+    <div class="leftcolumn col-lg-5 col-md-12">
       <!--Jumbo box organization name-->
       <div class="jumbo">
       {% if error %}
@@ -19,11 +13,26 @@
       <!--Jumbo box organization name-->
       <!--Form-->
       <h3>Please read carefully the next document <br> and then click in sign</h3>
-      <form  method="post">
-        <center><button class="btn"  id="signbutton" name="signbutton" >Sign!</button></center>
+      <form class="nda-form">
+        <div class="form-group">
+          <label for="exampleInputPassword1">Name : </label>
+          <input type="text" class="form-control" id="username" placeholder="Enter name">
+        </div>
+        <div class="form-group">
+            <label for="exampleInputEmail1">Email address : </label>
+            <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
+            <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+        </div>
+        <button id="signbutton" name="signbutton" type="submit" class="btn btn-info btn-lg">Sign document</button>
         <input type="hidden" id="nda_file" name="nda_file" value="">
       </form>
+    </div>
       <!--Closing Form-->
+    <div class="col-lg-7 col-md-12">
+       <!--Pdf Container-->
+       <div id="containern" style="height: 800px;overflow: scroll;"></div>
+       <div class="space30"></div>
+       <!-- closing Pdf Container-->
     </div>
   </div>
 
