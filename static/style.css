@@ -1,9 +1,9 @@
-@import url("https://fonts.googleapis.com/css?family=Open+Sans:400,700");
+@import url("https://fonts.googleapis.com/css?family=Roboto:400,700");
 
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Roboto', sans-serif!important;
   color: #444;
 }
 
@@ -219,7 +219,7 @@ form input[type=submit]:hover{
 /*Tables*/
 
 table {
-    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+    
     border-collapse: collapse;
     width: 100%;
 }
@@ -250,7 +250,6 @@ th {
 
 .btn {
   border: none;
-  font-family: Arial;
   color: #423d42;
   background: #999fa3;
   padding: 10px 10px 10px 10px;
