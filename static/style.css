@@ -14,7 +14,6 @@ header {
   height: 75px;
   width: 100%;
   opacity: .9;
-  margin-bottom: 10px;
 }
 
 header h1.logo {
@@ -90,13 +89,20 @@ header h1.logo:hover {
   width: 940px;
   margin: 0 auto;
 }
-
+.rightcolumn{
+  padding:60px;
+  background-color:#333333;
+  color:#fff;
+}
 div.jumbo {
-  padding: 10px 0 30px 0;
+  padding: 20px;
+  margin:40px;
+  color:#071323;
+  text-align:center;
   background-color: #eeeeee;
   -webkit-border-radius: 6px;
      -moz-border-radius: 6px;
-          border-radius: 6px;
+          border-radius: 10px;
 }
 div.graybk {
   padding: 20px 30px 20px 30px;

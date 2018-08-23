@@ -8,17 +8,17 @@
       <div class="space30"></div>
       <!-- closing Pdf Container-->
     </div>
-    <div class="col-5">
+    <div class="rightcolumn col-5">
       <!--Jumbo box organization name-->
       <div class="jumbo">
       {% if error %}
       <div class="error"><strong>Error:</strong> {{ error }}</div>
       {% elif pdffile %}
-      <h1> Organization name: {{ org_name }}</h1>
+      <h2> Organization name: {{ org_name }}</h2>
       </div>
       <!--Jumbo box organization name-->
       <!--Form-->
-      <h1>Please read carefully the next document and then click in sign</h1>
+      <h3>Please read carefully the next document <br> and then click in sign</h3>
       <form  method="post">
         <center><button class="btn"  id="signbutton" name="signbutton" >Sign!</button></center>
         <input type="hidden" id="nda_file" name="nda_file" value="">
