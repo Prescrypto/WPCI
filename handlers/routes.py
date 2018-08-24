@@ -33,6 +33,15 @@ SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
+
+# Axis for the pdf header
+AXIS_X = 15
+AXIS_Y = 500
+AXIS_X_LOWER = 28
+WATERMARK_ROTATION = 90
+WATERMARK_FONT = "Times-Roman"
+WATERMARK_SIZE = 10
+
 # The default message to be sent in the body of the email
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
         <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
@@ -217,11 +226,6 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
-    print("starting")
-    # Axis for the pdf header
-    AXIS_X = 15
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
     attachments_list = []
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
@@ -249,11 +253,12 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X,AXIS_Y)
-            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize = 10, fontname = "Times-Roman")
-                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointa, text=watermark, fontsize=10, fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=10, fontname=WATERMARK_FONT,
+                                rotate=WATERMARK_ROTATION)
             document.save(file_full_path, incremental=1)
             document.close()
 
@@ -276,10 +281,6 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
-    #Axis for the pdf header
-    AXIS_X = 15
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
     attachments_list = []
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
@@ -300,7 +301,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     if user_email is None or user_email == "":
         user_email = user.username
     user_email = user_email.strip()
-    watermark = "Copy generated for: " + user_email
+    watermark = "Document generated for: " + user_email
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
@@ -314,11 +315,13 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
                                                cwd=filesdir)
             file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
-                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
+                                rotate= WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
+                                fontname=WATERMARK_FONT, rotate= WATERMARK_ROTATION)
             document.save(file_full_path, incremental=1)
             document.close()
 
@@ -340,11 +343,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
 def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
-    # Axis for the pdf header
-    AXIS_X = 15
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
+    file_full_path = ''
 
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
@@ -361,7 +360,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     rev_parse = 'git rev-parse master'
     if email is None or email == "":
         email = user.username
-    watermark = "Copy generated for: " + email
+    watermark = "Document generated for: " + email
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
@@ -372,17 +371,19 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
-            document = fitz.open(new_name)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
+            document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
-                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
-            document.save(new_name, incremental=1)
+                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
+                                rotate=WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
+                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
+            document.save(file_full_path, incremental=1)
             document.close()
 
-            pdffile = open(new_name, 'rb').read()
+            pdffile = open(file_full_path, 'rb').read()
             return(pdffile)
 
         except IOError as e:
@@ -395,19 +396,14 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
 def create_download_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
-    # Axis for the pdf header
-    AXIS_X = 15
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
-
+    file_full_path = ''
     if email is None or email== "":
         return False
 
     store_petition(repo_url, RENDER_HASH, email)
     print("No private access")
 
-    watermark = "Copy generated for: "+ email
+    watermark = "Document generated for: "+ email
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
@@ -421,17 +417,19 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
-            document = fitz.open(new_name)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
+            document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
-                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
-            document.save(new_name, incremental=1)
+                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
+                                rotate=WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
+                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
+            document.save(file_full_path, incremental=1)
             document.close()
 
-            pdffile = open(new_name, 'rb').read()
+            pdffile = open(file_full_path, 'rb').read()
             return pdffile
 
         except IOError as e:
@@ -445,7 +443,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
 def render_pdf_base64(repo_url, main_tex= "main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
+    file_full_path = ''
     store_petition(repo_url, RENDER_NOHASH, "")
     print("No private access")
 
@@ -459,14 +457,14 @@ def render_pdf_base64(repo_url, main_tex= "main.tex"):
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True, cwd=filesdir)
-            new_name = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
-            new_name64 = filesdir + "/" + main_tex.split(".")[0] + ".base64"
-            with open(new_name, 'rb') as f:
-                with open(new_name64, 'wb') as ftemp:
+            file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
+            file_full_path64 = filesdir + "/" + main_tex.split(".")[0] + ".base64"
+            with open(file_full_path, 'rb') as f:
+                with open(file_full_path64, 'wb') as ftemp:
                     # write in a new file the base64
                     ftemp.write(base64.b64encode(f.read()))
 
-            pdffile = open(new_name64, 'r').read()
+            pdffile = open(file_full_path64, 'r').read()
 
             return (pdffile)
 

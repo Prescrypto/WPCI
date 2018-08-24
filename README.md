@@ -11,7 +11,7 @@ curl -X POST \
   http://latex-ci.herokuapp.com/api/v1/auth/signin \
   -d '{"username":"youruser@yourcompany.com","password":"password"}'
   ```
-then to login and get a TOKEN to post to the endpoint run the following:
+then to login and get a TOKEN to post to the endpoint run the following: 
 ```bash
   curl -X POST \
   http://latex-ci.herokuapp.com/api/v1/auth/login \
