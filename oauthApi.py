@@ -187,13 +187,15 @@ def show_pdf(id):
                         wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
                         nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
                         try:
-                            wpci_result = create_download_pdf(thisnda.wp_url, thisnda.email, wp_main_tex)
+                            wpci_result = create_download_pdf(thisnda.wp_url, signer_email, wp_main_tex)
 
                             if wpci_result is False:
+                                print("Error rendering the white paper")
                                 error = "Error rendering the white paper"
                                 return render_template('pdf_form.html', id=id, error=error)
 
                             with open(wpci_file_path, 'wb') as ftemp:
+                                print("wpci ok")
                                 ftemp.write(wpci_result)
 
                             owner_hash = get_hash([thisnda.org_name,thisnda.org_email, thisnda.wp_url])
@@ -226,11 +228,13 @@ def show_pdf(id):
 
                             nda_result = get_nda(crypto_sign_payload)
                             if nda_result is not False:
+                                print("nda ok")
                                 # if the request returned a nda pdf file correctly then store it as pdf
                                 with open(nda_file_path, 'wb') as ftemp:
                                     ftemp.write(nda_result)
 
                             else:
+                                print("failed loading nda")
                                 error = "failed loading nda"
                                 return render_template('pdf_form.html', id=id, error=error)
                             #this is the payload for the white paper file
@@ -244,7 +248,7 @@ def show_pdf(id):
                                                    filename=NDA_FILE_NAME)
                             attachments_list.append(nda_attachment)
 
-                            mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL, emails_to=[thisnda.email],
+                            mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL, emails_to=[signer_email],
                                         attachments_list=attachments_list, text_message = "",
                                         html_message=DEFAULT_HTML_TEXT)
 
@@ -256,10 +260,12 @@ def show_pdf(id):
                             return render_template('pdf_form.html', id=id, error=error)
 
                 else:
+                    print("No valid wp Pdf url found")
                     error = "No valid wp Pdf url found"
                     return render_template('pdf_form.html', id=id, error=error)
 
             else:
+                print('ID not found')
                 error = 'ID not found'
                 return render_template('pdf_form.html', id=id, error=error)
 
