@@ -195,7 +195,6 @@ def show_pdf(id):
                                 return render_template('pdf_form.html', id=id, error=error)
 
                             with open(wpci_file_path, 'wb') as ftemp:
-                                print("wpci ok")
                                 ftemp.write(wpci_result)
 
                             owner_hash = get_hash([thisnda.org_name,thisnda.org_email, thisnda.wp_url])
@@ -228,7 +227,6 @@ def show_pdf(id):
 
                             nda_result = get_nda(crypto_sign_payload)
                             if nda_result is not False:
-                                print("nda ok")
                                 # if the request returned a nda pdf file correctly then store it as pdf
                                 with open(nda_file_path, 'wb') as ftemp:
                                     ftemp.write(nda_result)
