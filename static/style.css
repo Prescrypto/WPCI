@@ -279,3 +279,12 @@ text-align: center;
 .control-group {
 margin-bottom: 10px;
 }
+
+.message-form{
+  width: 60%;
+  margin : 200px auto;
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  font-size:2em;
+}
