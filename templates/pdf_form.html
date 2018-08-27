@@ -5,10 +5,18 @@
     <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
     <div class="row">
       {% if error %}
-        <div class="form-group">
-          <div class="error"><h3><strong>Error:</strong> {{ error }}</h3></div>
-          <button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()" class="btn btn-info btn-lg">Go back</button>
-        </div>
+         <form class="message-form" method="POST">
+          <center class="message" >
+              <h3>
+                  <strong> {{ error }} </strong>
+              </h3>
+
+          <center></center><button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()"
+                                   class="btn btn-info btn-lg" style="padding:20px;">Go back</button></center>
+
+          </div>
+
+        </form>
       {% elif pdffile %}
           <div class="leftcolumn col-lg-5 col-md-12">
               <!--Jumbo box organization name-->
@@ -18,7 +26,7 @@
             <!--Jumbo box organization name-->
               <!--Form-->
               <h3>Please read carefully the next document <br> and then click in sign</h3>
-              <form class="nda-form" method="POST">
+              <form class="nda-form" id="nda-form" method="POST">
                 <div class="form-group">
                   <label>Name : </label>
                   <input type="text" class="form-control" id="signer_name" name="signer_name" placeholder="Enter name" required>
@@ -28,14 +36,19 @@
                     <input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
                     <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
                 </div>
-                <button id="signbutton" name="signbutton" type="submit" class="btn btn-info btn-lg">Sign document</button>
                 <input type="hidden" id="nda_file" name="nda_file" value="">
               </form>
           </div>
         <!--Closing Form-->
         <div class="col-lg-7 col-md-12">
            <!--Pdf Container-->
-           <div id="containern" style="height: 800px;overflow: scroll;"></div>
+            <div id="pdf_container" style="height: 800px;overflow: scroll;">
+              <div id="dynamic_container" >
+              </div>
+                <br>
+                <button id="signbutton" name="signbutton" type="submit" class="btn btn-info btn-lg" style="display:flex;align-items:bottom;margin:auto;padding:10px;">Sign document</button>
+                <br>
+            </div>
            <!-- closing Pdf Container-->
         </div>
 
@@ -44,6 +57,10 @@
 
         var pdfData = atob('{{ pdffile }}');
         $('#nda_file').val('{{ pdffile }}');
+        // Get div#container and cache it for later use
+        var wholecontainer = document.getElementById("pdf_container");
+        var container = document.getElementById("dynamic_container");
+
 
 
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -53,9 +70,6 @@
 
          var loadingTask = pdfjsLib.getDocument({data: pdfData});
         loadingTask.promise.then(function(pdf) {
-
-            // Get div#container and cache it for later use
-            var container = document.getElementById("containern");
 
             // Loop from 1 to total_number_of_pages in PDF document
             for (var i = 1; i <= pdf.numPages; i++) {
@@ -95,10 +109,19 @@
                   page.render(renderContext);
                 });
             }
+
+
+
+
         }, function (reason) {
           // PDF loading error
           console.error(reason);
         });
+
+         $('#signbutton').on('click', function(){
+          document.getElementById("nda-form").submit();
+         });
+
 
 
       </script>
