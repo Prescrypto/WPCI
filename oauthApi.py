@@ -131,8 +131,6 @@ def authorized():
     except:
         logger.info("error getting Token")
         error= "error getting Token"
-
-    #me = github.get('user') return jsonify(me.data)  #we can get the user information from github
     return redirect(url_for('index', error=error))
 
 @github.tokengetter
