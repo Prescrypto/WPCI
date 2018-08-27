@@ -14,8 +14,6 @@
           <center></center><button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()"
                                    class="btn btn-info btn-lg" style="padding:20px;">Go back</button></center>
 
-          </div>
-
         </form>
       {% elif pdffile %}
           <div class="leftcolumn col-lg-5 col-md-12">
@@ -35,6 +33,8 @@
                     <label>Email address : </label>
                     <input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
                     <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+                    <button id="signbutton" name="signbutton" type="submit" style="display:flex;margin:auto;"
+                           class="btn btn-info btn-lg" disabled>Sign document</button>
                 </div>
                 <input type="hidden" id="nda_file" name="nda_file" value="">
               </form>
@@ -45,9 +45,12 @@
             <div id="pdf_container" style="height: 800px;overflow: scroll;">
               <div id="dynamic_container" >
               </div>
-                <br>
-                <button id="signbutton" name="signbutton" type="submit" class="btn btn-info btn-lg" style="display:flex;align-items:bottom;margin:auto;padding:10px;">Sign document</button>
-                <br>
+
+                <div style="display:flex;align-items:bottom;padding-left:35%"><h3>
+                  <input onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(3);">
+                  <label for="mycheck" style="padding-left:20px;">I agree to the above document</label></h3>
+                 </div>
+
             </div>
            <!-- closing Pdf Container-->
         </div>
@@ -121,6 +124,18 @@
          $('#signbutton').on('click', function(){
           document.getElementById("nda-form").submit();
          });
+
+         function checkChanged() {
+              // Get the checkbox
+              var checkBox = document.getElementById("mycheck");
+
+              // If the checkbox is checked, enable button
+              if (checkBox.checked == true){
+                document.getElementById('signbutton').disabled = false;
+              } else {
+                document.getElementById('signbutton').disabled = true;
+              }
+            }
 
 
 
