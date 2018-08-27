@@ -5,6 +5,7 @@ import config as conf
 from passlib.context import CryptContext
 import time
 import logging
+from models import User
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +30,7 @@ class Nda(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, email = None):
+    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson={}, email = None):
         try:
             self.pdf = pdf
             self.pdf_url = pdf_url
@@ -39,6 +40,21 @@ class Nda(object):
             self.org_email = org_email
             self.nda_logo = nda_logo
             self.email = email
+
+            if userjson is not None and userjson != {}:
+                #if the user is authenticated then use a different url with github authentication
+                user = User.User(userjson.get("username"), userjson.get("password"))
+                github_token = user.get_attribute('github_token')
+                if github_token is None or github_token == '':
+                    logger.info("github token error")
+                    return False
+                try:
+                    self.pdf_url = "https://{}:x-oauth-basic@{}".format(github_token, self.pdf_url.split("://")[1])
+                    self.wp_url = "https://{}:x-oauth-basic@{}".format(github_token, self.wp_url.split("://")[1])
+                except:
+                    logger.info("error getting correct url on git")
+                    return False
+
             if self.id is None:
                 self.id = '{}_nda_{}'.format(org_name.strip(), str(int(time.time() * 1000)))
 

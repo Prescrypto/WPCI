@@ -482,12 +482,12 @@ def render_pdf_base64(repo_url, main_tex= "main.tex"):
             return False
 
 
-def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo):
+def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson):
     base_url= conf.BASE_URL
     PDF_VIEW_URL = 'pdf/'
     try:
         nda = Nda.Nda()
-        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo)
+        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson)
         if nda.check():
             nda.update()
         else:
@@ -648,7 +648,7 @@ class PostWpNda(BaseHandler):
                 pdf_url = json_data.get("pdf_url")
 
             userjson = ast.literal_eval(userid)
-            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo)
+            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson)
             if result is not False:
                 self.write(json.dumps({"endpoint": result}))
             else:
