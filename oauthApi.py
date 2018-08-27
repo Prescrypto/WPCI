@@ -1,6 +1,7 @@
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
+import logging
 import base64
 import tempfile
 import config as conf
@@ -10,6 +11,10 @@ from handlers.emailHandler import Mailer
 from models import User, Nda
 from handlers.WSHandler import *
 from utils import *
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
@@ -68,7 +73,7 @@ def login():
                 if github_token is not None:
                     session["github_token"] = github_token
                 else:
-                    print("no github session token")
+                    logger.info("no github session token")
                 return redirect(url_for('index'))
             else:
                 error = 'Invalid Credentials. Please try again.'
@@ -111,7 +116,7 @@ def authorized():
     error = None
     resp = github.authorized_response()
     if resp is None or resp.get('access_token') is None:
-        print("no access token")
+        logger.info("no access token")
         error= 'Access denied: reason=%s error=%s resp=%s' % (
             request.args['error'],
             request.args['error_description'],
@@ -124,7 +129,7 @@ def authorized():
             user.github_token = resp['access_token']
             user.update()
     except:
-        print("error getting Token")
+        logger.info("error getting Token")
         error= "error getting Token"
 
     #me = github.get('user') return jsonify(me.data)  #we can get the user information from github
@@ -157,7 +162,7 @@ def show_pdf(id):
                 error = 'ID not found'
 
         except Exception as e:
-            print(e)
+            logger.info(e)
             error= "Couldn't render the PDF on the page"
 
     if request.method == 'POST':
@@ -190,15 +195,15 @@ def show_pdf(id):
                             wpci_result = create_download_pdf(thisnda.wp_url, signer_email, wp_main_tex)
 
                             if wpci_result is False:
-                                print("Error rendering the white paper")
+                                logger.info("Error rendering the white paper")
                                 error = "Error rendering the white paper"
                                 return render_template('pdf_form.html', id=id, error=error)
 
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
 
-                            owner_hash = get_hash([thisnda.org_name,thisnda.org_email, thisnda.wp_url])
-                            client_hash = get_hash([signer_name, signer_email, thisnda.wp_url])
+                            owner_hash = get_hash([thisnda.org_email])
+                            client_hash = get_hash([signer_email])
                             if thisnda.nda_logo is None:
                                 nda_logo = open(DEFAULT_LOGO_PATH, 'r').read()
                             else:
@@ -208,11 +213,6 @@ def show_pdf(id):
                                 "timezone": TIMEZONE,
                                 "pdf": nda_file_base64,
                                 "signatures": [
-                                    {
-                                        "hash": owner_hash,
-                                        "email": thisnda.org_email,
-                                        "name": thisnda.org_name
-                                    },
                                     {
                                         "hash": client_hash,
                                         "email": signer_email,
@@ -232,7 +232,7 @@ def show_pdf(id):
                                     ftemp.write(nda_result)
 
                             else:
-                                print("failed loading nda")
+                                logger.info("failed loading nda")
                                 error = "failed loading nda"
                                 return render_template('pdf_form.html', id=id, error=error)
                             #this is the payload for the white paper file
@@ -253,22 +253,22 @@ def show_pdf(id):
                             message = "successfully sent your files "
 
                         except Exception as e: #except from temp directory
-                            print(e)
+                            logger.info(e)
                             error = "Error sending the email"
                             return render_template('pdf_form.html', id=id, error=error)
 
                 else:
-                    print("No valid wp Pdf url found")
+                    logger.info("No valid wp Pdf url found")
                     error = "No valid wp Pdf url found"
                     return render_template('pdf_form.html', id=id, error=error)
 
             else:
-                print('ID not found')
+                logger.info('ID not found')
                 error = 'ID not found'
                 return render_template('pdf_form.html', id=id, error=error)
 
         except Exception as e: #function except
-            print(e)
+            logger.info(e)
             error = "there was an error on your files"
             return render_template('pdf_form.html', id=id, error=error)
 

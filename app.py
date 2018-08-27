@@ -6,7 +6,7 @@ import os
 
 cwd = os.getcwd() # used by static file server
 # execute asynchronously action
-# print('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
+# logger.info('response', WSHandler.get_repo_pages('Prescrypto/cryptosign_whitepaper/', 'README.md'))
 
 '''Initializing the application with routes'''
 web_app = Application([
@@ -19,6 +19,7 @@ web_app = Application([
     (r"/api/v1/git/(.*)", FallbackHandler, dict(fallback=oauth_app)),
     (r"/api/v1/pdf/(.*)", FallbackHandler, dict(fallback=oauth_app)),
     (r"/(.*\.css)", StaticFileHandler, {"path": cwd}),
+    (r"/(.*\.svg)", StaticFileHandler, {"path": cwd}),
     (r'.*', routes.APINotFoundHandler)],
     debug=True)
 

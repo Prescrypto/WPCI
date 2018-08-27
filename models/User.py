@@ -3,6 +3,11 @@ import pymongo
 from pymongo import MongoClient
 import config as conf
 from passlib.context import CryptContext
+import logging
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 
 pwd_context = CryptContext(
@@ -40,7 +45,7 @@ class User(object):
                 result = True
 
         except Exception as e:
-            print("finding user", e)
+            logger.info("finding user", e)
 
         finally:
             if mydb is not None:
@@ -61,7 +66,7 @@ class User(object):
                     result = True
 
         except Exception as e:
-            print("finding user", e)
+            logger.info("finding user", e)
 
         finally:
             if mydb is not None:
@@ -80,7 +85,7 @@ class User(object):
             result = mydb.insert_json({"username": self.username, "password": password})
 
         except Exception as error:
-            print("creating user", error)
+            logger.info("creating user", error)
 
         finally:
             if mydb is not None:
@@ -100,7 +105,7 @@ class User(object):
             result = mydb.update({"username": self.username}, temp_user)
 
         except Exception as error:
-            print("updating user", error)
+            logger.info("updating user", error)
             result = None
 
         finally:

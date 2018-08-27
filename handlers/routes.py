@@ -1,5 +1,6 @@
 from tornado.web import  os
 import tornado
+import logging
 from tornado import gen, ioloop
 import ast
 from handlers.apiBaseHandler import BaseHandler
@@ -20,6 +21,10 @@ from handlers.emailHandler import Mailer
 import config as conf
 import base64
 from utils import *
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
@@ -105,7 +110,7 @@ def validate_token(access_token):
         user_id = decode_auth_token(token.strip('"'))
 
     except Exception as e:
-        print (e)
+        logger.info(e)
         return False
 
     return user_id
@@ -171,7 +176,7 @@ def jwtauth(handler_class):
             try:
                 require_auth(self, kwargs)
             except Exception as e:
-                print (e)
+                logger.info(e)
                 return False
 
             return handler_execute(self, transforms, *args, **kwargs)
@@ -213,7 +218,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
         result = mydb.insert_json({"username": username, "timestamp": time.time(), "remote_url": remote_url, "petition_type": petition_type})
 
     except Exception as error:
-        print("storing petition", error)
+        logger.info("storing petition", error)
 
     finally:
         if mydb is not None:
@@ -235,7 +240,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     user_email = user_email.strip()
 
     store_petition(repo_url, RENDER_HASH, user_email)
-    print("No private access")
+    logger.info("No private access")
 
     watermark = "Document generated for: "+ user_email
 
@@ -269,10 +274,10 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
                         html_message=email_body_html)
 
         except IOError as e:
-            print('IOError', e)
+            logger.info('IOError', e)
             return("IO ERROR")
         except Exception as e:
-            print("other error", e)
+            logger.info("other error", e)
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
     return True
 
@@ -332,10 +337,10 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
                         html_message=email_body_html)
 
         except IOError as e:
-            print('IOError', e)
+            logger.info('IOError', e)
             return ("IO ERROR")
         except Exception as e:
-            print("other error", e)
+            logger.info("other error", e)
             return ("ERROR")
     return True
 
@@ -387,10 +392,10 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             return(pdffile)
 
         except IOError as e:
-            print('IOError', e)
+            logger.info('IOError', e)
             return("IO ERROR")
         except Exception as e:
-            print("other error", e)
+            logger.info("other error", e)
             return("ERROR")
 
 def create_download_pdf(repo_url, email, main_tex="main.tex"):
@@ -401,7 +406,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
         return False
 
     store_petition(repo_url, RENDER_HASH, email)
-    print("No private access")
+    logger.info("No private access")
 
     watermark = "Document generated for: "+ email
 
@@ -433,10 +438,10 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             return pdffile
 
         except IOError as e:
-            print('IOError', e)
+            logger.info('IOError', e)
             return False
         except Exception as e:
-            print("other error", e)
+            logger.info("other error", e)
             return False
 
 
@@ -445,7 +450,7 @@ def render_pdf_base64(repo_url, main_tex= "main.tex"):
     repo_name = ''
     file_full_path = ''
     store_petition(repo_url, RENDER_NOHASH, "")
-    print("No private access")
+    logger.info("No private access")
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
@@ -470,10 +475,10 @@ def render_pdf_base64(repo_url, main_tex= "main.tex"):
 
 
         except IOError as e:
-            print('IOError', e)
+            logger.info('IOError', e)
             return False
         except Exception as e:
-            print("other error", e)
+            logger.info("other error", e)
             return False
 
 
@@ -491,7 +496,7 @@ def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_ema
         return base_url+PDF_VIEW_URL+nda.id
 
     except Exception as e:
-        print("error creating nda",e)
+        logger.info("error creating nda",e)
         return False
 
 
@@ -575,7 +580,7 @@ class PostRepoHash(BaseHandler):
                 self.write(json.dumps({"response": "Error"}))
 
         except Exception as e:
-            print("error on clone", e)
+            logger.info("error on clone", e)
             self.write(json.dumps({"response": "Error"}))
 
 
@@ -598,7 +603,7 @@ class RenderUrl(BaseHandler):
 
 
         except Exception as e:
-            print("error on clone", e)
+            logger.info("error on clone", e)
             self.write(json.dumps({"response": "Error"}))
 
 @jwtauth
@@ -650,7 +655,7 @@ class PostWpNda(BaseHandler):
                 self.write(json.dumps({"response": "Error"}))
 
         except Exception as e:
-            print("error creating endpoint", e)
+            logger.info("error creating endpoint", e)
             self.write(json.dumps({"response": "Error"}))
 
 

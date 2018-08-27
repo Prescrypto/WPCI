@@ -4,6 +4,11 @@ from pymongo import MongoClient
 import config as conf
 from passlib.context import CryptContext
 import time
+import logging
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 NDA = "Nda"
 pwd_context = CryptContext(
@@ -39,7 +44,7 @@ class Nda(object):
 
             return True
         except Exception as e:
-            print(e)
+            logger.info(e)
             return False
 
     def check(self):
@@ -54,7 +59,7 @@ class Nda(object):
                 result = True
 
         except Exception as e:
-            print("finding id", e)
+            logger.info("finding id", e)
 
         finally:
             if mydb is not None:
@@ -78,7 +83,7 @@ class Nda(object):
                 return self
 
         except Exception as e:
-            print("finding id", e)
+            logger.info("finding id", e)
 
         finally:
             if mydb is not None:
@@ -101,7 +106,7 @@ class Nda(object):
             result = mydb.insert_json(temp_nda)
 
         except Exception as error:
-            print("creating user", error)
+            logger.info("creating user", error)
 
         finally:
             if mydb is not None:
@@ -123,7 +128,7 @@ class Nda(object):
             result = mydb.update({"id": self.id}, temp_nda)
 
         except Exception as error:
-            print("updating user", error)
+            logger.info("updating user", error)
             result = None
 
         finally:

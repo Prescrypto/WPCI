@@ -2,6 +2,11 @@ from pymongo import MongoClient
 from pymongo.collation import Collation
 from bson.objectid import ObjectId
 import config as conf
+import logging
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 
 class ManageDB():
@@ -33,9 +38,9 @@ class ManageDB():
                 self.collection.update_many(result[0], {"$set": {"counter": id}}, upsert=False)
             else:
                 id = 0
-                print("no counter")
+                logger.info("no counter")
         except Exception as e:
-            print(e)
+            logger.info(e)
 
         return str(id)
 
