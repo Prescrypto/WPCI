@@ -74,6 +74,8 @@
   "buildpacks": [
     {
       "url": "heroku/python",
+    },
+    {
       "url": "https://github.com/Thermondo/heroku-buildpack-tex"
     }
   ]
