@@ -218,7 +218,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
         result = mydb.insert_json({"username": username, "timestamp": time.time(), "remote_url": remote_url, "petition_type": petition_type})
 
     except Exception as error:
-        logger.info("storing petition", error)
+        logger.info("storing petition"+ str(error))
 
     finally:
         if mydb is not None:
@@ -274,10 +274,10 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
                         html_message=email_body_html)
 
         except IOError as e:
-            logger.info('IOError', e)
+            logger.info('IOError'+ str(e))
             return("IO ERROR")
         except Exception as e:
-            logger.info("other error", e)
+            logger.info("other error"+ str(e))
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
     return True
 
@@ -337,10 +337,10 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
                         html_message=email_body_html)
 
         except IOError as e:
-            logger.info('IOError', e)
+            logger.info('IOError'+ str(e))
             return ("IO ERROR")
         except Exception as e:
-            logger.info("other error", e)
+            logger.info("other error"+ str(e))
             return ("ERROR")
     return True
 
@@ -392,10 +392,10 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             return(pdffile)
 
         except IOError as e:
-            logger.info('IOError', e)
+            logger.info('IOError'+ str(e))
             return("IO ERROR")
         except Exception as e:
-            logger.info("other error", e)
+            logger.info("other error"+ str(e))
             return("ERROR")
 
 def create_download_pdf(repo_url, email, main_tex="main.tex"):
@@ -438,10 +438,10 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             return pdffile
 
         except IOError as e:
-            logger.info('IOError', e)
+            logger.info('IOError'+ str(e))
             return False
         except Exception as e:
-            logger.info("other error", e)
+            logger.info("other error"+ str(e))
             return False
 
 
@@ -475,10 +475,10 @@ def render_pdf_base64(repo_url, main_tex= "main.tex"):
 
 
         except IOError as e:
-            logger.info('IOError', e)
+            logger.info('IOError'+ str(e))
             return False
         except Exception as e:
-            logger.info("other error", e)
+            logger.info("other error"+ str(e))
             return False
 
 
@@ -496,7 +496,7 @@ def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_ema
         return base_url+PDF_VIEW_URL+nda.id
 
     except Exception as e:
-        logger.info("error creating nda",e)
+        logger.info("error creating nda"+ str(e))
         return False
 
 
@@ -580,7 +580,7 @@ class PostRepoHash(BaseHandler):
                 self.write(json.dumps({"response": "Error"}))
 
         except Exception as e:
-            logger.info("error on clone", e)
+            logger.info("error on clone"+ str(e))
             self.write(json.dumps({"response": "Error"}))
 
 
@@ -603,7 +603,7 @@ class RenderUrl(BaseHandler):
 
 
         except Exception as e:
-            logger.info("error on clone", e)
+            logger.info("error on clone"+ str(e))
             self.write(json.dumps({"response": "Error"}))
 
 @jwtauth
@@ -655,7 +655,7 @@ class PostWpNda(BaseHandler):
                 self.write(json.dumps({"response": "Error"}))
 
         except Exception as e:
-            logger.info("error creating endpoint", e)
+            logger.info("error creating endpoint"+ str(e))
             self.write(json.dumps({"response": "Error"}))
 
 

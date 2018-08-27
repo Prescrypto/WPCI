@@ -45,7 +45,7 @@ class User(object):
                 result = True
 
         except Exception as e:
-            logger.info("finding user", e)
+            logger.info("finding user"+ str(e))
 
         finally:
             if mydb is not None:
@@ -66,7 +66,7 @@ class User(object):
                     result = True
 
         except Exception as e:
-            logger.info("finding user", e)
+            logger.info("finding user"+ str(e))
 
         finally:
             if mydb is not None:
@@ -105,7 +105,7 @@ class User(object):
             result = mydb.update({"username": self.username}, temp_user)
 
         except Exception as error:
-            logger.info("updating user", error)
+            logger.info("updating user"+ str(error))
             result = None
 
         finally:

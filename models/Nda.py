@@ -75,7 +75,7 @@ class Nda(object):
                 result = True
 
         except Exception as e:
-            logger.info("finding id", e)
+            logger.info("finding id"+ str(e))
 
         finally:
             if mydb is not None:
@@ -99,7 +99,7 @@ class Nda(object):
                 return self
 
         except Exception as e:
-            logger.info("finding id", e)
+            logger.info("finding id"+ str(e))
 
         finally:
             if mydb is not None:
@@ -122,7 +122,7 @@ class Nda(object):
             result = mydb.insert_json(temp_nda)
 
         except Exception as error:
-            logger.info("creating user", error)
+            logger.info("creating user"+ str(error))
 
         finally:
             if mydb is not None:
@@ -144,7 +144,7 @@ class Nda(object):
             result = mydb.update({"id": self.id}, temp_nda)
 
         except Exception as error:
-            logger.info("updating user", error)
+            logger.info("updating user"+ str(error))
             result = None
 
         finally:
