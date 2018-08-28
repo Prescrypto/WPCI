@@ -7,13 +7,12 @@
       {% if error %}
          <form class="message-form" method="POST">
           <center class="message" >
-              <h3>
-                  <strong> {{ error }} </strong>
-              </h3>
-
-          <center></center><button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()"
-                                   class="btn btn-info btn-lg" style="padding:20px;">Go back</button></center>
-
+            <img style="width: 200px;margin-left: 40px;margin-bottom:20px;" src="/static/images/error.svg" alt="">
+            <h3>
+              <strong> {{ error }} </strong>
+            </h3>
+          <center></center>
+          <button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()" class="btn btn-info btn-lg" style="padding:10px;">Go back</button></center>
         </form>
       {% elif pdffile %}
           <div class="leftcolumn col-lg-5 col-md-12">
