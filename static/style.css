@@ -19,8 +19,8 @@ header {
 }
 
 header h1.logo {
-  margin: 20px 0 0 0;
-  font-size: 1.8em;
+  padding-top: 15px;
+  font-size: 1.5em;
   color: #fff;
   text-transform: uppercase;
   float: left;
@@ -30,7 +30,10 @@ header h1.logo:hover {
   color: #fff;
   text-decoration: none;
 }
-
+.login-nav{
+  display: flex;
+  justify-content: space-between;
+}
 /* Message flashing */
 .flash {
   background-color: #FF9238;
@@ -66,6 +69,7 @@ header h1.logo:hover {
 
 .menu li {
   display: inline;
+  margin-right: 15px;
 }
 
 .menu li + li {
