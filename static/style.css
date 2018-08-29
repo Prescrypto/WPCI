@@ -1,7 +1,9 @@
+@import url("https://fonts.googleapis.com/css?family=Roboto:400,700");
+
 body {
   margin: 0;
   padding: 0;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', sans-serif!important;
   color: #444;
 }
 
@@ -10,16 +12,15 @@ body {
  */
 
 header {
-  background-color: #005B5B;
+  background-color: #071323;
   height: 75px;
   width: 100%;
   opacity: .9;
-  margin-bottom: 10px;
 }
 
 header h1.logo {
-  margin: 0;
-  font-size: 1.8em;
+  padding-top: 15px;
+  font-size: 1.5em;
   color: #fff;
   text-transform: uppercase;
   float: left;
@@ -29,7 +30,10 @@ header h1.logo:hover {
   color: #fff;
   text-decoration: none;
 }
-
+.login-nav{
+  display: flex;
+  justify-content: space-between;
+}
 /* Message flashing */
 .flash {
   background-color: #FF9238;
@@ -49,8 +53,9 @@ header h1.logo:hover {
  */
 
 .menu {
-  float: right;
-  margin-top: 30px;
+  padding-top: 20px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .menu ul{
@@ -64,6 +69,7 @@ header h1.logo:hover {
 
 .menu li {
   display: inline;
+  margin-right: 15px;
 }
 
 .menu li + li {
@@ -90,13 +96,21 @@ header h1.logo:hover {
   width: 940px;
   margin: 0 auto;
 }
-
+.leftcolumn{
+  padding:60px;
+  background-color:#333333;
+  color:#fff;
+}
 div.jumbo {
-  padding: 10px 0 30px 0;
+  padding: 20px;
+  margin:40px;
+  margin-top:60px;
+  color:#071323;
+  text-align:center;
   background-color: #eeeeee;
   -webkit-border-radius: 6px;
      -moz-border-radius: 6px;
-          border-radius: 6px;
+          border-radius: 10px;
 }
 div.graybk {
   padding: 20px 30px 20px 30px;
@@ -105,7 +119,9 @@ div.graybk {
      -moz-border-radius: 6px;
           border-radius: 6px;
 }
-
+.login-h1{
+  padding-bottom: 20px;
+}
 h2 {
   font-size: 3em;
   margin-top: 40px;
@@ -122,8 +138,25 @@ h3 {
   color: #999;
 }
 
+.nda-form{
+  font-size:14px;
+  font-weight:400;
+  width: 60%;
+  margin: 0 auto;
+  padding:20px;
+}
+.nda-form input{
+  border-radius:20px;
+  margin-bottom: 15px;
+}
+#signbutton{
+  border-radius:20px;
+  text-align:center;
+  font-size:1.5em;
+}
+
 /* Contact form */
-form label {
+/*form label {
   font-size: 1.2em;
   font-weight: bold;
   display: block;
@@ -189,12 +222,12 @@ form input[type=submit]:hover{
   cursor : pointer;
   background: #f5c423;
   text-decoration: none;
-}
+}*/
 
 /*Tables*/
 
 table {
-    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+    
     border-collapse: collapse;
     width: 100%;
 }
@@ -223,9 +256,8 @@ th {
 
 .space30 { margin-top: 30px; }
 
-.btn {
+/*.btn {
   border: none;
-  font-family: Arial;
   color: #423d42;
   background: #999fa3;
   padding: 10px 10px 10px 10px;
@@ -236,7 +268,7 @@ th {
   cursor : pointer;
   background: #bbbdb7;
   text-decoration: none;
-}
+}*/
 
 .login-screen {
 background-color: #FFF;
@@ -254,4 +286,33 @@ text-align: center;
 }
 .control-group {
 margin-bottom: 10px;
+}
+
+.message-form{
+  width: 60%;
+  margin : 200px auto;
+  display:flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  font-size:2em;
+}
+.error-form{
+  width: 60%;
+  margin : 200px auto;
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  font-size:2em;
+}
+.login-section{
+  background-color: #333333;
+  width:100vw;
+  height:100vh;
+}
+#login-card{
+  background: #fff;
+  margin: 150px auto;
+  padding: 50px;
+  border-radius: 10px;
 }

@@ -2,9 +2,14 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from tornado.template import Loader
+import logging
 from email import encoders
 import config as conf
 import smtplib
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 
 class Mailer(object):
@@ -53,6 +58,6 @@ class Mailer(object):
             self.server.starttls()
             self.server.login(self.username, self.password)
             self.server.sendmail(msg['From'], msg['To'], msg.as_string())
-            print(self.server.quit())
+            logger.info(self.server.quit())
         except Exception as e:
-            print("sending email", e)
+            logger.info("error sending email"+ str(e))
