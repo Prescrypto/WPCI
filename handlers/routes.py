@@ -1,5 +1,6 @@
 from tornado.web import  os
 import tornado
+import logging
 from tornado import gen, ioloop
 import ast
 from handlers.apiBaseHandler import BaseHandler
@@ -8,7 +9,7 @@ import config as conf
 import datetime
 import json
 import fitz
-from models import User
+from models import User, Nda
 from models.mongoManager import ManageDB
 import tempfile
 import time
@@ -17,6 +18,13 @@ import os
 import subprocess
 import glob
 from handlers.emailHandler import Mailer
+import config as conf
+import base64
+from utils import *
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
@@ -30,6 +38,15 @@ SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
+
+# Axis for the pdf header
+AXIS_X = 15
+AXIS_Y = 500
+AXIS_X_LOWER = 28
+WATERMARK_ROTATION = 90
+WATERMARK_FONT = "Times-Roman"
+WATERMARK_SIZE = 10
+
 # The default message to be sent in the body of the email
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
         <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
@@ -93,7 +110,7 @@ def validate_token(access_token):
         user_id = decode_auth_token(token.strip('"'))
 
     except Exception as e:
-        print (e)
+        logger.info(e)
         return False
 
     return user_id
@@ -159,7 +176,7 @@ def jwtauth(handler_class):
             try:
                 require_auth(self, kwargs)
             except Exception as e:
-                print (e)
+                logger.info(e)
                 return False
 
             return handler_execute(self, transforms, *args, **kwargs)
@@ -191,14 +208,6 @@ def authenticate_json(json_data):
     else:
         return False
 
-def get_hash(email, git_sha):
-    hashed_payload = None
-    timestamp = str(time.time())
-    payload = hashlib.sha256(timestamp.encode('utf-8')).hexdigest() + hashlib.sha256(email.encode('utf-8')).hexdigest() + git_sha
-    hash_object = hashlib.sha256(payload.encode('utf-8'))
-    hashed_payload = hash_object.hexdigest()
-
-    return hashed_payload
 
 def store_petition(remote_url, petition_type, username='anonymous'):
     result = False
@@ -209,7 +218,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
         result = mydb.insert_json({"username": username, "timestamp": time.time(), "remote_url": remote_url, "petition_type": petition_type})
 
     except Exception as error:
-        print("storing petition", error)
+        logger.info("storing petition"+ str(error))
 
     finally:
         if mydb is not None:
@@ -222,11 +231,6 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
-    print("starting")
-    # Axis for the pdf header
-    AXIS_X = 15
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
     attachments_list = []
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
@@ -236,7 +240,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     user_email = user_email.strip()
 
     store_petition(repo_url, RENDER_HASH, user_email)
-    print("No private access")
+    logger.info("No private access")
 
     watermark = "Document generated for: "+ user_email
 
@@ -245,19 +249,21 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(user_email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
             file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X,AXIS_Y)
-            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize = 10, fontname = "Times-Roman")
-                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointa, text=watermark, fontsize=10, fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=10, fontname=WATERMARK_FONT,
+                                rotate=WATERMARK_ROTATION)
             document.save(file_full_path, incremental=1)
             document.close()
 
@@ -268,10 +274,10 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
                         html_message=email_body_html)
 
         except IOError as e:
-            print('IOError', e)
+            logger.info('IOError'+ str(e))
             return("IO ERROR")
         except Exception as e:
-            print("other error", e)
+            logger.info("other error"+ str(e))
             return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
     return True
 
@@ -280,10 +286,6 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
-    #Axis for the pdf header
-    AXIS_X = 15
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
     attachments_list = []
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
@@ -294,7 +296,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
         return ("ERROR NO GITHUB TOKEN")
 
     try:
-        repo_url = "https://" + github_token + ":x-oauth-basic@" + repo_url.split("://")[1]
+        repo_url = "https://{}:x-oauth-basic@{}".format(github_token,repo_url.split("://")[1])
     except:
         return ("Invalid GIT Repository URL")
 
@@ -304,24 +306,27 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     if user_email is None or user_email == "":
         user_email = user.username
     user_email = user_email.strip()
-    watermark = "Copy generated for: " + user_email
+    watermark = "Document generated for: " + user_email
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(user_email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True,
                                                cwd=filesdir)
             file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
-                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
+                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
+                                rotate= WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
+                                fontname=WATERMARK_FONT, rotate= WATERMARK_ROTATION)
             document.save(file_full_path, incremental=1)
             document.close()
 
@@ -332,10 +337,10 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
                         html_message=email_body_html)
 
         except IOError as e:
-            print('IOError', e)
+            logger.info('IOError'+ str(e))
             return ("IO ERROR")
         except Exception as e:
-            print("other error", e)
+            logger.info("other error"+ str(e))
             return ("ERROR")
     return True
 
@@ -343,11 +348,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
 def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
-    # Axis for the pdf header
-    AXIS_X = 15
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
+    file_full_path = ''
 
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
@@ -355,7 +356,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
         return("ERROR NO GITHUB TOKEN")
 
     try:
-        repo_url = "https://"+github_token+":x-oauth-basic@"+repo_url.split("://")[1]
+        repo_url = "https://{}:x-oauth-basic@{}".format(github_token, repo_url.split("://")[1])
     except:
         return("Invalid GIT Repository URL")
 
@@ -364,52 +365,92 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
     rev_parse = 'git rev-parse master'
     if email is None or email == "":
         email = user.username
-    watermark = "Copy generated for: " + email
+    watermark = "Document generated for: " + email
 
     with tempfile.TemporaryDirectory() as tmpdir:
         try:
+            timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
+            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
-            document = fitz.open(new_name)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
+            document = fitz.open(file_full_path)
             for page in document:
-                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
-                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
-            document.save(new_name, incremental=1)
+                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
+                                rotate=WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
+                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
+            document.save(file_full_path, incremental=1)
             document.close()
 
-            pdffile = open(new_name, 'rb').read()
+            pdffile = open(file_full_path, 'rb').read()
             return(pdffile)
 
         except IOError as e:
-            print('IOError', e)
+            logger.info('IOError'+ str(e))
             return("IO ERROR")
         except Exception as e:
-            print("other error", e)
+            logger.info("other error"+ str(e))
             return("ERROR")
 
 def create_download_pdf(repo_url, email, main_tex="main.tex"):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
-    new_name = ''
-    # Axis for the pdf header
-    AXIS_X = 15
-    AXIS_Y = 35
-    AXIS_Y_LOWER = 50
-
+    file_full_path = ''
     if email is None or email== "":
-        return("NO EMAIL TO HASH")
+        return False
 
     store_petition(repo_url, RENDER_HASH, email)
-    print("No private access")
+    logger.info("No private access")
 
-    watermark = "Copy generated for: "+ email
+    watermark = "Document generated for: "+ email
+
+    clone = 'git clone ' + repo_url
+    rev_parse = 'git rev-parse master'
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            timestamp = str(time.time())
+            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
+            repo_name = os.listdir(tmpdir)[0]
+            filesdir = os.path.join(tmpdir, repo_name)
+            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
+            file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            pointa = fitz.Point(AXIS_X, AXIS_Y)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
+            document = fitz.open(file_full_path)
+            for page in document:
+                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
+                                rotate=WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
+                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
+            document.save(file_full_path, incremental=1)
+            document.close()
+
+            pdffile = open(file_full_path, 'rb').read()
+            return pdffile
+
+        except IOError as e:
+            logger.info('IOError'+ str(e))
+            return False
+        except Exception as e:
+            logger.info("other error"+ str(e))
+            return False
+
+
+def render_pdf_base64(repo_url, main_tex= "main.tex"):
+    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    repo_name = ''
+    file_full_path = ''
+    store_petition(repo_url, RENDER_NOHASH, "")
+    logger.info("No private access")
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
@@ -420,27 +461,43 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash(email, run_git_rev_parse.decode('UTF-8'))
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            new_name = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
-            pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X, AXIS_Y_LOWER)
-            document = fitz.open(new_name)
-            for page in document:
-                page.insertText(pointa, text=watermark, fontsize=10, fontname="Times-Roman")
-                page.insertText(pointb, text="hashid: " + complete_hash, fontsize=10, fontname="Times-Roman")
-            document.save(new_name, incremental=1)
-            document.close()
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True, cwd=filesdir)
+            file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
+            file_full_path64 = filesdir + "/" + main_tex.split(".")[0] + ".base64"
+            with open(file_full_path, 'rb') as f:
+                with open(file_full_path64, 'wb') as ftemp:
+                    # write in a new file the base64
+                    ftemp.write(base64.b64encode(f.read()))
 
-            pdffile = open(new_name, 'rb').read()
-            return(pdffile)
+            pdffile = open(file_full_path64, 'r').read()
+
+            return (pdffile)
+
 
         except IOError as e:
-            print('IOError', e)
-            return("IO ERROR")
+            logger.info('IOError'+ str(e))
+            return False
         except Exception as e:
-            print("other error", e)
-            return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
+            logger.info("other error"+ str(e))
+            return False
+
+
+def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson):
+    base_url= conf.BASE_URL
+    PDF_VIEW_URL = 'pdf/'
+    try:
+        nda = Nda.Nda()
+        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson)
+        if nda.check():
+            nda.update()
+        else:
+            nda.create()
+
+        return base_url+PDF_VIEW_URL+nda.id
+
+    except Exception as e:
+        logger.info("error creating nda"+ str(e))
+        return False
 
 
 @jwtauth
@@ -523,7 +580,7 @@ class PostRepoHash(BaseHandler):
                 self.write(json.dumps({"response": "Error"}))
 
         except Exception as e:
-            print("error on clone", e)
+            logger.info("error on clone"+ str(e))
             self.write(json.dumps({"response": "Error"}))
 
 
@@ -546,7 +603,59 @@ class RenderUrl(BaseHandler):
 
 
         except Exception as e:
-            print("error on clone", e)
+            logger.info("error on clone"+ str(e))
+            self.write(json.dumps({"response": "Error"}))
+
+@jwtauth
+class PostWpNda(BaseHandler):
+    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+
+    def post(self, userid):
+        wp_url = None
+        pdf_contract = None
+        pdf_url = None
+        wp_main_tex = "main.tex"
+        org_name = None
+        org_email = None
+        nda_logo = None
+        email = None
+        json_data = json.loads(self.request.body.decode('utf-8'))
+        try:
+            if json_data.get("wp_url") is None or json_data.get("wp_url") == "":
+                self.write(json.dumps({"response": "Error, White paper url not found"}))
+            else:
+                wp_url = json_data.get("wp_url")
+
+            if json_data.get("org_name") is None or json_data.get("org_name") == "":
+                self.write(json.dumps({"response": "Error, organization name not found"}))
+            else:
+                org_name = json_data.get("org_name")
+
+            if json_data.get("wp_main_tex") is not None and json_data.get("wp_main_tex") != "":
+                wp_main_tex = json_data.get("wp_main_tex")
+
+
+            if json_data.get("logo") is not None and json_data.get("logo") != "":
+                nda_logo = json_data.get("logo")
+
+            if json_data.get("org_email") is not None and json_data.get("org_email") != "":
+                org_email = json_data.get("org_email")
+
+            if json_data.get("pdf") is not None and json_data.get("pdf") != "":
+                pdf_contract = json_data.get("pdf")
+
+            if json_data.get("pdf_url") is not None and json_data.get("pdf_url") != "":
+                pdf_url = json_data.get("pdf_url")
+
+            userjson = ast.literal_eval(userid)
+            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson)
+            if result is not False:
+                self.write(json.dumps({"endpoint": result}))
+            else:
+                self.write(json.dumps({"response": "Error"}))
+
+        except Exception as e:
+            logger.info("error creating endpoint"+ str(e))
             self.write(json.dumps({"response": "Error"}))
 
 

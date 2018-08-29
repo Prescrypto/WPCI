@@ -1,0 +1,153 @@
+{% extends "pdflayout.html" %}
+{% block content %}
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+    <div class="row">
+      {% if error %}
+         <form class="message-form" method="POST">
+          <center class="message" >
+            <img style="width: 200px;margin-left: 40px;margin-bottom:20px;" src="/static/images/error.svg" alt="">
+            <h3>
+              <strong> {{ error }} </strong>
+            </h3>
+          <center></center>
+          <button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()" class="btn btn-info btn-lg" style="padding:10px;">Go back</button></center>
+        </form>
+      {% elif pdffile %}
+          <div class="leftcolumn col-lg-5 col-md-12">
+              <!--Jumbo box organization name-->
+            <div class="jumbo">
+              <h3> Organization name : {{ org_name }}</h3>
+            </div>
+            <!--Jumbo box organization name-->
+              <!--Form-->
+              <h3>Please read carefully the next document <br> and then click in sign</h3>
+              <form class="nda-form" id="nda-form" method="POST">
+                <div class="form-group">
+                  <label>Name : </label>
+                  <input type="text" class="form-control" id="signer_name" name="signer_name" placeholder="Enter name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email address : </label>
+                    <input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
+                    
+                    <button id="signbutton" name="signbutton" type="submit" style="display:flex;margin:auto;"
+                           class="btn btn-info btn-lg" disabled>Sign document</button>
+                </div>
+                <input type="hidden" id="nda_file" name="nda_file" value="">
+              </form>
+          </div>
+        <!--Closing Form-->
+        <div class="col-lg-7 col-md-12">
+           <!--Pdf Container-->
+            <div id="pdf_container" style="height: 800px;overflow: scroll;">
+              <div id="dynamic_container" >
+              </div>
+                <div style="display:flex;align-items:bottom;padding-left:35%">
+                  <input onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
+                  <label for="mycheck" style="padding-left:20px;"><h4>I agree to the above document</h4></label>
+                 </div>
+
+            </div>
+           <!-- closing Pdf Container-->
+        </div>
+
+
+      <script type="text/javascript">
+
+        var pdfData = atob('{{ pdffile }}');
+        $('#nda_file').val('{{ pdffile }}');
+        // Get div#container and cache it for later use
+        var wholecontainer = document.getElementById("pdf_container");
+        var container = document.getElementById("dynamic_container");
+
+
+
+        var pdfjsLib = window['pdfjs-dist/build/pdf'];
+
+        // The workerSrc property shall be specified.
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+
+         var loadingTask = pdfjsLib.getDocument({data: pdfData});
+        loadingTask.promise.then(function(pdf) {
+
+            // Loop from 1 to total_number_of_pages in PDF document
+            for (var i = 1; i <= pdf.numPages; i++) {
+
+                // Get desired page
+                pdf.getPage(i).then(function(page) {
+
+                  var scale = 1.5;
+                  var viewport = page.getViewport(scale);
+                  var div = document.createElement("div");
+
+                  // Set id attribute with page-#{pdf_page_number} format
+                  div.setAttribute("id", "page-" + (page.pageIndex + 1));
+
+                  // This will keep positions of child elements as per our needs
+                  div.setAttribute("style", "position: relative");
+
+                  // Append div within div#container
+                  container.appendChild(div);
+
+                  // Create a new Canvas element
+                  var canvas = document.createElement("canvas");
+
+                  // Append Canvas within div#page-#{pdf_page_number}
+                  div.appendChild(canvas);
+
+                  var context = canvas.getContext('2d');
+                  canvas.height = viewport.height;
+                  canvas.width = viewport.width;
+
+                  var renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                  };
+
+                  // Render PDF page
+                  page.render(renderContext);
+                });
+            }
+
+
+
+
+        }, function (reason) {
+          // PDF loading error
+          console.error(reason);
+        });
+
+         $('#signbutton').on('click', function(){
+          document.getElementById("nda-form").submit();
+         });
+
+         function checkChanged() {
+              // Get the checkbox
+              var checkBox = document.getElementById("mycheck");
+
+              // If the checkbox is checked, enable button
+              if (checkBox.checked == true){
+                document.getElementById('signbutton').disabled = false;
+              } else {
+                document.getElementById('signbutton').disabled = true;
+              }
+            }
+
+
+
+      </script>
+
+    {% elif message %}
+
+      <form class="message-form" method="POST">
+        <div><img style="width:100px;margin-bottom:20px;" src="/static/images/send.svg" alt=""></div> 
+        <div class="message"><strong> {{ message }} </strong></div>
+      </form>
+
+    {% endif %}
+    </div>
+
+
+{% endblock %}

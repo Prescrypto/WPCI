@@ -2,57 +2,39 @@ import json
 import os
 import sys
 import config as conf
+from requests.auth import HTTPBasicAuth
+import requests
+import base64
 
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
+
 
 headers = conf.headers
 GIT_BASE_URI = conf.GITHUB_API_URL
 
-class WSHandler(object):
-    http_client = AsyncHTTPClient()
+def get_nda(payload):
+    '''this function creates a new page dynamically by storing the payload posted into the data base'''
+    URL= conf.CRYPTO_SIGN_URL
+    SIGN_URL = 'api/v1/sign/'
+    TOKEN_URL = 'oauth/token/'
+    tokenheaders=  {'Content-Type' : 'application/x-www-form-urlencoded' }
 
-    def get(self, url, data=None, headers=None):
-        if data is not None:
-            if isinstance(data, dict):
-                data = json.dumps(data)
-            if '?' in url:
-                url += '&amp;%s' % data
-            else:
-                url += '?%s' % data
-        return self.async_fetch(url, 'GET', headers=headers)
+    #request a token to cryptosign
+    jsondata = {
+        "grant_type": "password",
+        "username": conf.CRYPTO_USERNAME,
+        "password": conf.CRYPTO_PASS
+    }
 
-    def post(self, url, data, headers=None):
-        if data is not None:
-            if isinstance(data, dict):
-                data = json.dumps(data)
-        return self._fetch(url, 'POST', data, headers)
+    auth = HTTPBasicAuth(conf.CRYPTO_ID, conf.CRYPTO_SECRET)
 
-    def async_fetch(self, url):
-        http_client = AsyncHTTPClient()
-        response = yield http_client.fetch(url)
-        self.on_response(url, response)
+    token_result = requests.post(url= URL+TOKEN_URL,data=jsondata, headers=tokenheaders, auth=auth)
+    token_json_result = json.loads(token_result.content)
+    if token_json_result.get("access_token"):
+        #if there is a token in the payload then request the pdf
+        headers["Authorization"] = "Bearer " + token_json_result.get("access_token")
+        sign_result = requests.post(url=URL + SIGN_URL, json=payload, headers=headers)
+        return sign_result.content
 
-    def on_response(self, url, response):
-        self.url_res[url] = response
-        self.write(str(response) + "\n")
-        self.flush()
-        if not filter(lambda x: x is None, self.url_res.values()):
-            self.finish()
-
-def handle_response(res):
-    if res.error:
-        print (res.error)
-    else:
-        print ("success",res.body)
-
-def get_repo_pages(owner_repo, path):
-    repo_url= 'repos/'+owner_repo+'contents/'+path
-    URL= GIT_BASE_URI + repo_url
-    http_client = AsyncHTTPClient()
-    # Asynchronous request for contet
-    headers['Accept'] = 'application/vnd.github.v3.raw'
-
-    response = http_client.fetch(URL,headers=headers, method="GET", callback=handle_response)
-
-    return response
+    return False
 
