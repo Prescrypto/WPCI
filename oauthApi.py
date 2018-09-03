@@ -152,7 +152,9 @@ def show_pdf(id):
             thisnda = nda.find_by_id(id)
             if thisnda is not None:
                 if thisnda.pdf_url is not None and thisnda.pdf_url != "":
-                    pdffile = render_pdf_base64(thisnda.pdf_url, "main.tex")
+                    render_options = {"companyname": thisnda.org_name, "companytype": thisnda.org_type,
+                                      "companyaddress": thisnda.org_address}
+                    pdffile = render_pdf_base64(thisnda.pdf_url, "main.tex", render_options)
                     return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=thisnda.org_name)
                 else:
                     error="No valid Pdf url found"
@@ -200,7 +202,7 @@ def show_pdf(id):
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
 
-                            owner_hash = get_hash([thisnda.org_email])
+                            owner_hash = get_hash([thisnda.org_name])
                             client_hash = get_hash([signer_email])
                             if thisnda.nda_logo is None:
                                 nda_logo = open(DEFAULT_LOGO_PATH, 'r').read()
