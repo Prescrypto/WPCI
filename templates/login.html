@@ -9,16 +9,16 @@
             <h1 style="font-weight:900;" class="login-h1">Please login</h1>
             <div class="input-group mb-3">
               <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">Username</span>
+                <span class="input-group-text" >Username</span>
               </div>
-              <input type="text" class="form-control" value="{{request.form.username }}" placeholder="Enter your Username" aria-label="Username" aria-describedby="basic-addon1">
+              <input type="text" class="form-control" name="username" value="{{request.form.username }}" placeholder="Enter your Username" aria-label="Username" aria-describedby="basic-addon1">
             </div>
 
             <div class="input-group mb-3">
               <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">Password</span>
+                <span class="input-group-text" id="basic-addon2">Password</span>
               </div>
-              <input type="password" class="form-control" value="{{request.form.password }}" placeholder="Enter your Password" aria-label="Username" aria-describedby="basic-addon1">
+              <input type="password" class="form-control" name="password" value="{{request.form.password }}" placeholder="Enter your Password" aria-label="Username" aria-describedby="basic-addon1">
             </div>
             <button type="submit" class="btn btn-info" value="Login">Login</button>
           </form>
