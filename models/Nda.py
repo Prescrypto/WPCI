@@ -30,14 +30,15 @@ class Nda(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson={}, email = None):
+    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson={}, email = None):
         try:
             self.pdf = pdf
             self.pdf_url = pdf_url
             self.wp_url = wp_url
             self.wp_main_tex = wp_main_tex
             self.org_name = org_name
-            self.org_email = org_email
+            self.org_address = org_address
+            self.org_type = org_type
             self.nda_logo = nda_logo
             self.email = email
 

@@ -15,7 +15,6 @@
     "SECRET": {
       "required": true
     },
-
     "SMTP_EMAIL": {
         "required": true
       },
@@ -73,7 +72,7 @@
   ],
   "buildpacks": [
     {
-      "url": "heroku/python",
+      "url": "heroku/python"
     },
     {
       "url": "https://github.com/Thermondo/heroku-buildpack-tex"
