@@ -21,6 +21,21 @@ from handlers.emailHandler import Mailer
 import config as conf
 import base64
 from utils import *
+import jinja2
+
+latex_jinja_env = jinja2.Environment(
+	block_start_string = '\BLOCK{',
+	block_end_string = '}',
+	variable_start_string = '${{',
+	variable_end_string = '}}$',
+	comment_start_string = '\#{',
+	comment_end_string = '}',
+	line_statement_prefix = '%%line',
+	line_comment_prefix = '%#line',
+	trim_blocks = True,
+	autoescape = False,
+	loader = jinja2.FileSystemLoader(os.path.abspath('/'))
+)
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -227,11 +242,12 @@ def store_petition(remote_url, petition_type, username='anonymous'):
     return result
 
 
-def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text=""):
+def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text="", options ={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
     attachments_list = []
+    new_main_tex = "main2.tex"
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
 
@@ -253,10 +269,21 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
+
+            if options != {}: #if there are special conditions to render
+                # modify the original template:
+                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
+                renderer_template = template.render(**options)
+                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
+                    f.write(renderer_template)
+            else:
+                new_main_tex = main_tex
+
+            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ new_main_tex , shell=True, cwd=filesdir)
+
             pointa = fitz.Point(AXIS_X,AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
@@ -282,11 +309,12 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     return True
 
 
-def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_tex="main.tex", email_body_text =""):
+def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_tex="main.tex", email_body_text ="", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
     attachments_list = []
+    new_main_tex = "main2.tex"
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
 
@@ -314,11 +342,20 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
+            if options != {}: #if there are special conditions to render
+                # modify the original template:
+                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
+                renderer_template = template.render(**options)
+                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
+                    f.write(renderer_template)
+            else:
+                new_main_tex = main_tex
+
+            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True,
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
                                                cwd=filesdir)
-            file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
@@ -345,10 +382,11 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     return True
 
 
-def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
+def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
+    new_main_tex = "main2.tex"
 
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
@@ -373,10 +411,20 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
+            if options != {}: #if there are special conditions to render
+                # modify the original template:
+                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
+                renderer_template = template.render(**options)
+                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
+                    f.write(renderer_template)
+            else:
+                new_main_tex = main_tex
+
+            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ new_main_tex , shell=True, cwd=filesdir)
+
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
@@ -398,10 +446,11 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex"):
             logger.info("other error"+ str(e))
             return("ERROR")
 
-def create_download_pdf(repo_url, email, main_tex="main.tex"):
+def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
+    new_main_tex = "main2.tex"
     if email is None or email== "":
         return False
 
@@ -419,10 +468,20 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
+            if options != {}: #if there are special conditions to render
+                # modify the original template:
+                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
+                renderer_template = template.render(**options)
+                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
+                    f.write(renderer_template)
+            else:
+                new_main_tex = main_tex
+
+            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ main_tex , shell=True, cwd=filesdir)
-            file_full_path = filesdir+"/"+ main_tex.split(".")[0]+ ".pdf"
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ new_main_tex , shell=True, cwd=filesdir)
+
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
@@ -445,10 +504,11 @@ def create_download_pdf(repo_url, email, main_tex="main.tex"):
             return False
 
 
-def render_pdf_base64(repo_url, main_tex= "main.tex"):
+def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
+    new_main_tex = "main2.tex"
     store_petition(repo_url, RENDER_NOHASH, "")
     logger.info("No private access")
 
@@ -460,10 +520,19 @@ def render_pdf_base64(repo_url, main_tex= "main.tex"):
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
+            if options != {}: #if there are special conditions to render
+                # modify the original template:
+                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
+                renderer_template = template.render(**options)
+                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
+                    f.write(renderer_template)
+            else:
+                new_main_tex = main_tex
+
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + main_tex, shell=True, cwd=filesdir)
-            file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
-            file_full_path64 = filesdir + "/" + main_tex.split(".")[0] + ".base64"
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True, cwd=filesdir)
+            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
+            file_full_path64 = filesdir + "/" + new_main_tex.split(".")[0] + ".base64"
             with open(file_full_path, 'rb') as f:
                 with open(file_full_path64, 'wb') as ftemp:
                     # write in a new file the base64
@@ -482,12 +551,12 @@ def render_pdf_base64(repo_url, main_tex= "main.tex"):
             return False
 
 
-def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson):
+def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson):
     base_url= conf.BASE_URL
     PDF_VIEW_URL = 'pdf/'
     try:
         nda = Nda.Nda()
-        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson)
+        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson)
         if nda.check():
             nda.update()
         else:
@@ -572,8 +641,14 @@ class PostRepoHash(BaseHandler):
             else:
                 email_body_text = json_data.get("email_body_text")
 
+            if json_data.get("options") is None or json_data.get("options") == {}  or json_data.get("options") == "":
+                options = {}
+            else:
+                options = json_data.get("options")
+
+
             userjson = ast.literal_eval(userid)
-            result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email, email_body_html, main_tex,  email_body_text)
+            result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email, email_body_html, main_tex,  email_body_text, options)
             if result:
                 self.write(json.dumps({"response": "done"}))
             else:
@@ -594,8 +669,9 @@ class RenderUrl(BaseHandler):
             email = self.get_argument('email', "")
             email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
             email_body_text =self.get_argument('email_body_text', "")
+            options = json.loads(self.get_argument('options', "{}"))
 
-            result = create_email_pdf(repo_url, email,email_body_html, main_tex,email_body_text)
+            result = create_email_pdf(repo_url, email,email_body_html, main_tex,email_body_text, options)
             if result:
                 self.write(json.dumps({"response":"done"}))
             else:
@@ -616,7 +692,8 @@ class PostWpNda(BaseHandler):
         pdf_url = None
         wp_main_tex = "main.tex"
         org_name = None
-        org_email = None
+        org_address = None
+        org_type = None
         nda_logo = None
         email = None
         json_data = json.loads(self.request.body.decode('utf-8'))
@@ -631,15 +708,22 @@ class PostWpNda(BaseHandler):
             else:
                 org_name = json_data.get("org_name")
 
+            if json_data.get("org_type") is None or json_data.get("org_type") == "":
+                self.write(json.dumps({"response": "Error, organization type not found"}))
+            else:
+                org_type = json_data.get("org_type")
+
+            if json_data.get("org_address") is None or json_data.get("org_address") == "":
+                self.write(json.dumps({"response": "Error, organization address not found"}))
+            else:
+                org_address = json_data.get("org_address")
+
             if json_data.get("wp_main_tex") is not None and json_data.get("wp_main_tex") != "":
                 wp_main_tex = json_data.get("wp_main_tex")
 
 
             if json_data.get("logo") is not None and json_data.get("logo") != "":
                 nda_logo = json_data.get("logo")
-
-            if json_data.get("org_email") is not None and json_data.get("org_email") != "":
-                org_email = json_data.get("org_email")
 
             if json_data.get("pdf") is not None and json_data.get("pdf") != "":
                 pdf_contract = json_data.get("pdf")
@@ -648,7 +732,7 @@ class PostWpNda(BaseHandler):
                 pdf_url = json_data.get("pdf_url")
 
             userjson = ast.literal_eval(userid)
-            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, org_email, nda_logo, userjson)
+            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson)
             if result is not False:
                 self.write(json.dumps({"endpoint": result}))
             else:
