@@ -15,7 +15,7 @@
           <button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()" class="btn btn-info btn-lg" style="padding:10px;">Go back</button></center>
         </form>
       {% elif pdffile %}
-          <div class="leftcolumn col-lg-5 col-md-12">
+          <div class="leftcolumn col-lg-5 col-md-12" style="margin-bottom:-99999px;padding-bottom:99999px;">
               <!--Jumbo box organization name-->
             <div class="jumbo">
               <h3> Organization name : {{ org_name }}</h3>
@@ -39,7 +39,7 @@
               </form>
           </div>
         <!--Closing Form-->
-        <div class="col-lg-7 col-md-12">
+        <div class="col-lg-7 col-md-12" style="margin-bottom: -99999px;padding-bottom: 99999px;">
            <!--Pdf Container-->
             <div id="pdf_container" style="height: 800px;overflow: scroll;">
               <div id="dynamic_container" >
@@ -55,7 +55,9 @@
 
 
       <script type="text/javascript">
-
+        var winheight= $( window ).height();
+        console.log(winheight);
+        $('#pdf_container').attr('style','height:'+ winheight+'px;overflow: scroll;');
         var pdfData = atob('{{ pdffile }}');
         $('#nda_file').val('{{ pdffile }}');
         // Get div#container and cache it for later use
