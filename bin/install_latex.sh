@@ -30,6 +30,7 @@ else
     echo "*******************************************"
     echo 'PATH="/vagrant/build/.texlive/bin/x86_64-linux:$PATH"' >> ~/.profile
     source ~/.profile
+    sudo fmtutil --all
 
     echo "LaTeX Installed"
 fi
