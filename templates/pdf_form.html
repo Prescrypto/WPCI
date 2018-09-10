@@ -32,8 +32,7 @@
                     <label>Email address : </label>
                     <input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
                     
-                    <button id="signbutton" name="signbutton" type="submit" style="display:flex;margin:auto;"
-                           class="btn btn-info btn-lg" disabled>Sign document</button>
+
                 </div>
                 <input type="hidden" id="nda_file" name="nda_file" value="">
               </form>
@@ -47,7 +46,12 @@
                 <div style="display:flex;align-items:bottom;padding-left:35%">
                   <input onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
                   <label for="mycheck" style="padding-left:20px;"><h4>I agree to the above document</h4></label>
+
                  </div>
+                <div style="display:flex;align-items:bottom;padding-left:45%;padding-bottom:10px;">
+                <button id="signbutton" name="signbutton" type="submit"
+                           class="btn btn-info btn-lg" disabled>Sign document</button>
+                </div>
 
             </div>
            <!-- closing Pdf Container-->
@@ -55,8 +59,8 @@
 
 
       <script type="text/javascript">
-        var winheight= $( window ).height();
-        $('#pdf_container').attr('style','height:'+ winheight+'px;overflow: scroll;');
+        var winheight= $( window ).height() - 60;
+        $('#pdf_container').attr('style','height:'+ winheight +'px;overflow: scroll;');
         var pdfData = atob('{{ pdffile }}');
         $('#nda_file').val('{{ pdffile }}');
         // Get div#container and cache it for later use
@@ -121,7 +125,14 @@
         });
 
          $('#signbutton').on('click', function(){
-          document.getElementById("nda-form").submit();
+           if(($('#signer_name').val() == '') || ($('#signer_email').val() == '')){
+             alert("please fill all the required fields");
+           }
+           else{
+             document.getElementById("nda-form").submit();
+           }
+
+
          });
 
          function checkChanged() {
