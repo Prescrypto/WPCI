@@ -14,10 +14,10 @@
  <header>
   	<div class="container">
   	  <strong><nav>
-        <!-- <ul class="menu">
+         <ul class="menu">
             <a href=""><img style="width:150px; margin:0;" src="/static/images/wpci.svg" alt=""></a>
-          <li><a href="{{ url_for('index') }}">Home</a></li>
-        </ul> -->
+         <!-- <li><a href="{{ url_for('index') }}">Home</a></li> -->
+        </ul>
         {% for fmessage in get_flashed_messages() %}
           <p class=message>{{ fmessage }}</p>
         {% endfor %}

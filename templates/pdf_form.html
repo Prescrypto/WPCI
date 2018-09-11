@@ -58,9 +58,11 @@
             <div id="pdf_container" style="height: 800px;overflow: scroll;">
               <div id="dynamic_container" >
               </div>
-                <div style="display:flex;align-items:bottom;padding-left:5%">
-                     <button id="signbutton" name="signbutton" type="submit" style="display:flex;margin:auto;"
-                           class="btn btn-info btn-lg" uk-toggle="target: #modal-sign">I agree to the above terms in this NDA</button>
+                <div style="display:flex;align-items:bottom;padding-left:35%">
+                    <input uk-toggle="target: #modal-sign" onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
+                  <label for="mycheck" style="padding-left:20px;"><h4>I agree to the above terms in this NDA</h4></label>
+
+
 
                  </div>
 
