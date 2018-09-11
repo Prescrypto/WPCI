@@ -28,24 +28,22 @@
                  <!-- This is the modal -->
         <div id="modal-sign" uk-modal>
             <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-bottom" >
-                <h2 class="uk-modal-title">Almost done! </h2>
+                <h2 class="uk-modal-title">Almost done! <b>We will send the document to the email you provide.</b> </h2>
                <form class="nda-form" id="nda-form" method="POST">
 
                 <div class="form-group">
-                  <label>Name : </label>
+                  <label>Give us your full name:</label>
                   <input type="text" class="form-control" id="signer_name" name="signer_name" placeholder="Enter name" required>
                 </div>
                 <div class="form-group">
-                    <label>Email address : </label>
+                    <label>Give us your best email address: </label>
                     <input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
 
                 </div>
                 <input type="hidden" id="nda_file" name="nda_file" value="">
 
                 <p class="uk-text-center">
-                    <button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg" >Sign</button>
-                    <button class="btn btn-info btn-lg uk-modal-close" style="color:#000;background-color:#fff;!important;" >Cancel</button>
-
+                    <button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg" >I agree to the above terms in this NDA.</button>
                 </p>
                 </form>
             </div>
