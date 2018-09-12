@@ -246,7 +246,8 @@ def show_pdf(id):
                                                    filename=NDA_FILE_NAME)
                             attachments_list.append(nda_attachment)
 
-                            mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL, emails_to=[signer_email],
+                            mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
+                                        emails_to=[signer_email], emails_bcc=[conf.ADMIN_EMAIL],
                                         attachments_list=attachments_list, text_message = "",
                                         html_message=DEFAULT_HTML_TEXT)
 

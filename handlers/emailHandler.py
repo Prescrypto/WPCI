@@ -21,10 +21,10 @@ class Mailer(object):
             self.__dict__[x] = kwargs[x]
         loader = Loader("templates/email")
         self.EMAIL_HTML_TEMPLATE = loader.load("document_send_email.html")
-        self.server = smtplib.SMTP(host=self.server, port=self.port)
+
 
     def send(self, **kwargs):
-        mandatory_args = ["subject","email_from","emails_to","attachments_list"]
+        mandatory_args = ["subject","email_from","emails_to","emails_bcc","attachments_list"]
         for x in mandatory_args:
             if not kwargs.get(x, False):
                 raise ValueError("%s is mandatory" % (x))
@@ -32,12 +32,15 @@ class Mailer(object):
         toaddr_list = []
         for eaddress in kwargs['emails_to']:
             toaddr_list.append(eaddress)
+        for eaddress in kwargs['emails_bcc']:
+            toaddr_list.append(eaddress)
 
         try:
-            msg = MIMEMultipart('alternative')
+            msg = MIMEMultipart('mixed')
             msg['Subject'] = kwargs['subject']
             msg['From'] = kwargs['email_from']
             msg['To'] = ','.join(kwargs['emails_to'])
+            msg['Bcc'] =  ','.join(kwargs['emails_bcc'])
 
             text = kwargs['text_message']
             html = kwargs['html_message']
@@ -55,9 +58,12 @@ class Mailer(object):
                 part.add_header('Content-Disposition', 'attachment; filename="' + attachment.get('filename') + '"')
                 msg.attach(part)
 
+            self.server = smtplib.SMTP(host=self.server, port=self.port)
+            self.server.ehlo()
             self.server.starttls()
+            self.server.ehlo()
             self.server.login(self.username, self.password)
-            self.server.sendmail(msg['From'], msg['To'], msg.as_string())
+            self.server.sendmail(msg['From'], toaddr_list, msg.as_string())
             logger.info(self.server.quit())
         except Exception as e:
             logger.info("error sending email"+ str(e))

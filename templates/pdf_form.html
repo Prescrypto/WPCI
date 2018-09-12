@@ -3,6 +3,9 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
     <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/css/uikit.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
     <div class="row">
       {% if error %}
          <form class="message-form" method="POST">
@@ -15,48 +18,67 @@
           <button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()" class="btn btn-info btn-lg" style="padding:10px;">Go back</button></center>
         </form>
       {% elif pdffile %}
-          <div class="leftcolumn col-lg-5 col-md-12" style="margin-bottom:-10px;padding-bottom:10px;">
+          <div class="leftcolumn col-lg-3 col-md-12" style="margin-bottom:-10px;padding-bottom:10px;">
               <!--Jumbo box organization name-->
             <div class="jumbo">
-              <h3> Organization name : {{ org_name }}</h3>
+              <h3><b> {{ org_name }}</b> requires you to sign this before you can continue.</h3>
+             <h4>Please read carefully and sign to continue.</h4>
             </div>
-            <!--Jumbo box organization name-->
-              <!--Form-->
-              <h3>Please read carefully the next document <br> and then click in sign</h3>
-              <form class="nda-form" id="nda-form" method="POST">
+
+                 <!-- This is the modal -->
+        <div id="modal-sign" uk-modal>
+            <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-bottom" >
+                <h2 class="uk-modal-title">Almost done! <b>We will send the document to your email.</b> </h2>
+               <form class="nda-form" id="nda-form" method="POST">
+
                 <div class="form-group">
-                  <label>Name : </label>
+                  <label>Give us your full name:</label>
                   <input type="text" class="form-control" id="signer_name" name="signer_name" placeholder="Enter name" required>
                 </div>
                 <div class="form-group">
-                    <label>Email address : </label>
+                    <label>Give us your best email address: </label>
+                    <label style="font-size: 11px">(we won't save it or use it for anything else, we promise.)</label>
                     <input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
-                    
-                    <button id="signbutton" name="signbutton" type="submit" style="display:flex;margin:auto;"
-                           class="btn btn-info btn-lg" disabled>Sign document</button>
+
                 </div>
                 <input type="hidden" id="nda_file" name="nda_file" value="">
-              </form>
+
+                <p class="uk-text-center">
+                    <button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg" >Sign!</button>
+                </p>
+                </form>
+            </div>
+        </div>
+
+
           </div>
         <!--Closing Form-->
-        <div class="col-lg-7 col-md-12" style="margin-bottom: -10px;padding-bottom: 10px;">
+        <div class="col-lg-9 col-md-12" style="margin-bottom:-10px;padding-bottom: 10px;">
            <!--Pdf Container-->
             <div id="pdf_container" style="height: 800px;overflow: scroll;">
               <div id="dynamic_container" >
               </div>
                 <div style="display:flex;align-items:bottom;padding-left:35%">
-                  <input onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
-                  <label for="mycheck" style="padding-left:20px;"><h4>I agree to the above document</h4></label>
+                    <input uk-toggle="target: #modal-sign" onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
+                  <label for="mycheck" style="padding-left:20px;"><h4>I agree to the above terms in this NDA</h4></label>
+
+
+
                  </div>
+
+
+
 
             </div>
            <!-- closing Pdf Container-->
-        </div>
+
+
+
 
 
       <script type="text/javascript">
-        var winheight= $( window ).height();
-        $('#pdf_container').attr('style','height:'+ winheight+'px;overflow: scroll;');
+        var winheight= $( window ).height() - 60;
+        $('#pdf_container').attr('style','height:'+ winheight +'px;overflow: scroll;');
         var pdfData = atob('{{ pdffile }}');
         $('#nda_file').val('{{ pdffile }}');
         // Get div#container and cache it for later use
@@ -79,7 +101,7 @@
                 // Get desired page
                 pdf.getPage(i).then(function(page) {
 
-                  var scale = 1.5;
+                  var scale = 2.5;
                   var viewport = page.getViewport(scale);
                   var div = document.createElement("div");
 
@@ -120,9 +142,6 @@
           console.error(reason);
         });
 
-         $('#signbutton').on('click', function(){
-          document.getElementById("nda-form").submit();
-         });
 
          function checkChanged() {
               // Get the checkbox
