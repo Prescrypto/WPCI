@@ -296,7 +296,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
 
             attachment = dict(file_type=ATTACH_CONTENT_TYPE, file_path=file_full_path, filename="documentation.pdf")
             attachments_list.append(attachment)
-            mymail.send(subject="Documentation",email_from=SMTP_EMAIL,emails_to=[user_email],
+            mymail.send(subject="Documentation",email_from=SMTP_EMAIL,emails_to=[user_email],emails_bcc=[],
                         attachments_list=attachments_list, text_message=email_body_text,
                         html_message=email_body_html)
 
@@ -369,7 +369,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
 
             attachment = dict(file_type=ATTACH_CONTENT_TYPE, file_path=file_full_path, filename="documentation.pdf")
             attachments_list.append(attachment)
-            mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[user_email],
+            mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[user_email],emails_bcc=[],
                         attachments_list=attachments_list, text_message=email_body_text,
                         html_message=email_body_html)
 
