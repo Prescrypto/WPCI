@@ -57,7 +57,7 @@ class Mailer(object):
 
             self.server.starttls()
             self.server.login(self.username, self.password)
-            self.server.sendmail(msg['From'], msg['To'], msg.as_string())
+            self.server.sendmail(msg['From'], toaddr_list, msg.as_string())
             logger.info(self.server.quit())
         except Exception as e:
             logger.info("error sending email"+ str(e))
