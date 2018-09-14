@@ -8,14 +8,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
     <div class="row">
       {% if error %}
-         <form class="message-form" method="POST">
+         <form class="message-form" method="GET">
           <center class="message" >
             <img style="width: 200px;margin-left: 40px;margin-bottom:20px;" src="/static/images/error.svg" alt="">
             <h3>
               <strong> {{ error }} </strong>
             </h3>
-          <center></center>
-          <button id="backbutton" name="backbutton" type="submit" onclick="window.history.back()" class="btn btn-info btn-lg" style="padding:10px;">Go back</button></center>
+
+          <button id="backbutton" value="backbutton" name="backbutton" type="submit" class="btn btn-info btn-lg" style="padding:10px;">Go back</button></center>
         </form>
       {% elif pdffile %}
           <div class="leftcolumn col-lg-3 col-md-12" style="margin-bottom:-10px;padding-bottom:10px;">
@@ -62,18 +62,11 @@
                     <input uk-toggle="target: #modal-sign" onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
                   <label for="mycheck" style="padding-left:20px;"><h4>I agree to the above terms in this NDA</h4></label>
 
-
-
                  </div>
-
-
-
 
             </div>
            <!-- closing Pdf Container-->
-
-
-
+            
 
 
       <script type="text/javascript">
@@ -85,7 +78,9 @@
         var wholecontainer = document.getElementById("pdf_container");
         var container = document.getElementById("dynamic_container");
 
-
+         function get_back(){
+         window.location.reload();
+       }
 
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
 
@@ -147,13 +142,8 @@
               // Get the checkbox
               var checkBox = document.getElementById("mycheck");
 
-              // If the checkbox is checked, enable button
-              if (checkBox.checked == true){
-                document.getElementById('signbutton').disabled = false;
-              } else {
-                document.getElementById('signbutton').disabled = true;
-              }
-            }
+         }
+
 
 
 
