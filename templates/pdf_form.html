@@ -43,10 +43,12 @@
                 </div>
                 <input type="hidden" id="nda_file" name="nda_file" value="">
 
-                <p class="uk-text-center">
-                    <button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg" >Sign!</button>
-                </p>
-                </form>
+                <div class="uk-text-center">
+                    <p id="spinner"></p>
+                    <button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg" onClick="click_button()" >Sign!</button>
+                </div>
+                   </form>
+
             </div>
         </div>
 
@@ -137,8 +139,17 @@
           console.error(reason);
         });
 
+        function click_button() {
+            document.getElementById("signbtn").hidden = true;
+            $('#spinner').html('<p id="spinner"><div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div></p?');
+        }
 
-         function checkChanged() {
+        $('#modal-sign').on('hide.uk.modal', function(){
+         document.getElementById("signbtn").hidden = false;
+          $('#spinner').html('<p id="spinner"></p>');
+        });
+
+        function checkChanged() {
               // Get the checkbox
               var checkBox = document.getElementById("mycheck");
                 // If the checkbox is checked, show the sign modal
