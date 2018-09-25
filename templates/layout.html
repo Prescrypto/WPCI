@@ -12,9 +12,10 @@
         <ul class="menu">
           <li><a href="{{ url_for('index') }}">Home</a></li>
           {% if session.user %}
-          <li><a href="{{ url_for('logout') }}">Log out [{{ session.user.username}}]</a></li>
+            <li><a href="{{ url_for('register_org') }}">Organization</a></li>
+            <li><a href="{{ url_for('logout') }}">Log out [{{ session.user.username}}]</a></li>
           {% else %}
-          <li><a href="{{ url_for('login') }}">Log in</a></li>
+            <li><a href="{{ url_for('login') }}">Log in</a></li>
 
           {% endif %}
         </ul>

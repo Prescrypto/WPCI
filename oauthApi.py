@@ -103,11 +103,15 @@ def register():
 @app.route('/api/v1/admin/register_org', methods=['GET', 'POST'])
 def register_org():
     error=''
+    username=''
     if request.method == 'POST':
 
-        if request.form['org_name'] and request.form['org_type']:
+        if request.form['org_name'] and request.form['org_type'] and \
+                request.form['org_email'] and request.form['org_address']:
+            user = User.User()
+            user = user.find_by_attr("username", username)
+            user.set_attr(request.form['org_name'], request.form['org_type'],request.form['org_email'],request.form['org_address'])
 
-            print("has fields")
         else:
             error = 'Invalid Values. Please try again.'
 
