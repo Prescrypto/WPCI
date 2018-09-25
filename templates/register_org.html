@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block content %}
+<section class="login-section">
+  <div>
+    <div id="general-form" class="row" >
+      <div class="col-xs-2 center-block" style="float:none;">
+        <div class="login-form">
+          <form action="{{ url_for('register_org') }}" method="post">
+            <h1 style="font-weight:900;" class="login-h1">Please Enter all the Document information</h1>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Organization Name</span>
+              </div>
+              <input type="text" class="form-control" name="org_name" value="{{request.form.org_name }}" placeholder="Enter the organization Name" aria-label="Org Name" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Organization Address</span>
+              </div>
+              <input type="text" class="form-control" name="org_address" value="{{request.form.org_address }}" placeholder="Enter the organization Address" aria-label="Org Address" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Organization Notification Email</span>
+              </div>
+              <input type="text" class="form-control" name="org_email" value="{{request.form.org_email }}" placeholder="Enter the organization Email" aria-label="Org Email" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon2">Organization Type</span>
+              </div>
+              <input type="text" class="form-control" name="org_type" value="{{request.form.org_type }}" placeholder="Enter the organization Type" aria-label="Username" aria-describedby="basic-addon1">
+            </div>
+            <button type="submit" class="btn btn-info" value="create">Create!</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+      {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}</p>
+      {% endif %}
+    </div>
+{% endblock %}

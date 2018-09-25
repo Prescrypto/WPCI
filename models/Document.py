@@ -19,10 +19,10 @@ pwd_context = CryptContext(
 )
 
 
-class Nda(object):
+class Organization(object):
 
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, org_id):
+        self.org_id = org_id
 
     def __str__(self):
         return "Nda(id='%s')" % self.id
@@ -30,17 +30,30 @@ class Nda(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson={}, email = None):
+    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, nda_logo):
         try:
-            self.org_name = org_name
-            self.org_address = org_address
-            self.org_type = org_type
-            self.org_email = email
+            self.pdf = pdf
+            self.pdf_url = pdf_url
+            self.wp_url = wp_url
+            self.wp_main_tex = wp_main_tex
+            self.nda_logo = nda_logo
 
+            return True
+        except Exception as e:
+            logger.info(e)
+            return False
 
-            if userjson is not None and userjson != {}:
-                #if the user is authenticated then use a different url with github authentication
-                user = User.User(userjson.get("username"), userjson.get("password"))
+    def create_nda(self, pdf, pdf_url, wp_url, wp_main_tex, nda_logo):
+        try:
+            self.pdf = pdf
+            self.pdf_url = pdf_url
+            self.wp_url = wp_url
+            self.wp_main_tex = wp_main_tex
+            self.nda_logo = nda_logo
+            user = User.User().find_by_org_id(self.org_id)
+
+            if user is not None:
+                # if the user is authenticated then use a different url with github authentication
                 github_token = user.get_attribute('github_token')
                 if github_token is None or github_token == '':
                     logger.info("github token error")
@@ -52,10 +65,12 @@ class Nda(object):
                     logger.info("error getting correct url on git")
                     return False
 
-            if self.id is None:
-                self.id = '{}_nda_{}'.format(org_name.strip(), str(int(time.time() * 1000)))
+                self.nda_id = '{}_nda_{}'.format(user.get_attribute("org_name").strip().strip("."), str(int(time.time() * 1000)))
+                print(self.nda_id)
 
-            return True
+                return True
+            else:
+                return False
         except Exception as e:
             logger.info(e)
             return False

@@ -11,6 +11,7 @@ from handlers.emailHandler import Mailer
 from models import User, Nda
 from handlers.WSHandler import *
 from utils import *
+from utils import is_valid_email
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -97,6 +98,51 @@ def register():
             else:
                 error = "User already Exists"
     return render_template('register.html', error=error)
+
+
+@app.route('/api/v1/admin/register_org', methods=['GET', 'POST'])
+def register_org():
+    error=''
+    if request.method == 'POST':
+
+        if request.form['org_name'] and request.form['org_type']:
+
+            print("has fields")
+        else:
+            error = 'Invalid Values. Please try again.'
+
+    return render_template('register_org.html', error=error)
+
+
+@app.route('/api/v1/admin/validate_email', methods=['GET', 'POST'])
+def validate_email():
+    error=''
+    username = None
+    if request.method == 'GET':
+        code = request.args.get('code', None)
+        if code:
+            user = User.User()
+            user = user.find_by_attr("code", code)
+
+            if user is False:
+                error = "This user is already authenticated or doesnt exists"
+                return render_template('validate_email.html', error=error)
+            else:
+                username = user.get_attribute("username")
+
+        else:
+            error = 'Invalid code.'
+
+    if request.method == 'POST':
+        password = request.form['pass']
+        username = request.form['username']
+        if password and request.form['password']:
+            user = User.User(username)
+            user.validate_email(password)
+            user = user.find_by_attr("username", username)
+            return redirect(url_for('index'))
+
+    return render_template('validate_email.html', error=error, username=username)
 
 
 @app.route('/api/v1/git/gitlogin')

@@ -22,6 +22,7 @@ import config as conf
 import base64
 from utils import *
 import jinja2
+from utils import is_valid_email
 
 latex_jinja_env = jinja2.Environment(
 	block_start_string = '\BLOCK{',
@@ -595,6 +596,26 @@ class AuthLoginHandler(BaseHandler):
             self.set_secure_cookie("user", tornado.escape.json_encode(user))
         else:
             self.clear_cookie("user")
+
+class RegisterUserByEmail(BaseHandler):
+    '''receives a payload with the user data and stores it on the bd'''
+    def post(self):
+        try:
+            ADMIN_URL = conf.BASE_URL +"admin/validate_email?code="
+            email = self.get_argument('email', "")
+
+            if is_valid_email(email):
+                user = User.User(email)
+                code = user.get_validation_code()
+                if code is False:
+                    self.write(json.dumps({"error": "user"}))
+
+                self.write(json.dumps({"code": ADMIN_URL + code}))
+            else:
+                self.write(json.dumps({"error": "email"}))
+
+        except:
+            self.write(json.dumps({"error": "email"}))
 
 class RegisterUser(BaseHandler):
     '''receives a payload with the user data and stores it on the bd'''

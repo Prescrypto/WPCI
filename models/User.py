@@ -4,6 +4,8 @@ from pymongo import MongoClient
 import config as conf
 from passlib.context import CryptContext
 import logging
+import time
+from utils import get_hash
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -16,22 +18,38 @@ pwd_context = CryptContext(
         pbkdf2_sha256__default_rounds=300
 )
 
-
 class User(object):
 
-    def __init__(self, username, password):
+    def __init__(self, username=None, password=None):
         self.username = username
         self.password = password
         self.github_token = None
 
+
     def __str__(self):
         return "User(id='%s')" % self.username
 
-    def encrypt_password(self):
-        return pwd_context.encrypt(self.password)
+    def encrypt_password(self, password):
+        return pwd_context.encrypt(password)
 
     def check_encrypted_password(self, hashed):
         return pwd_context.verify(self.password, hashed)
+
+    def get_validation_code(self):
+        self.code = get_hash([self.username])
+        if self.find():
+            print("user already exists")
+            return False
+        self.create()
+        return self.code
+
+    def validate_email(self, password):
+        self.password = self.encrypt_password(password)
+        self.update(update_password=True)
+
+    def set_attr(self, **kwargs ):
+        self.__dict__ = kwargs
+
 
     def find(self):
         '''finds a user'''
@@ -46,6 +64,29 @@ class User(object):
 
         except Exception as e:
             logger.info("finding user"+ str(e))
+
+        finally:
+            if mydb is not None:
+                mydb.close()
+
+        return result
+
+    def find_by_attr(self, key, value):
+        '''finds a user object by the attribute id'''
+        result = False
+        mydb = None
+        try:
+            collection = "User"
+            mydb = ManageDB(collection)
+            docs = mydb.select(key, value)
+            if len(docs) > 0:
+                result = User(docs[0].get("username"), docs[0].get("password"))
+                result.__dict__ = docs[0]
+            else:
+                print("no docs")
+
+        except Exception as e:
+            logger.info("finding user" + str(e))
 
         finally:
             if mydb is not None:
@@ -81,8 +122,16 @@ class User(object):
         try:
             collection = "User"
             mydb = ManageDB(collection)
-            password = self.encrypt_password()
-            result = mydb.insert_json({"username": self.username, "password": password})
+            if self.password is not None:
+                password = self.encrypt_password(self.password)
+            else:
+                password = ""
+            if self.code is not None:
+                code = self.code
+            else:
+                code = ""
+            org_id = self.username + str(int(time.time()))
+            result = mydb.insert_json({"username": self.username, "password": password, "org_id": org_id, "code": code})
 
         except Exception as error:
             logger.info("creating user", error)
@@ -93,7 +142,7 @@ class User(object):
 
         return result
 
-    def update(self):
+    def update(self, update_password = False):
         '''updates a user on the bd'''
         result = None
         mydb = None
@@ -101,7 +150,8 @@ class User(object):
             collection = "User"
             mydb = ManageDB(collection)
             temp_user= self.__dict__
-            temp_user.pop("password")
+            if not update_password:
+                temp_user.pop("password")
             result = mydb.update({"username": self.username}, temp_user)
 
         except Exception as error:
