@@ -1,8 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
     <div class="jumbo">
-    {%  if session.user %}
-        <h2>Welcome to your WPCI admin panel</h2>
+    {%  if session.github_token %}
+        <h2>Github Permission Already Added</h2>
+    {% else %}
+        <a href="{{ url_for('gitlogin') }}">Add permission to Github</a>
 
     {% endif %}
     {% if error %}

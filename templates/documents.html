@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% block content %}
+<section class="login-section">
+  <div>
+    <div id="general-form" class="row" >
+      <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" style="float:none;">
+        <div class="login-form">
+          <form action="{{ url_for('documents') }}" method="post">
+            <h1 style="font-weight:900;" class="login-h1">Please Enter all the Document information</h1>
+              {% if success %}
+              <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+              {% endif %}
+             <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Document Name</span>
+              </div>
+              <input type="text" class="form-control" name="wp_name" value="" placeholder="Enter the Document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >White Paper url</span>
+              </div>
+              <input type="text" class="form-control" name="wp_url" value="" placeholder="Enter the white paper url" aria-label="WP url" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Nda Url</span>
+              </div>
+              <input type="text" class="form-control" name="nda_url" value="" placeholder="Enter the Nda url" aria-label="Nda url" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >White paper main tex name (must be on the root)</span>
+              </div>
+              <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon2">Nda Logo</span>
+              </div>
+              <input type="text" class="form-control" name="nda_logo" value="" placeholder="Enter Nda Logo" aria-label="nada logo" aria-describedby="basic-addon1">
+            </div>
+            <button type="submit" class="btn btn-info" value="create">Save!</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+      {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}</p>
+      {% endif %}
+
+{% endblock %}

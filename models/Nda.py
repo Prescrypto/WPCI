@@ -37,7 +37,6 @@ class Nda(object):
             self.org_type = org_type
             self.org_email = email
 
-
             if userjson is not None and userjson != {}:
                 #if the user is authenticated then use a different url with github authentication
                 user = User.User(userjson.get("username"), userjson.get("password"))

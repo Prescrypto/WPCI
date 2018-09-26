@@ -599,7 +599,12 @@ class AuthLoginHandler(BaseHandler):
 
 class RegisterUserByEmail(BaseHandler):
     '''receives a payload with the user data and stores it on the bd'''
+
+
     def post(self):
+        VERIFICATION_HTML = "<h3>Hello,</h3>\
+                <p>Click <a href='{}'>HERE</a> to verify your email.</p>\
+                <p>Best regards,</p>"
         try:
             ADMIN_URL = conf.BASE_URL +"admin/validate_email?code="
             email = self.get_argument('email', "")
@@ -609,12 +614,22 @@ class RegisterUserByEmail(BaseHandler):
                 code = user.get_validation_code()
                 if code is False:
                     self.write(json.dumps({"error": "user"}))
+                try:
 
-                self.write(json.dumps({"code": ADMIN_URL + code}))
+                    html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
+                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+                    mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[email],
+                                emails_bcc=[conf.ADMIN_EMAIL], html_message=html_text)
+                    self.write(json.dumps({"response": "email sent"}))
+                except Exception as e:
+                    logger.info("sending email: "+str(e))
+                    self.write(json.dumps({"error": "email"}))
+
             else:
                 self.write(json.dumps({"error": "email"}))
 
         except:
+            logger.info("registering user: " + str(e))
             self.write(json.dumps({"error": "email"}))
 
 class RegisterUser(BaseHandler):

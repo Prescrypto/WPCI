@@ -19,29 +19,19 @@ pwd_context = CryptContext(
 )
 
 
-class Organization(object):
+class Document(object):
 
     def __init__(self, org_id):
         self.org_id = org_id
 
     def __str__(self):
-        return "Nda(id='%s')" % self.id
+        return "Nda(org_id='%s')" % self.org_id
 
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-    def set_attr(self, pdf, pdf_url, wp_url, wp_main_tex, nda_logo):
-        try:
-            self.pdf = pdf
-            self.pdf_url = pdf_url
-            self.wp_url = wp_url
-            self.wp_main_tex = wp_main_tex
-            self.nda_logo = nda_logo
-
-            return True
-        except Exception as e:
-            logger.info(e)
-            return False
+    def set_attributes(self, dictattr ):
+        self.__dict__.update(dictattr)
 
     def create_nda(self, pdf, pdf_url, wp_url, wp_main_tex, nda_logo):
         try:

@@ -8,7 +8,7 @@ import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import jwtauth, validate_token, render_pdf_base64, create_download_pdf
 from handlers.emailHandler import Mailer
-from models import User, Nda
+from models import User, Nda, Document
 from handlers.WSHandler import *
 from utils import *
 from utils import is_valid_email
@@ -29,7 +29,7 @@ app.secret_key = conf.SECRET
 oauth = OAuth(app)
 
 DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
-TIMEZONE = "America/Mexico_City"
+TIMEZONE = conf.TIMEZONE
 
 oauth_app = WSGIContainer(app)
 
@@ -45,21 +45,29 @@ github = oauth.remote_app(
     authorize_url= conf.GITHUB_OAUTH_URI +'authorize'
 )
 
-
-@app.route('/api/v1/git/index')
+@app.route('/api/v1/admin/index')
 def index():
+    error =request.args.get('error')
+    if 'user' in session:
+        print("user logued already")
+        return render_template('index.html', error=error)
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/api/v1/admin/github_reg')
+def github_reg():
     error =request.args.get('error')
     if 'user' in session:
         if 'github_token' in session:
             #me = github.get('user') #return jsonify(me.data) # we can get this information if there is a github_token at the session
-            return render_template('index.html', error=error)
+            return render_template('github_reg.html', error=error)
         else:
-            return render_template('index.html', error= error)
+            return render_template('github_reg.html', error= error)
     else:
         return redirect(url_for('login'))
 
 
-@app.route('/api/v1/git/login', methods=['GET', 'POST'])
+@app.route('/api/v1/admin/login', methods=['GET', 'POST'])
 def login():
     error=''
     if 'user' in session:
@@ -85,7 +93,7 @@ def login():
     return render_template('login.html', error=error)
 
 
-@app.route('/api/v1/git/register', methods=['GET', 'POST'])
+@app.route('/api/v1/admin/register', methods=['GET', 'POST'])
 def register():
     error = None
     if request.method == 'POST':
@@ -104,18 +112,83 @@ def register():
 def register_org():
     error=''
     username=''
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        #we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
 
         if request.form['org_name'] and request.form['org_type'] and \
                 request.form['org_email'] and request.form['org_address']:
-            user = User.User()
-            user = user.find_by_attr("username", username)
-            user.set_attr(request.form['org_name'], request.form['org_type'],request.form['org_email'],request.form['org_address'])
+            try:
+                data= request.form.to_dict()
+                user.set_attributes(data)
+                user.update()
+                success= "Succesfully updated the information!"
+                return render_template('register_org.html', error=error, success=success,  myuser=user)
+
+            except Exception as e:
+                logger.info("registering org " + str(e))
+                error = 'Error updating the information'
 
         else:
             error = 'Invalid Values. Please try again.'
+            logger.info(error)
 
-    return render_template('register_org.html', error=error)
+        return render_template('register_org.html', error=error)
+
+    if request.method == 'GET':
+
+        return render_template('register_org.html', error=error, myuser=user)
+
+@app.route('/api/v1/admin/documents', methods=['GET', 'POST'])
+def documents():
+    error=''
+    username=''
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        #we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        print("post documents")
+
+        if request.form['wp_name']:
+            try:
+                property = getattr(user, "org_id", None)
+                if not property:
+                    error= "You need to create first the organization profile"
+                    return render_template('documents.html', error=error)
+
+                doc = Document.Document(user.org_id)
+                data= request.form.to_dict()
+                if data.get("nda_logo") == "":
+                    data["nda_logo"] = open(DEFAULT_LOGO_PATH, 'r').read()
+                if data.get("main_tex") == "":
+                    data["main_tex"] = "main.tex"
+                doc.set_attributes(data)
+                success= "Succesfully updated the information!"
+                return render_template('documents.html', error=error, success=success,  myuser=user)
+
+            except Exception as e:
+                logger.info("documents post " + str(e))
+                error = 'Error updating the information'
+
+        else:
+            error = 'Invalid Values. Please try again.'
+            logger.info(error)
+
+    return render_template('documents.html', error=error)
+
 
 
 @app.route('/api/v1/admin/validate_email', methods=['GET', 'POST'])
@@ -158,7 +231,7 @@ def gitlogin():
 def logout():
     session.pop('user', None)
     session.pop('github_token', None)
-    return redirect(url_for('index'))
+    return redirect(url_for('github_reg'))
 
 
 @app.route('/api/v1/git/login/authorized')
@@ -181,7 +254,7 @@ def authorized():
     except:
         logger.info("error getting Token")
         error= "error getting Token"
-    return redirect(url_for('index', error=error))
+    return redirect(url_for('github_reg', error=error))
 
 @github.tokengetter
 def get_github_oauth_token():
@@ -212,7 +285,7 @@ def show_pdf(id):
                 error = 'ID not found'
 
         except Exception as e:
-            logger.info(e)
+            logger.info(str(e))
             error= "Couldn't render the PDF on the page"
 
     if request.method == 'POST':
@@ -305,7 +378,7 @@ def show_pdf(id):
                             message = "successfully sent your files "
 
                         except Exception as e: #except from temp directory
-                            logger.info(e)
+                            logger.info(str(e))
                             error = "Error sending the email"
                             return render_template('pdf_form.html', id=id, error=error)
 
@@ -320,7 +393,7 @@ def show_pdf(id):
                 return render_template('pdf_form.html', id=id, error=error)
 
         except Exception as e: #function except
-            logger.info(e)
+            logger.info(str(e))
             error = "there was an error on your files"
             return render_template('pdf_form.html', id=id, error=error)
 

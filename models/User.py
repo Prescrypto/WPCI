@@ -27,7 +27,7 @@ class User(object):
 
 
     def __str__(self):
-        return "User(id='%s')" % self.username
+        return "User(username='%s')" % self.username
 
     def encrypt_password(self, password):
         return pwd_context.encrypt(password)
@@ -47,8 +47,11 @@ class User(object):
         self.password = self.encrypt_password(password)
         self.update(update_password=True)
 
-    def set_attr(self, **kwargs ):
-        self.__dict__ = kwargs
+    def set_attributes(self, dictattr ):
+        self.__dict__.update(dictattr)
+
+    def __setitem__(self, name, value):
+        self.__dict__[name] = value
 
 
     def find(self):
@@ -83,7 +86,7 @@ class User(object):
                 result = User(docs[0].get("username"), docs[0].get("password"))
                 result.__dict__ = docs[0]
             else:
-                print("no docs")
+                logger.info("user not found")
 
         except Exception as e:
             logger.info("finding user" + str(e))
@@ -151,11 +154,12 @@ class User(object):
             mydb = ManageDB(collection)
             temp_user= self.__dict__
             if not update_password:
+                print("no password update")
                 temp_user.pop("password")
             result = mydb.update({"username": self.username}, temp_user)
 
         except Exception as error:
-            logger.info("updating user"+ str(error))
+            logger.info("updating user "+ str(error))
             result = None
 
         finally:
