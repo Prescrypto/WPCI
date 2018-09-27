@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
+from werkzeug.utils import secure_filename
 from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
 import logging
@@ -11,13 +12,13 @@ from handlers.emailHandler import Mailer
 from models import User, Nda, Document
 from handlers.WSHandler import *
 from utils import *
-from utils import is_valid_email
+from utils import is_valid_email, allowed_file
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tornado-info')
 
-
+UPLOAD_FOLDER = os.path.join("/static/images")
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
         <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
         <p>Best regards,</p>"
@@ -26,6 +27,7 @@ DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
 app = Flask(__name__)
 app.debug = True
 app.secret_key = conf.SECRET
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 oauth = OAuth(app)
 
 DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
@@ -112,6 +114,7 @@ def register():
 def register_org():
     error=''
     username=''
+
     user = User.User()
     if 'user' in session:
         username = session['user']['username']
@@ -126,7 +129,31 @@ def register_org():
         if request.form['org_name'] and request.form['org_type'] and \
                 request.form['org_email'] and request.form['org_address']:
             try:
-                data= request.form.to_dict()
+                data = request.form.to_dict()
+                try:
+                    # check if the post request has the file part
+                    if 'org_logo' not in request.files or request.files['org_logo'].filename == '':
+
+                        if data["prev_logo"] is not None and data["prev_logo"] != "":
+                            data["org_logo"] = data["prev_logo"]
+                        else:
+                            data["org_logo"] = open(DEFAULT_LOGO_PATH, 'r').read()
+                    else:
+                        file = request.files['org_logo']
+                        if file and allowed_file(file.filename):
+                            try:
+                                data["org_logo"] = base64.b64encode(file.read()).decode('utf-8')
+                            except Exception as e:
+                                logger.info("loading b64 file "+str(e))
+                                data["org_logo"] = open(DEFAULT_LOGO_PATH, 'r').read()
+
+
+                except Exception as e:
+                    logger.info("loading logo "+str(e))
+                    error = "error loading the file"
+                    return render_template('register_org.html', error=error)
+
+                data.pop("prev_logo")
                 user.set_attributes(data)
                 user.update()
                 success= "Succesfully updated the information!"
@@ -175,8 +202,7 @@ def documents():
 
                 doc = Document.Document(user.org_id)
                 data= request.form.to_dict()
-                if data.get("nda_logo") == "":
-                    data["nda_logo"] = open(DEFAULT_LOGO_PATH, 'r').read()
+
                 if data.get("main_tex") == "":
                     data["main_tex"] = "main.tex"
                 doc.set_attributes(data)
@@ -276,7 +302,7 @@ def show_pdf(id):
     error = None
     message = None
     pdffile = ""
-    nda_logo = ""
+    org_logo = ""
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, server=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
@@ -352,10 +378,10 @@ def show_pdf(id):
                                 ftemp.write(wpci_result)
 
                             client_hash = get_hash([signer_email])
-                            if thisnda.nda_logo is None:
-                                nda_logo = open(DEFAULT_LOGO_PATH, 'r').read()
+                            if user.org_logo is None:
+                                org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
                             else:
-                                nda_logo = thisnda.nda_logo
+                                org_logo = user.org_logo
 
                             crypto_sign_payload = {
                                 "timezone": TIMEZONE,
@@ -369,7 +395,7 @@ def show_pdf(id):
                                 "params": {
                                     "title": user.org_name + " contract",
                                     "file_name": NDA_FILE_NAME,
-                                    "logo": nda_logo
+                                    "logo": org_logo
                                 }
                             }
 

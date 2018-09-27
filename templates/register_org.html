@@ -6,7 +6,7 @@
     <div id="general-form" class="row" >
       <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" style="float:none;">
         <div class="login-form">
-          <form action="{{ url_for('register_org') }}" method="post">
+          <form action="{{ url_for('register_org') }}" method="post" enctype="multipart/form-data">
             <h1 style="font-weight:900;" class="login-h1">Please Enter all the Organization information</h1>
               {% if success %}
               <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
@@ -36,10 +36,20 @@
 
             <div class="input-group mb-3">
               <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon2">Organization Type</span>
+                <span class="input-group-text">Organization Type</span>
               </div>
               <input type="text" class="form-control" name="org_type" value="{{ myuser.org_type }}" placeholder="Enter the organization Type" aria-label="Username" aria-describedby="basic-addon1">
             </div>
+              <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Organization Logo</span>
+              </div>
+                  <input type="hidden" name="prev_logo" value="{{ myuser.org_logo }}">
+              <input type="file" class="form-control" name="org_logo" value="" placeholder="Enter the organization Logo" aria-label="org logo" aria-describedby="basic-addon1">
+                 {% if myuser.org_logo %}
+                    <img style="padding-left:10px" width="96" height="48" src="data:image/jpeg;base64,{{ myuser.org_logo }}" alt="org_logo" />
+                  {% endif %}
+              </div>
             <button type="submit" class="btn btn-info" value="create">Save!</button>
           </form>
         </div>
