@@ -39,19 +39,6 @@ class Document(object):
             if self.nda_url is not None and self.wp_url is not None and self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
 
-                # if the user is authenticated then use a different url with github authentication
-                github_token = user.github_token
-                if github_token is None or github_token == '':
-                    logger.info("github token is not set")
-
-                else:
-                    try:
-                        self.nda_url = "https://{}:x-oauth-basic@{}".format(github_token, self.nda_url.split("://")[1])
-                        self.wp_url = "https://{}:x-oauth-basic@{}".format(github_token, self.wp_url.split("://")[1])
-                    except:
-                        logger.info("error getting correct url on git")
-                        return False
-
                 self.nda_id = '{}_nda_{}'.format(user.org_name.strip().strip("."), str(int(time.time() * 1000)))
                 result = self.create()
                 if not result:

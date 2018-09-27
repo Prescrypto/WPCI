@@ -5,6 +5,7 @@ from tornado.wsgi import WSGIContainer, WSGIAdapter
 import logging
 import base64
 import tempfile
+import subprocess
 import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import jwtauth, validate_token, render_pdf_base64, create_download_pdf
@@ -173,6 +174,11 @@ def register_org():
 
         return render_template('register_org.html', error=error, myuser=user)
 
+@app.route('/api/v1/admin/view_docs', methods=['GET', 'POST'])
+def view_docs():
+    error=""
+    return render_template('view_docs.html', error=error)
+
 @app.route('/api/v1/admin/documents', methods=['GET', 'POST'])
 def documents():
     error=''
@@ -205,6 +211,45 @@ def documents():
 
                 if data.get("main_tex") == "":
                     data["main_tex"] = "main.tex"
+
+                '''Check if the permissions are enough for the repositories if the 
+                user is authenticated then use a different url with github authentication'''
+                github_token = user.github_token
+                if github_token is None or github_token == '':
+                    logger.info("github token is not set")
+                    try:
+                        GITHUB_URL = "github.com"
+                        print("dataaaa", data.get("wp_url").split("/"))
+                        if GITHUB_URL in data.get("nda_url").split("/"):
+                            data["nda_url"] = "git://{}".format(data.get("nda_url").split("://")[1])
+                        if GITHUB_URL in data.get("wp_url").split("/"):
+                            data["wp_url"] = "git://{}".format(data.get("wp_url").split("://")[1])
+                    except:
+                        error ="error getting correct url on git for public access"
+                        logger.info(error)
+                        return render_template('documents.html', error=error)
+
+                else:
+                    try:
+                        data["nda_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("nda_url").split("://")[1])
+                        data["wp_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("wp_url").split("://")[1])
+                    except:
+                        error = "error getting correct url on git for private access"
+                        logger.info(error)
+                        return render_template('documents.html', error=error)
+
+                try:
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        clone = 'git clone ' + data["nda_url"]
+                        subprocess.check_output(clone, shell=True, cwd=tmpdir)
+                        clone = 'git clone ' + data["wp_url"]
+                        subprocess.check_output(clone, shell=True, cwd=tmpdir)
+                except:
+                    error= "You don't have permissions to clone the repository provided"
+                    logger.info(error)
+                    return render_template('documents.html', error=error, git_error = "error")
+
+
                 doc.set_attributes(data)
                 nda_url = doc.create_nda()
                 if not nda_url:
@@ -213,7 +258,7 @@ def documents():
                     return render_template('documents.html', error=error)
 
                 print("this is nda", nda_url)
-                success= "Succesfully updated the information!: "+ PDF_URL +nda_url
+                success= "Succesfully updated the information! Your Document link is: "+ PDF_URL +nda_url
                 return render_template('documents.html', error=error, success=success)
 
             except Exception as e:
