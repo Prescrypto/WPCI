@@ -150,6 +150,8 @@ def register_org():
 def documents():
     error=''
     username=''
+    success = ''
+    PDF_URL = conf.BASE_URL + "pdf/"
     user = User.User()
     if 'user' in session:
         username = session['user']['username']
@@ -164,10 +166,12 @@ def documents():
 
         if request.form['wp_name']:
             try:
-                property = getattr(user, "org_id", None)
-                if not property:
-                    error= "You need to create first the organization profile"
-                    return render_template('documents.html', error=error)
+                id_property = getattr(user, "org_id", False)
+                name_property = getattr(user, "org_name", False)
+                if id_property is False or name_property is False:
+                    error= "There is no organization information"
+                    logger.info(error)
+                    return render_template('documents.html', error=error, org_name=error)
 
                 doc = Document.Document(user.org_id)
                 data= request.form.to_dict()
@@ -176,8 +180,15 @@ def documents():
                 if data.get("main_tex") == "":
                     data["main_tex"] = "main.tex"
                 doc.set_attributes(data)
-                success= "Succesfully updated the information!"
-                return render_template('documents.html', error=error, success=success,  myuser=user)
+                nda_url = doc.create_nda()
+                if not nda_url:
+                    error= "couldn't create the nda"
+                    logger.info(error)
+                    return render_template('documents.html', error=error)
+
+                print("this is nda", nda_url)
+                success= "Succesfully updated the information!: "+ PDF_URL +nda_url
+                return render_template('documents.html', error=error, success=success)
 
             except Exception as e:
                 logger.info("documents post " + str(e))
@@ -271,22 +282,34 @@ def show_pdf(id):
 
     if request.method == 'GET':
         try:
-            nda = Nda.Nda()
-            thisnda = nda.find_by_id(id)
+            nda = Document.Document()
+            thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
-                if thisnda.pdf_url is not None and thisnda.pdf_url != "":
-                    render_options = {"companyname": thisnda.org_name, "companytype": thisnda.org_type,
-                                      "companyaddress": thisnda.org_address}
-                    pdffile = render_pdf_base64(thisnda.pdf_url, "main.tex", render_options)
-                    return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=thisnda.org_name)
+                if thisnda.nda_url is not None and thisnda.nda_url != "":
+                    user = User.User()
+                    user = user.find_by_attr("org_id", thisnda.org_id)
+                    render_options = {"companyname": user.org_name, "companytype": user.org_type,
+                                      "companyaddress": user.org_address}
+                    pdffile = render_pdf_base64(thisnda.nda_url, "main.tex", render_options)
+                    if not pdffile:
+                        error = "Error rendering the pdf with the nda url"
+                        logger.info(error)
+                        return render_template('pdf_form.html', id=id, error=error)
+
+                    return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name)
                 else:
                     error="No valid Pdf url found"
+                    logger.info(error)
+                    return render_template('pdf_form.html', id=id, error=error)
             else:
                 error = 'ID not found'
+                logger.info(error)
+                return render_template('pdf_form.html', id=id, error=error)
 
         except Exception as e:
-            logger.info(str(e))
+            logger.info("rendering pdf nda "+str(e))
             error= "Couldn't render the PDF on the page"
+            return render_template('pdf_form.html', id=id, error=error)
 
     if request.method == 'POST':
         attachments_list = []
@@ -298,35 +321,36 @@ def show_pdf(id):
             signer_name = request.form.get("signer_name")
             if signer_email is None or signer_email == "":
                 error = "Error, you must enter a valid email"
+                logger.info(error)
                 return render_template('pdf_form.html', id=id, error=error)
             if signer_name is None or signer_name == "":
                 error = "Error, you must enter a valid Name"
+                logger.info(error)
                 return render_template('pdf_form.html', id=id, error=error)
 
             nda_file_base64 = str(request.form.get("nda_file"))
-            nda = Nda.Nda()
-            thisnda = nda.find_by_id(id)
-            wp_main_tex = "main.tex"
+            nda = Document.Document()
+            thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
-                if thisnda.wp_main_tex is not None and thisnda.wp_main_tex != "":
-                    wp_main_tex = thisnda.wp_main_tex
-                if thisnda.wp_url is not None and thisnda.wp_url != "":
+                if thisnda.wp_url is not None and thisnda.wp_url != "" and thisnda.org_id is not None:
+                    user = User.User()
+                    user = user.find_by_attr("org_id", thisnda.org_id)
+
                     '''here we create a temporary directory to store the files while the function sends it by email'''
                     with tempfile.TemporaryDirectory() as tmpdir:
                         wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
                         nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
                         try:
-                            wpci_result = create_download_pdf(thisnda.wp_url, signer_email, wp_main_tex)
+                            wpci_result = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
-                                logger.info("Error rendering the white paper")
                                 error = "Error rendering the white paper"
+                                logger.info(error)
                                 return render_template('pdf_form.html', id=id, error=error)
 
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
 
-                            owner_hash = get_hash([thisnda.org_name])
                             client_hash = get_hash([signer_email])
                             if thisnda.nda_logo is None:
                                 nda_logo = open(DEFAULT_LOGO_PATH, 'r').read()
@@ -343,7 +367,7 @@ def show_pdf(id):
                                         "name": signer_name
                                     }],
                                 "params": {
-                                    "title": thisnda.org_name + " contract",
+                                    "title": user.org_name + " contract",
                                     "file_name": NDA_FILE_NAME,
                                     "logo": nda_logo
                                 }
@@ -356,8 +380,9 @@ def show_pdf(id):
                                     ftemp.write(nda_result)
 
                             else:
-                                logger.info("failed loading nda")
                                 error = "failed loading nda"
+                                logger.info(error)
+
                                 return render_template('pdf_form.html', id=id, error=error)
                             #this is the payload for the white paper file
                             wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
@@ -383,13 +408,13 @@ def show_pdf(id):
                             return render_template('pdf_form.html', id=id, error=error)
 
                 else:
-                    logger.info("No valid wp Pdf url found")
                     error = "No valid wp Pdf url found"
+                    logger.info(error)
                     return render_template('pdf_form.html', id=id, error=error)
 
             else:
-                logger.info('ID not found')
                 error = 'ID not found'
+                logger.info(error)
                 return render_template('pdf_form.html', id=id, error=error)
 
         except Exception as e: #function except

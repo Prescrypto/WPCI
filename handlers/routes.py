@@ -619,7 +619,7 @@ class RegisterUserByEmail(BaseHandler):
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
                     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
                     mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[email],
-                                emails_bcc=[conf.ADMIN_EMAIL], html_message=html_text)
+                        html_message=html_text)
                     self.write(json.dumps({"response": "email sent"}))
                 except Exception as e:
                     logger.info("sending email: "+str(e))

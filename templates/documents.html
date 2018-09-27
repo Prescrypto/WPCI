@@ -8,7 +8,14 @@
           <form action="{{ url_for('documents') }}" method="post">
             <h1 style="font-weight:900;" class="login-h1">Please Enter all the Document information</h1>
               {% if success %}
-              <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+                <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+              {% elif error %}
+                <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
+                {{ error }}
+                {% if org_name %}
+                   , Click <a href="{{ url_for('register_org') }}"> HERE to register an organization</a>
+                {% endif %}
+                </h3>
               {% endif %}
              <div class="input-group mb-3">
               <div class="input-group-prepend">
@@ -51,8 +58,5 @@
     </div>
   </div>
 </section>
-      {% if error %}
-        <p class="error"><strong>Error:</strong> {{ error }}</p>
-      {% endif %}
 
 {% endblock %}

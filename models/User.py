@@ -83,8 +83,8 @@ class User(object):
             mydb = ManageDB(collection)
             docs = mydb.select(key, value)
             if len(docs) > 0:
-                result = User(docs[0].get("username"), docs[0].get("password"))
-                result.__dict__ = docs[0]
+                self.__dict__ = docs[0]
+                return self
             else:
                 logger.info("user not found")
 

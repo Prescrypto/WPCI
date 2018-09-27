@@ -10,7 +10,9 @@
             <h1 style="font-weight:900;" class="login-h1">Please Enter all the Organization information</h1>
               {% if success %}
               <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
-              {% endif %}
+              {% elif error %}
+                <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
+                {% endif %}
             <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >Organization Name </span>
@@ -46,8 +48,6 @@
   </div>
 </section>
 {% endif %}
-      {% if error %}
-        <p class="error"><strong>Error:</strong> {{ error }}</p>
-      {% endif %}
+
 
 {% endblock %}

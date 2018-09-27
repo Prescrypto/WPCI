@@ -21,7 +21,7 @@ pwd_context = CryptContext(
 
 class Document(object):
 
-    def __init__(self, org_id):
+    def __init__(self, org_id = None):
         self.org_id = org_id
 
     def __str__(self):
@@ -33,36 +33,37 @@ class Document(object):
     def set_attributes(self, dictattr ):
         self.__dict__.update(dictattr)
 
-    def create_nda(self, pdf, pdf_url, wp_url, wp_main_tex, nda_logo):
+    def create_nda(self):
         try:
-            self.pdf = pdf
-            self.pdf_url = pdf_url
-            self.wp_url = wp_url
-            self.wp_main_tex = wp_main_tex
-            self.nda_logo = nda_logo
-            user = User.User().find_by_org_id(self.org_id)
 
-            if user is not None:
+            if self.nda_url is not None and self.wp_url is not None and self.org_id is not None:
+                user = User.User().find_by_attr("org_id", self.org_id)
+
                 # if the user is authenticated then use a different url with github authentication
-                github_token = user.get_attribute('github_token')
+                github_token = user.github_token
                 if github_token is None or github_token == '':
-                    logger.info("github token error")
-                    return False
-                try:
-                    self.pdf_url = "https://{}:x-oauth-basic@{}".format(github_token, self.pdf_url.split("://")[1])
-                    self.wp_url = "https://{}:x-oauth-basic@{}".format(github_token, self.wp_url.split("://")[1])
-                except:
-                    logger.info("error getting correct url on git")
+                    logger.info("github token is not set")
+
+                else:
+                    try:
+                        self.nda_url = "https://{}:x-oauth-basic@{}".format(github_token, self.nda_url.split("://")[1])
+                        self.wp_url = "https://{}:x-oauth-basic@{}".format(github_token, self.wp_url.split("://")[1])
+                    except:
+                        logger.info("error getting correct url on git")
+                        return False
+
+                self.nda_id = '{}_nda_{}'.format(user.org_name.strip().strip("."), str(int(time.time() * 1000)))
+                result = self.create()
+                if not result:
+                    logger.info("couldn't save the nda to the db")
                     return False
 
-                self.nda_id = '{}_nda_{}'.format(user.get_attribute("org_name").strip().strip("."), str(int(time.time() * 1000)))
-                print(self.nda_id)
-
-                return True
+                return self.nda_id
             else:
+                logger.info("theres a missing argument")
                 return False
         except Exception as e:
-            logger.info(e)
+            logger.info("error creating nda "+ str(e))
             return False
 
     def check(self):
@@ -85,7 +86,7 @@ class Document(object):
 
         return result
 
-    def find_by_id(self, id):
+    def find_by_nda_id(self, nda_id):
         '''finds a user'''
         result = None
         mydb = None
@@ -94,10 +95,9 @@ class Document(object):
         try:
             collection = NDA
             mydb = ManageDB(collection)
-            docs = mydb.select("id", id)
+            docs = mydb.select("nda_id", nda_id)
             if len(docs) > 0:
-                for key, value in docs[0].items():
-                    self[key] = value
+                self.__dict__ = docs[0]
                 return self
 
         except Exception as e:
@@ -113,8 +113,7 @@ class Document(object):
         '''creates a new user on the bd'''
         result = False
         mydb = None
-
-        if self.id is None:
+        if self.org_id is None or self.nda_id is None:
             return result
 
         try:
@@ -136,14 +135,14 @@ class Document(object):
         '''updates a user on the bd'''
         result = None
         mydb = None
-        if self.id is None:
+        if self.nda_id is None:
             return None
         try:
             collection = NDA
             mydb = ManageDB(collection)
             temp_nda= self.__dict__
-            temp_nda.pop("id")
-            result = mydb.update({"id": self.id}, temp_nda)
+            temp_nda.pop("nda_id")
+            result = mydb.update({"nda_id": self.nda_id}, temp_nda)
 
         except Exception as error:
             logger.info("updating user"+ str(error))
