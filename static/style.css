@@ -315,3 +315,12 @@ margin-bottom: 10px;
   margin: 150px auto;
   padding: 50px;
 }
+#titlebig {
+  padding: 20px;
+  margin:40px;
+  margin-top:60px;
+  color:#071323;
+  text-align:center;
+  -webkit-border-radius: 6px;
+     -moz-border-radius: 6px;
+          border-radius: 10px;

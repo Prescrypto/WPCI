@@ -35,13 +35,16 @@ class Document(object):
 
     def create_nda(self):
         try:
+            if self.nda_url is None:
+                self.nda_url = ""
+            if self.wp_url is None:
+                self.wp_url = ""
 
-            if self.nda_url is not None and self.wp_url is not None and self.org_id is not None:
+            if self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
 
                 self.nda_id = '{}_nda_{}'.format(user.org_name.strip().strip("."), str(int(time.time() * 1000)))
                 result = self.create()
-                logger.info("create result", result)
                 if not result:
                     logger.info("couldn't save the nda to the db")
                     return False
@@ -108,7 +111,6 @@ class Document(object):
             collection = NDA
             mydb = ManageDB(collection)
             temp_nda = self.__dict__
-            logger.info("before create ", result)
             result = mydb.insert_json(temp_nda)
 
         except Exception as error:

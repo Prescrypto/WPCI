@@ -52,7 +52,6 @@ github = oauth.remote_app(
 def index():
     error =request.args.get('error')
     if 'user' in session:
-        print("user logued already")
         return render_template('index.html', error=error)
     else:
         return redirect(url_for('login'))
@@ -179,8 +178,13 @@ def view_docs():
     error=""
     return render_template('view_docs.html', error=error)
 
-@app.route('/api/v1/admin/documents', methods=['GET', 'POST'])
-def documents():
+@app.route('/api/v1/admin/edit_docs', methods=['GET', 'POST'])
+def edit_docs():
+    error=""
+    return render_template('edit_docs.html', error=error)
+
+@app.route('/api/v1/admin/documents/<type>', methods=['GET', 'POST'])
+def documents(type):
     error=''
     username=''
     success = ''
@@ -204,12 +208,12 @@ def documents():
                 if id_property is False or name_property is False:
                     error= "There is no organization information"
                     logger.info(error)
-                    return render_template('documents.html', error=error, org_name=error)
+                    return render_template('documents.html', type=type, error=error, org_name=error)
 
                 doc = Document.Document(user.org_id)
                 data= request.form.to_dict()
 
-                if data.get("main_tex") == "":
+                if data.get("main_tex") is None or data.get("main_tex") == "":
                     data["main_tex"] = "main.tex"
 
                 if data.get("nda_url") is not None and data.get("nda_url") != "":
@@ -231,7 +235,7 @@ def documents():
                     except:
                         error ="error getting correct url on git for public access"
                         logger.info(error)
-                        return render_template('documents.html', error=error)
+                        return render_template('documents.html', type=type, error=error)
 
                 else:
                     try:
@@ -242,7 +246,7 @@ def documents():
                     except:
                         error = "error getting correct url on git for private access"
                         logger.info(error)
-                        return render_template('documents.html', error=error)
+                        return render_template('documents.html', type=type, error=error)
 
                 try:
                     with tempfile.TemporaryDirectory() as tmpdir:
@@ -255,7 +259,7 @@ def documents():
                 except:
                     error= "You don't have permissions to clone the repository provided"
                     logger.info(error)
-                    return render_template('documents.html', error=error, git_error = "error")
+                    return render_template('documents.html', type=type, error=error, git_error = "error")
 
 
                 doc.set_attributes(data)
@@ -263,11 +267,10 @@ def documents():
                 if not nda_url:
                     error= "couldn't create the nda"
                     logger.info(error)
-                    return render_template('documents.html', error=error)
+                    return render_template('documents.html', type=type, error=error)
 
-                print("this is nda", nda_url)
                 success= "Succesfully updated the information! Your Document link is: "+ PDF_URL +nda_url
-                return render_template('documents.html', error=error, success=success)
+                return render_template('documents.html', type=type, error=error, success=success)
 
             except Exception as e:
                 logger.info("documents post " + str(e))
@@ -277,7 +280,10 @@ def documents():
             error = 'Invalid Values. Please try again.'
             logger.info(error)
 
-    return render_template('documents.html', error=error)
+        return render_template('documents.html', type=type, error=error)
+
+    if request.method == 'GET':
+        return render_template('documents.html', type=type, error=error)
 
 
 
@@ -450,17 +456,15 @@ def show_pdf(id):
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
 
-                            print("wpci attachment")
                             # this is the payload for the white paper file
                             wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                                                    file_path=wpci_file_path,
                                                    filename=WPCI_FILE_NAME)
                             attachments_list.append(wpci_attachment)
-                            print("wpci attachment added")
 
                         if render_nda_only or render_wp_only is False:
                             nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
-                            print("crypto sign payload")
+
                             crypto_sign_payload = {
                                 "timezone": TIMEZONE,
                                 "pdf": nda_file_base64,
@@ -473,12 +477,12 @@ def show_pdf(id):
                                 "params": {
                                     "title": user.org_name + " contract",
                                     "file_name": NDA_FILE_NAME,
-                                    "logo": str(org_logo)
+                                    "logo": org_logo
                                 }
                             }
-                            print("get nda")
+
                             nda_result = get_nda(crypto_sign_payload)
-                            print("result nda", nda_result)
+
                             if nda_result is not False:
                                 # if the request returned a nda pdf file correctly then store it as pdf
                                 with open(nda_file_path, 'wb') as ftemp:
@@ -489,13 +493,13 @@ def show_pdf(id):
                                 logger.info(error)
                                 return render_template('pdf_form.html', id=id, error=error)
 
-                            print("nda attachment")
+
                             #this is the payload for the nda file
                             nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                                                    file_path=nda_file_path,
                                                    filename=NDA_FILE_NAME)
                             attachments_list.append(nda_attachment)
-                            print("nda added attachment")
+
                         #send the email with the result attachments
 
                         mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
