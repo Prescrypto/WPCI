@@ -5,16 +5,13 @@
     <div id="general-form" class="row" >
       <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" style="float:none;">
         <div class="login-form">
-          <form action="{{ url_for('documents') }}" method="post">
+          <form action="{{ url_for('view_docs') }}" method="post">
             <h1 style="font-weight:900;" class="login-h1">Please Enter all the Document information</h1>
               {% if success %}
                 <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
               {% elif error %}
                 <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
                 {{ error }}
-                {% if org_name %}
-                   , Click <a href="{{ url_for('register_org') }}"> HERE to register an organization</a>
-                {% endif %}
                 {% if git_error %}
                    , please click <a href="{{ url_for('github_reg') }}"> HERE </a>
                     to reload your github token.
@@ -22,7 +19,7 @@
 
                 </h3>
               {% endif %}
-             <table class="uk-table">
+             <table class="uk-table" id="document_table">
                 <caption></caption>
                 <thead>
                     <tr>
