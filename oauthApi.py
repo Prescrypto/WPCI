@@ -450,14 +450,17 @@ def show_pdf(id):
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
 
+                            print("wpci attachment")
                             # this is the payload for the white paper file
                             wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                                                    file_path=wpci_file_path,
                                                    filename=WPCI_FILE_NAME)
                             attachments_list.append(wpci_attachment)
+                            print("wpci attachment added")
 
                         if render_nda_only or render_wp_only is False:
                             nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+                            print("crypto sign payload")
                             crypto_sign_payload = {
                                 "timezone": TIMEZONE,
                                 "pdf": nda_file_base64,
@@ -470,11 +473,12 @@ def show_pdf(id):
                                 "params": {
                                     "title": user.org_name + " contract",
                                     "file_name": NDA_FILE_NAME,
-                                    "logo": org_logo
+                                    "logo": str(org_logo)
                                 }
                             }
-
+                            print("get nda")
                             nda_result = get_nda(crypto_sign_payload)
+                            print("result nda", nda_result)
                             if nda_result is not False:
                                 # if the request returned a nda pdf file correctly then store it as pdf
                                 with open(nda_file_path, 'wb') as ftemp:
@@ -485,12 +489,13 @@ def show_pdf(id):
                                 logger.info(error)
                                 return render_template('pdf_form.html', id=id, error=error)
 
+                            print("nda attachment")
                             #this is the payload for the nda file
                             nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                                                    file_path=nda_file_path,
                                                    filename=NDA_FILE_NAME)
                             attachments_list.append(nda_attachment)
-
+                            print("nda added attachment")
                         #send the email with the result attachments
 
                         mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
