@@ -430,8 +430,7 @@ def show_pdf(id):
                 user = user.find_by_attr("org_id", thisnda.org_id)
                 '''here we create a temporary directory to store the files while the function sends it by email'''
                 with tempfile.TemporaryDirectory() as tmpdir:
-                    wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
-                    nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+
                     client_hash = get_hash([signer_email])
                     if user.org_logo is None:
                         org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
@@ -440,6 +439,7 @@ def show_pdf(id):
 
                     try:
                         if render_wp_only or render_nda_only is False:
+                            wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
                             wpci_result = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
@@ -457,6 +457,7 @@ def show_pdf(id):
                             attachments_list.append(wpci_attachment)
 
                         if render_nda_only or render_wp_only is False:
+                            nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
                             crypto_sign_payload = {
                                 "timezone": TIMEZONE,
                                 "pdf": nda_file_base64,
@@ -493,7 +494,7 @@ def show_pdf(id):
                         #send the email with the result attachments
 
                         mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
-                                    emails_to=[signer_email], emails_bcc=[conf.ADMIN_EMAIL],
+                                    emails_to=[signer_email], emails_bcc=[user.org_email],
                                     attachments_list=attachments_list,
                                     html_message=DEFAULT_HTML_TEXT)
 
