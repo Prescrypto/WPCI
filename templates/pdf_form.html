@@ -170,11 +170,44 @@
 
     {% elif message %}
 
-      <form class="message-form" method="POST">
-        <div><img style="width:100px;margin-bottom:20px;" src="/static/images/send.svg" alt=""></div> 
-        <div class="message"><strong> {{ message }} </strong></div>
-      </form>
+    <!-- Success message-->
+    <section class="container" style="padding-top:4em;">
+      <article class="row justify-content-md-center">
+        <div class="col-sm-12 col-md-8">
+          <div class="card text-center border-0">
+            <div class="card-body">
+              <img style="width:100px;margin-bottom:20px;" src="/static/images/send.svg" alt="">
+              <h2 class="card-title message"><strong>{% if message %}{{message}}{% else %}Succesfully sent files!{% endif %}</strong></h2>
+            </div>
+          </div>
+          <div class="card text-center bg-light border-0">
+            <div class="card-body">
+              <h5>Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</h5>
+              <div class="row justify-content-md-center">
+                <div class="col-sm-12 col-md-10">
+                  <input id="ask_nda_email" type="email" class="form-control" placeholder="your@email.com" style="margin-bottom: 1em;" required>
+                </div>
+              </div>
+              <span style="margin-bottom:.5em;"></span>
+              <a id="button-try-wpci-nda-success" href="#" class="btn btn-warning try-nda" title="GO TO TRY WPCI" style="padding:1em;">TRY WPCI WITH NDA</a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
 
+    <script>
+      // Take user to try wpci-nda
+      $(document).ready(function() {
+        $('#button-try-wpci-nda-success').one('click', function(e) {
+          e.preventDefault();
+          var base_url = "https://www.wpci.io/";
+          var ask_nda_email = $("#ask_nda_email").val();
+          var wpci_url = base_url + "?ask_nda_email=" + encodeURI(ask_nda_email);
+          window.open(wpci_url,"_self");
+        });
+      });
+    </script>
     {% endif %}
     </div>
 

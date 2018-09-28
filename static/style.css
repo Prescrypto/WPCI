@@ -222,7 +222,7 @@ form input[type=submit]:hover{
 /*Tables*/
 
 table {
-    
+
     border-collapse: collapse;
     width: 100%;
 }
@@ -311,16 +311,19 @@ margin-bottom: 10px;
   padding: 50px;
   border-radius: 10px;
 }
-#general-form{
-  margin: 150px auto;
-  padding: 50px;
+
+.btn-green-wpci{
+    background-color: #50A898;
+    border-radius: 40px;
+    font-weight: 900!important;
+    padding-left: 1em;
+    padding-right: 1em;
+    padding-top: .5em;
 }
-#titlebig {
-  padding: 20px;
-  margin:40px;
-  margin-top:60px;
-  color:#071323;
-  text-align:center;
-  -webkit-border-radius: 6px;
-     -moz-border-radius: 6px;
-          border-radius: 10px;
+
+.try-nda{
+  font-weight: 900!important;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: .5em;
+}
