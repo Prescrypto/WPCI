@@ -5,9 +5,13 @@ import config as conf
 from requests.auth import HTTPBasicAuth
 import requests
 import base64
+import logging
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 headers = conf.headers
 GIT_BASE_URI = conf.GITHUB_API_URL
@@ -28,13 +32,16 @@ def get_nda(payload):
 
     auth = HTTPBasicAuth(conf.CRYPTO_ID, conf.CRYPTO_SECRET)
 
-    token_result = requests.post(url= URL+TOKEN_URL,data=jsondata, headers=tokenheaders, auth=auth)
-    token_json_result = json.loads(token_result.content)
-    if token_json_result.get("access_token"):
-        #if there is a token in the payload then request the pdf
-        headers["Authorization"] = "Bearer " + token_json_result.get("access_token")
-        sign_result = requests.post(url=URL + SIGN_URL, json=payload, headers=headers)
-        return sign_result.content
+    try:
+        token_result = requests.post(url= URL+TOKEN_URL,data=jsondata, headers=tokenheaders, auth=auth)
+        token_json_result = json.loads(token_result.content)
+        if token_json_result.get("access_token"):
+            #if there is a token in the payload then request the pdf
+            headers["Authorization"] = "Bearer " + token_json_result.get("access_token")
+            sign_result = requests.post(url=URL + SIGN_URL, json=payload, headers=headers)
+            return sign_result.content
+    except Exception as e:
+        logger.info("requesting cryptosign pdf "+ str(e))
 
     return False
 
