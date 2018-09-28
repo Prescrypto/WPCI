@@ -502,7 +502,7 @@ def show_pdf(id):
                         logger.info("sending email")
                         mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
                                     emails_to=[signer_email], emails_bcc=[conf.ADMIN_EMAIL],
-                                    attachments_list=attachments_list, text_message = "",
+                                    attachments_list=attachments_list,
                                     html_message=DEFAULT_HTML_TEXT)
 
                         message = "successfully sent your files "
