@@ -41,6 +41,7 @@ class Document(object):
 
                 self.nda_id = '{}_nda_{}'.format(user.org_name.strip().strip("."), str(int(time.time() * 1000)))
                 result = self.create()
+                logger.info("create result", result)
                 if not result:
                     logger.info("couldn't save the nda to the db")
                     return False
@@ -107,10 +108,11 @@ class Document(object):
             collection = NDA
             mydb = ManageDB(collection)
             temp_nda = self.__dict__
+            logger.info("before create ", result)
             result = mydb.insert_json(temp_nda)
 
         except Exception as error:
-            logger.info("creating user"+ str(error))
+            logger.info("creating user "+ str(error))
 
         finally:
             if mydb is not None:

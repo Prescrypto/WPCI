@@ -360,10 +360,12 @@ def show_pdf(id):
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, server=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
     if request.method == 'GET':
+        logger.info("get document nda")
         try:
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
+                logger.info("this nda is not none")
                 if thisnda.nda_url is None or thisnda.nda_url == "":
                     if thisnda.wp_url is None or thisnda.wp_url == "":
                         error = "No valid Pdf url found"
@@ -373,13 +375,13 @@ def show_pdf(id):
                         pdf_url = thisnda.wp_url
                 else:
                     pdf_url = thisnda.nda_url
-
+                logger.info("finding user")
                 user = User.User()
                 user = user.find_by_attr("org_id", thisnda.org_id)
                 render_options = {"companyname": user.org_name, "companytype": user.org_type,
                                   "companyaddress": user.org_address}
                 pdffile = render_pdf_base64(pdf_url, "main.tex", render_options)
-
+                logger.info("logued pdf file")
                 if not pdffile:
                     error = "Error rendering the pdf with the nda url"
                     logger.info(error)
