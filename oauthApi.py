@@ -169,6 +169,7 @@ def show_pdf(id):
         attachments_list = []
         NDA_FILE_NAME = "ndacontract.pdf"
         WPCI_FILE_NAME = "whitepaper.pdf"
+
         try:
             signer_email = request.form.get("signer_email")
             signer_name = request.form.get("signer_name")
