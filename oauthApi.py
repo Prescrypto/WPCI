@@ -360,12 +360,10 @@ def show_pdf(id):
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, server=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
     if request.method == 'GET':
-        logger.info("get document nda")
         try:
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
-                logger.info("this nda is not none")
                 if thisnda.nda_url is None or thisnda.nda_url == "":
                     if thisnda.wp_url is None or thisnda.wp_url == "":
                         error = "No valid Pdf url found"
@@ -375,7 +373,6 @@ def show_pdf(id):
                         pdf_url = thisnda.wp_url
                 else:
                     pdf_url = thisnda.nda_url
-                logger.info("finding user")
                 user = User.User()
                 user = user.find_by_attr("org_id", thisnda.org_id)
                 render_options = {"companyname": user.org_name, "companytype": user.org_type,
@@ -423,17 +420,14 @@ def show_pdf(id):
 
             if thisnda is not None and thisnda.org_id is not None:
                 if thisnda.nda_url is None or thisnda.nda_url == "" :
-                    logger.info("wp only")
                     render_wp_only = True
 
                 if thisnda.wp_url is None or thisnda.wp_url == "":
-                    logger.info(" nda only")
                     render_nda_only = True
 
 
                 user = User.User()
                 user = user.find_by_attr("org_id", thisnda.org_id)
-                logger.info("user", user.org_id)
                 '''here we create a temporary directory to store the files while the function sends it by email'''
                 with tempfile.TemporaryDirectory() as tmpdir:
                     wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
@@ -446,7 +440,6 @@ def show_pdf(id):
 
                     try:
                         if render_wp_only or render_nda_only is False:
-                            logger.info("getting white paper")
                             wpci_result = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
@@ -464,7 +457,6 @@ def show_pdf(id):
                             attachments_list.append(wpci_attachment)
 
                         if render_nda_only or render_wp_only is False:
-                            logger.info("getting nda sign")
                             crypto_sign_payload = {
                                 "timezone": TIMEZONE,
                                 "pdf": nda_file_base64,
@@ -499,7 +491,7 @@ def show_pdf(id):
                             attachments_list.append(nda_attachment)
 
                         #send the email with the result attachments
-                        logger.info("sending email")
+
                         mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
                                     emails_to=[signer_email], emails_bcc=[conf.ADMIN_EMAIL],
                                     attachments_list=attachments_list,
