@@ -195,8 +195,8 @@ def documents():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        print("post documents")
-
+        NDA_NOT_EMPTY = False
+        WP_NOT_EMPTY = False
         if request.form['wp_name']:
             try:
                 id_property = getattr(user, "org_id", False)
@@ -212,6 +212,11 @@ def documents():
                 if data.get("main_tex") == "":
                     data["main_tex"] = "main.tex"
 
+                if data.get("nda_url") is not None and data.get("nda_url") != "":
+                    NDA_NOT_EMPTY = True
+                if data.get("wp_url") is not None and data.get("wp_url") != "":
+                    WP_NOT_EMPTY = True
+
                 '''Check if the permissions are enough for the repositories if the 
                 user is authenticated then use a different url with github authentication'''
                 github_token = user.github_token
@@ -219,10 +224,9 @@ def documents():
                     logger.info("github token is not set")
                     try:
                         GITHUB_URL = "github.com"
-                        print("dataaaa", data.get("wp_url").split("/"))
-                        if GITHUB_URL in data.get("nda_url").split("/"):
+                        if NDA_NOT_EMPTY and GITHUB_URL in data.get("nda_url").split("/"):
                             data["nda_url"] = "git://{}".format(data.get("nda_url").split("://")[1])
-                        if GITHUB_URL in data.get("wp_url").split("/"):
+                        if WP_NOT_EMPTY and GITHUB_URL in data.get("wp_url").split("/"):
                             data["wp_url"] = "git://{}".format(data.get("wp_url").split("://")[1])
                     except:
                         error ="error getting correct url on git for public access"
@@ -231,8 +235,10 @@ def documents():
 
                 else:
                     try:
-                        data["nda_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("nda_url").split("://")[1])
-                        data["wp_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("wp_url").split("://")[1])
+                        if NDA_NOT_EMPTY:
+                            data["nda_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("nda_url").split("://")[1])
+                        if WP_NOT_EMPTY:
+                            data["wp_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("wp_url").split("://")[1])
                     except:
                         error = "error getting correct url on git for private access"
                         logger.info(error)
@@ -240,10 +246,12 @@ def documents():
 
                 try:
                     with tempfile.TemporaryDirectory() as tmpdir:
-                        clone = 'git clone ' + data["nda_url"]
-                        subprocess.check_output(clone, shell=True, cwd=tmpdir)
-                        clone = 'git clone ' + data["wp_url"]
-                        subprocess.check_output(clone, shell=True, cwd=tmpdir)
+                        if NDA_NOT_EMPTY:
+                            clone = 'git clone ' + data["nda_url"]
+                            subprocess.check_output(clone, shell=True, cwd=tmpdir)
+                        if WP_NOT_EMPTY:
+                            clone = 'git clone ' + data["wp_url"]
+                            subprocess.check_output(clone, shell=True, cwd=tmpdir)
                 except:
                     error= "You don't have permissions to clone the repository provided"
                     logger.info(error)
@@ -356,22 +364,29 @@ def show_pdf(id):
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
-                if thisnda.nda_url is not None and thisnda.nda_url != "":
-                    user = User.User()
-                    user = user.find_by_attr("org_id", thisnda.org_id)
-                    render_options = {"companyname": user.org_name, "companytype": user.org_type,
-                                      "companyaddress": user.org_address}
-                    pdffile = render_pdf_base64(thisnda.nda_url, "main.tex", render_options)
-                    if not pdffile:
-                        error = "Error rendering the pdf with the nda url"
+                if thisnda.nda_url is None or thisnda.nda_url == "":
+                    if thisnda.wp_url is None or thisnda.wp_url == "":
+                        error = "No valid Pdf url found"
                         logger.info(error)
                         return render_template('pdf_form.html', id=id, error=error)
-
-                    return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name)
+                    else:
+                        pdf_url = thisnda.wp_url
                 else:
-                    error="No valid Pdf url found"
+                    pdf_url = thisnda.nda_url
+
+                user = User.User()
+                user = user.find_by_attr("org_id", thisnda.org_id)
+                render_options = {"companyname": user.org_name, "companytype": user.org_type,
+                                  "companyaddress": user.org_address}
+                pdffile = render_pdf_base64(pdf_url, "main.tex", render_options)
+
+                if not pdffile:
+                    error = "Error rendering the pdf with the nda url"
                     logger.info(error)
                     return render_template('pdf_form.html', id=id, error=error)
+
+                return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name)
+
             else:
                 error = 'ID not found'
                 logger.info(error)
@@ -386,6 +401,7 @@ def show_pdf(id):
         attachments_list = []
         NDA_FILE_NAME = "ndacontract.pdf"
         WPCI_FILE_NAME = "whitepaper.pdf"
+        render_nda_only = render_wp_only = False
 
         try:
             signer_email = request.form.get("signer_email")
@@ -402,16 +418,30 @@ def show_pdf(id):
             nda_file_base64 = str(request.form.get("nda_file"))
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
-            if thisnda is not None:
-                if thisnda.wp_url is not None and thisnda.wp_url != "" and thisnda.org_id is not None:
-                    user = User.User()
-                    user = user.find_by_attr("org_id", thisnda.org_id)
 
-                    '''here we create a temporary directory to store the files while the function sends it by email'''
-                    with tempfile.TemporaryDirectory() as tmpdir:
-                        wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
-                        nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
-                        try:
+            if thisnda is not None and thisnda.org_id is not None:
+                if thisnda.nda_url is None or thisnda.nda_url == "" :
+                    render_wp_only = True
+
+                if thisnda.wp_url is None or thisnda.wp_url == "":
+                    render_nda_only = True
+
+
+                user = User.User()
+                user = user.find_by_attr("org_id", thisnda.org_id)
+
+                '''here we create a temporary directory to store the files while the function sends it by email'''
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
+                    nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+                    client_hash = get_hash([signer_email])
+                    if user.org_logo is None:
+                        org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
+                    else:
+                        org_logo = user.org_logo
+
+                    try:
+                        if render_wp_only or render_nda_only is False:
                             wpci_result = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
@@ -422,12 +452,13 @@ def show_pdf(id):
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
 
-                            client_hash = get_hash([signer_email])
-                            if user.org_logo is None:
-                                org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
-                            else:
-                                org_logo = user.org_logo
+                            # this is the payload for the white paper file
+                            wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                                   file_path=wpci_file_path,
+                                                   filename=WPCI_FILE_NAME)
+                            attachments_list.append(wpci_attachment)
 
+                        if render_nda_only or render_wp_only is False:
                             crypto_sign_payload = {
                                 "timezone": TIMEZONE,
                                 "pdf": nda_file_base64,
@@ -453,35 +484,26 @@ def show_pdf(id):
                             else:
                                 error = "failed loading nda"
                                 logger.info(error)
-
                                 return render_template('pdf_form.html', id=id, error=error)
-                            #this is the payload for the white paper file
-                            wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
-                                                   file_path=wpci_file_path,
-                                                   filename=WPCI_FILE_NAME)
-                            attachments_list.append(wpci_attachment)
+
                             #this is the payload for the nda file
                             nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                                                    file_path=nda_file_path,
                                                    filename=NDA_FILE_NAME)
                             attachments_list.append(nda_attachment)
 
-                            mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
-                                        emails_to=[signer_email], emails_bcc=[conf.ADMIN_EMAIL],
-                                        attachments_list=attachments_list, text_message = "",
-                                        html_message=DEFAULT_HTML_TEXT)
+                        #send the email with the result attachments
+                        mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
+                                    emails_to=[signer_email], emails_bcc=[conf.ADMIN_EMAIL],
+                                    attachments_list=attachments_list, text_message = "",
+                                    html_message=DEFAULT_HTML_TEXT)
 
-                            message = "successfully sent your files "
+                        message = "successfully sent your files "
 
-                        except Exception as e: #except from temp directory
-                            logger.info(str(e))
-                            error = "Error sending the email"
-                            return render_template('pdf_form.html', id=id, error=error)
-
-                else:
-                    error = "No valid wp Pdf url found"
-                    logger.info(error)
-                    return render_template('pdf_form.html', id=id, error=error)
+                    except Exception as e: #except from temp directory
+                        logger.info(str(e))
+                        error = "Error sending the email"
+                        return render_template('pdf_form.html', id=id, error=error)
 
             else:
                 error = 'ID not found'
