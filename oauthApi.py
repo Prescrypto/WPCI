@@ -139,7 +139,6 @@ def register():
             user = User.User(username)
             if user.find() is False:
                 code = user.get_validation_code()
-                print("code", code)
                 if code is False:
                     error = "Couldn't get a verification code, please try again."
                     logger.info(error)
@@ -148,16 +147,40 @@ def register():
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
                     mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
-                    print("username", username)
                     mymail.send(subject="Email Verification", email_from=SMTP_EMAIL, emails_to=[username],
                                 html_message=html_text)
-                    redirect(url_for('success'))
+                    return redirect(url_for('success'))
 
                 except Exception as e:
                     logger.info("sending email: " + str(e))
                     error= "Couldn't send verification code, please try again."
             else:
                 error= "This user already exists, please login."
+                logger.info(error)
+
+    if request.method == 'GET':
+        email = request.args.get('email', False)
+        if email is not False:
+            user = User.User(email)
+            if user.find() is False:
+                code = user.get_validation_code()
+                if code is False:
+                    error = "Couldn't get a verification code, please try again."
+                    logger.info(error)
+                    return render_template('register.html', error=error)
+
+                try:
+                    html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
+                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+                    mymail.send(subject="Email Verification", email_from=SMTP_EMAIL, emails_to=[email],
+                                html_message=html_text)
+                    return redirect(url_for('success'))
+
+                except Exception as e:
+                    logger.info("sending email: " + str(e))
+                    error = "Couldn't send verification code, please try again."
+            else:
+                error = "This user already exists, please login."
                 logger.info(error)
 
     return render_template('register.html', error=error)

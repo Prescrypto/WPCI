@@ -1,11 +1,7 @@
 {% extends "pdflayout.html" %}
 {% block content %}
+ <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/css/uikit.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
     <div class="row">
       {% if error %}
          <form class="message-form" method="GET">
@@ -24,6 +20,8 @@
               <h3><b> {{ org_name }}</b> requires you to sign this before you can continue.</h3>
              <h4>Please read carefully and sign to continue.</h4>
             </div>
+
+
 
                  <!-- This is the modal -->
         <div id="modal-sign" uk-modal>
@@ -182,14 +180,16 @@
           </div>
           <div class="card text-center bg-light border-0">
             <div class="card-body">
+                <form method="POST" action="{{ url_for('register') }}">
               <h5>Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</h5>
               <div class="row justify-content-md-center">
                 <div class="col-sm-12 col-md-10">
-                  <input id="ask_nda_email" type="email" class="form-control" placeholder="your@email.com" style="margin-bottom: 1em;" required>
+                  <input id="username" name="username" type="email" class="form-control" placeholder="your@email.com" style="margin-bottom: 1em;" required>
                 </div>
               </div>
               <span style="margin-bottom:.5em;"></span>
-              <a id="button-try-wpci-nda-success" href="#" class="btn btn-warning try-nda" title="GO TO TRY WPCI" style="padding:1em;">TRY WPCI WITH NDA</a>
+              <button type="submit" id="try-wpci-nda" class="btn btn-warning try-nda" title="TRY WPCI" style="padding:1em;">TRY WPCI WITH NDA</button>
+                </form>
             </div>
           </div>
         </div>
@@ -198,15 +198,7 @@
 
     <script>
       // Take user to try wpci-nda
-      $(document).ready(function() {
-        $('#button-try-wpci-nda-success').one('click', function(e) {
-          e.preventDefault();
-          var base_url = "https://www.wpci.io/";
-          var ask_nda_email = $("#ask_nda_email").val();
-          var wpci_url = base_url + "?ask_nda_email=" + encodeURI(ask_nda_email);
-          window.open(wpci_url,"_self");
-        });
-      });
+
     </script>
     {% endif %}
     </div>
