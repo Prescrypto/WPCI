@@ -11,7 +11,7 @@ from models import User
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tornado-info')
 
-NDA = "Nda"
+NDA = "Document"
 pwd_context = CryptContext(
         schemes=["pbkdf2_sha256"],
         default="pbkdf2_sha256",
@@ -80,25 +80,49 @@ class Document(object):
     def find_by_nda_id(self, nda_id):
         '''finds a user'''
         result = None
-        mydb = None
-        if id is None or id == "":
+        if nda_id is None or nda_id == "":
             return None
         try:
-            collection = NDA
-            mydb = ManageDB(collection)
-            docs = mydb.select("nda_id", nda_id)
-            if len(docs) > 0:
-                self.__dict__ = docs[0]
+            nda = self.find_by_attr("nda_id", nda_id)
+            if len(nda) > 0:
+                self.__dict__ = nda[0]
                 return self
+            else:
+                logger.info("nda not found")
 
         except Exception as e:
             logger.info("finding id"+ str(e))
+
+        return result
+
+    def find_by_attr(self, key, value):
+        '''finds a user object by the attribute id'''
+        result = []
+        mydb = None
+        try:
+            collection = NDA
+            mydb = ManageDB(collection)
+            docs = mydb.select(key, value)
+            if len(docs) > 0:
+                #for doc in docs:
+                 #   self.__dict__ = doc
+                  #  result.append(self)
+                   # self.__dict__ = {}
+                result = docs
+
+                return result
+            else:
+                logger.info("documents not found")
+
+        except Exception as e:
+            logger.info("finding user" + str(e))
 
         finally:
             if mydb is not None:
                 mydb.close()
 
         return result
+
 
     def create(self):
         '''creates a new user on the bd'''
@@ -152,7 +176,7 @@ class Document(object):
         try:
             collection = NDA
             mydb = ManageDB(collection)
-            docs = mydb.select("id", self.id)
+            docs = mydb.select("org_id", self.org_id)
             if len(docs) > 0:
                 result = docs[0].get(attribute_name)
         except:

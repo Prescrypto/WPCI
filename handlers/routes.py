@@ -47,6 +47,7 @@ RENDER_EMAIL = "render_and_send_by_email"
 RENDER_HASH = "render_sethash_and_download"
 RENDER_NOHASH = "render_and_download"
 RENDER_URL= "render_by_url_parameters"
+BASE_PATH = "/docs/"
 
 #SMTP VARIABLES
 SMTP_PASS = conf.SMTP_PASS
@@ -554,7 +555,7 @@ def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
 
 def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson):
     base_url= conf.BASE_URL
-    PDF_VIEW_URL = 'pdf/'
+    PDF_VIEW_URL = '/api/v1/pdf/'
     try:
         nda = Nda.Nda()
         nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson)
@@ -606,24 +607,27 @@ class RegisterUserByEmail(BaseHandler):
                 <p>Click <a href='{}'>HERE</a> to verify your email.</p>\
                 <p>Best regards,</p>"
         try:
-            ADMIN_URL = conf.BASE_URL +"admin/validate_email?code="
+            ADMIN_URL = conf.BASE_URL + BASE_PATH+"validate_email?code="
             email = self.get_argument('email', "")
 
             if is_valid_email(email):
                 user = User.User(email)
-                code = user.get_validation_code()
-                if code is False:
-                    self.write(json.dumps({"error": "user"}))
-                try:
+                if user.find() is False:
+                    code = user.get_validation_code()
+                    if code is False:
+                        self.write(json.dumps({"error": "user"}))
+                    try:
 
-                    html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
-                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
-                    mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[email],
-                        html_message=html_text)
-                    self.write(json.dumps({"response": "email sent"}))
-                except Exception as e:
-                    logger.info("sending email: "+str(e))
-                    self.write(json.dumps({"error": "email"}))
+                        html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
+                        mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+                        mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[email],
+                            html_message=html_text)
+                        self.write(json.dumps({"response": "email sent"}))
+                    except Exception as e:
+                        logger.info("sending email: "+str(e))
+                        self.write(json.dumps({"error": "email"}))
+                else:
+                    self.write(json.dumps({"error": "user"}))
 
             else:
                 self.write(json.dumps({"error": "email"}))

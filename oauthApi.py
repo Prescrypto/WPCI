@@ -19,11 +19,25 @@ from utils import is_valid_email, allowed_file
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tornado-info')
 
+#SMTP VARIABLES
+SMTP_PASS = conf.SMTP_PASS
+SMTP_USER = conf.SMTP_USER
+SMTP_EMAIL = conf.SMTP_EMAIL
+SMTP_ADDRESS = conf.SMTP_ADDRESS
+SMTP_PORT = conf.SMTP_PORT
+
 UPLOAD_FOLDER = os.path.join("/static/images")
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
         <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
         <p>Best regards,</p>"
 
+VERIFICATION_HTML = "<h3>Hello,</h3>\
+               <p>Click <a href='{}'>HERE</a> to verify your email.</p>\
+               <p>Best regards,</p>"
+
+BASE_PATH = "/docs/"
+PDF_URL = conf.BASE_URL + BASE_PATH +"pdf/"
+ADMIN_URL = conf.BASE_URL + BASE_PATH + "validate_email?code="
 
 app = Flask(__name__)
 app.debug = True
@@ -48,15 +62,35 @@ github = oauth.remote_app(
     authorize_url= conf.GITHUB_OAUTH_URI +'authorize'
 )
 
-@app.route('/api/v1/admin/index')
+@app.route(BASE_PATH+'index')
 def index():
-    error =request.args.get('error')
+    error = ''
+    username = ''
+    step_2 = False
+    step_3 = False
+
+    user = User.User()
     if 'user' in session:
-        return render_template('index.html', error=error)
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
     else:
+        logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-@app.route('/api/v1/admin/github_reg')
+    if request.method == 'GET':
+        org_name = getattr(user, "org_name", False)
+        if org_name is not False:
+            step_2 = True
+            docs = Document.Document()
+            docs = docs.find_by_attr("org_id", user.org_id)
+            if len(docs) > 0:
+                step_3 = True
+
+        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3)
+
+
+@app.route(BASE_PATH+'github_reg')
 def github_reg():
     error =request.args.get('error')
     if 'user' in session:
@@ -69,7 +103,7 @@ def github_reg():
         return redirect(url_for('login'))
 
 
-@app.route('/api/v1/admin/login', methods=['GET', 'POST'])
+@app.route(BASE_PATH+'login', methods=['GET', 'POST'])
 def login():
     error=''
     if 'user' in session:
@@ -95,25 +129,45 @@ def login():
     return render_template('login.html', error=error)
 
 
-@app.route('/api/v1/admin/register', methods=['GET', 'POST'])
+@app.route(BASE_PATH+'register', methods=['GET', 'POST'])
 def register():
     error = None
+    message = ""
     if request.method == 'POST':
-        if request.form['username'] and request.form['password']:
-            register_user = User.User(request.form['username'],request.form['password'])
-            if register_user.find() is not True:
-                register_user.create()
-                session["user"] = register_user.__dict__
-                return redirect(url_for('index'))
+        username = request.form['username']
+        if username:
+            user = User.User(username)
+            if user.find() is False:
+                code = user.get_validation_code()
+                print("code", code)
+                if code is False:
+                    error = "Couldn't get a verification code, please try again."
+                    logger.info(error)
+                    return render_template('register.html', error=error)
+
+                try:
+                    html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
+                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+                    print("username", username)
+                    mymail.send(subject="Email Verification", email_from=SMTP_EMAIL, emails_to=[username],
+                                html_message=html_text)
+                    redirect(url_for('success'))
+
+                except Exception as e:
+                    logger.info("sending email: " + str(e))
+                    error= "Couldn't send verification code, please try again."
             else:
-                error = "User already Exists"
+                error= "This user already exists, please login."
+                logger.info(error)
+
     return render_template('register.html', error=error)
 
 
-@app.route('/api/v1/admin/register_org', methods=['GET', 'POST'])
+@app.route(BASE_PATH +'register_org', methods=['GET', 'POST'])
 def register_org():
     error=''
     username=''
+    myuser = None
 
     user = User.User()
     if 'user' in session:
@@ -151,7 +205,7 @@ def register_org():
                 except Exception as e:
                     logger.info("loading logo "+str(e))
                     error = "error loading the file"
-                    return render_template('register_org.html', error=error)
+                    return render_template('register_org.html', error=error, myuser=user)
 
                 data.pop("prev_logo")
                 user.set_attributes(data)
@@ -167,28 +221,57 @@ def register_org():
             error = 'Invalid Values. Please try again.'
             logger.info(error)
 
-        return render_template('register_org.html', error=error)
+        return render_template('register_org.html', error=error, myuser=user)
 
     if request.method == 'GET':
 
         return render_template('register_org.html', error=error, myuser=user)
 
-@app.route('/api/v1/admin/view_docs', methods=['GET', 'POST'])
+@app.route(BASE_PATH+'view_docs', methods=['GET', 'POST'])
 def view_docs():
-    error=""
-    return render_template('view_docs.html', error=error)
+    document_list = []
+    error = ''
+    username = ''
+    success = ''
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
 
-@app.route('/api/v1/admin/edit_docs', methods=['GET', 'POST'])
+    if request.method == 'GET':
+        docs = Document.Document()
+        docs = docs.find_by_attr("org_id", user.org_id)
+        document_list = docs
+        doc_len = len(document_list)
+
+
+    return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len, base_url = PDF_URL)
+
+@app.route(BASE_PATH+'edit_docs', methods=['GET', 'POST'])
 def edit_docs():
     error=""
     return render_template('edit_docs.html', error=error)
 
-@app.route('/api/v1/admin/documents/<type>', methods=['GET', 'POST'])
+@app.route(BASE_PATH+'success', methods=['GET'])
+def success():
+    error=""
+    message = ""
+    return render_template('success.html', error=error)
+
+@app.route(BASE_PATH+'analytics/<id>', methods=['GET', 'POST'])
+def analytics(id):
+    error=""
+    return render_template('analytics.html', id = id, error=error)
+
+@app.route(BASE_PATH+'documents/<type>', methods=['GET', 'POST'])
 def documents(type):
     error=''
     username=''
     success = ''
-    PDF_URL = conf.BASE_URL + "pdf/"
     user = User.User()
     if 'user' in session:
         username = session['user']['username']
@@ -287,7 +370,7 @@ def documents(type):
 
 
 
-@app.route('/api/v1/admin/validate_email', methods=['GET', 'POST'])
+@app.route(BASE_PATH+'validate_email', methods=['GET', 'POST'])
 def validate_email():
     error=''
     username = None
@@ -318,19 +401,19 @@ def validate_email():
     return render_template('validate_email.html', error=error, username=username)
 
 
-@app.route('/api/v1/git/gitlogin')
+@app.route(BASE_PATH+'gitlogin')
 def gitlogin():
     return github.authorize(callback=url_for('authorized', _external=True))
 
 
-@app.route('/api/v1/git/logout')
+@app.route(BASE_PATH+'gitlogout')
 def logout():
     session.pop('user', None)
     session.pop('github_token', None)
     return redirect(url_for('github_reg'))
 
 
-@app.route('/api/v1/git/login/authorized')
+@app.route(BASE_PATH+'authorized')
 def authorized():
     error = None
     resp = github.authorized_response()
@@ -356,7 +439,7 @@ def authorized():
 def get_github_oauth_token():
     return session.get('github_token')
 
-@app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
+@app.route(BASE_PATH+'pdf/<id>', methods=['GET', 'POST'])
 def show_pdf(id):
     error = None
     message = None

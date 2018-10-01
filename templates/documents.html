@@ -28,7 +28,7 @@
               </div>
               <input type="text" class="form-control" name="wp_name" value="" placeholder="Enter the Document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
             </div>
-            {% if type == "wp"%}
+            {% if type == "wp_nda"%}
             <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >White Paper url</span>
@@ -41,17 +41,36 @@
               </div>
               <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
             </div>
-              {% else %}
-               <input type="hidden" name="wp_url" value="">
-              <input type="hidden" name="main_tex" value="">
-             {% endif %}
-            <div class="input-group mb-3">
+              <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >Nda Url</span>
               </div>
               <input type="text" class="form-control" name="nda_url" value="" placeholder="Enter the Nda url" aria-label="Nda url" aria-describedby="basic-addon1">
             </div>
-
+            {% elif type == "nda"%}
+               <input type="hidden" name="wp_url" value="">
+               <input type="hidden" name="main_tex" value="">
+                  <div class="input-group mb-3">
+                     <div class="input-group-prepend">
+                       <span class="input-group-text" >Nda Url</span>
+                     </div>
+                     <input type="text" class="form-control" name="nda_url" value="" placeholder="Enter the Nda url" aria-label="Nda url" aria-describedby="basic-addon1">
+                  </div>
+           {% elif type == "wp"%}
+              <input type="hidden" name="nda_url" value="">
+               <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >White Paper url</span>
+              </div>
+              <input type="text" class="form-control" name="wp_url" value="" placeholder="Enter the white paper url" aria-label="WP url" aria-describedby="basic-addon1">
+            </div>
+             <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >White paper main tex name (must be on the root)</span>
+              </div>
+              <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
+            </div>
+             {% endif %}
 
             <button type="submit" class="btn btn-info" value="create">Save!</button>
           </form>
