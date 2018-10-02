@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block content %}
+<section class="login-section">
+  <div>
+    <div id="general-form" class="row" >
+      <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" >
+        <div class="login-form">
+          <form action="{{ url_for('analytics', id=id) }}" method="post">
+            <h2 style="font-weight:900;" class="login-h1">Document Analytics</h2>
+              <h3 class="login-h1"><b>Name:</b> {{ doc.wp_name }}
+                  <p><b> Id:</b> {{ doc.nda_id }} </p></h3>
+              {% if error %}
+                <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
+                {{ error }}
+                </h3>
+              {% endif %}
+             <table class="uk-table" id="document_table"  style="margin-bottom:10px;padding-bottom:10px;">
+                <caption></caption>
+                <thead>
+                    <tr>
+                        <th>Times viewed</th>
+                        <th>Times emailed</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td> {{ doc.view_count }}</td>
+                        <td> {{ doc.down_count }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+          </form>
+            <button onClick="history.go(-1)" class="btn btn-info" value="back">Go back</button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

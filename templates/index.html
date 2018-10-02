@@ -1,10 +1,55 @@
 {% extends "layout.html" %}
 {% block content %}
-    <div class="jumbo">
-    {%  if session.github_token %}
-        <h2>Github Permission Already Added</h2>
-    {% else %}
-        <a href="{{ url_for('gitlogin') }}">Add permission to Github</a>
+
+<h1 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" >Welcome to your WPCI admin panel</h1>
+
+    <div>
+    {%  if session.user %}
+
+
+        <div class="uk-child-width-expand@s uk-text-center" uk-grid>
+            <div>
+                <div class="uk-card uk-card-hover uk-card-default">
+
+                    <div class="uk-card-body">
+                        <h2 class="uk-card-title"> 1</h2>
+                        <h3><a href="{{ url_for('register_org') }}"  >Register your Organization.</a></h3>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="uk-card uk-card-hover uk-card-default">
+                     {% if step_2 %}
+                        <div class="uk-card-body">
+                        <h2 class="uk-card-title"> 2</h2>
+                        <h3><a href="{{ url_for('edit_docs') }}"  >Create your new document.</a></h3>
+                     {% else%}
+                         <div class="uk-card-body uk-background-muted">
+                         <h2 class="uk-card-title"> 2</h2>
+                         <h3 style="color:#696969;">Create your new document.</h3>
+                     {% endif %}
+
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="uk-card uk-card-hover uk-card-default">
+                   {% if step_3 %}
+                        <div class="uk-card-body">
+                        <h2 class="uk-card-title"> 3</h2>
+                        <h3><a href="{{ url_for('view_docs') }}"  >Share it!</a></h3>
+                     {% else%}
+                         <div class="uk-card-body uk-background-muted">
+                         <h2 class="uk-card-title"> 3</h2>
+                         <h3 style="color:#696969;">Share it!</h3>
+                     {% endif %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
 
     {% endif %}
     {% if error %}

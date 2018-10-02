@@ -1,4 +1,5 @@
 import os
+TIMEZONE = "America/Mexico_City"
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
 headers = {'Content-Type' : 'application/json' } #get the content in json format
 GITHUB_API_URL = "https://api.github.com/"
@@ -13,7 +14,7 @@ SMTP_PORT= os.environ.get('SMTP_PORT', '')
 CONSUMER_KEY = os.environ.get('CONSUMER_KEY', '')
 CONSUMER_SECRET = os.environ.get('CONSUMER_SECRET', '')
 GITHUB_OAUTH_URI = os.environ.get('GITHUB_OAUTH_URI', '') #https://github.com/login/oauth/
-BASE_URL = os.environ.get('BASE_URL', 'http:localhost:8000/api/v1/')
+BASE_URL = os.environ.get('BASE_URL', 'http://localhost:7000')
 CRYPTO_ID = os.environ.get('CRYPTO_ID', '')
 CRYPTO_SECRET = os.environ.get('CRYPTO_SECRET', '')
 CRYPTO_USERNAME = os.environ.get('CRYPTO_USERNAME', '')

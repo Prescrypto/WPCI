@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block content %}
+{% if username %}
+<section class="login-section">
+  <div>
+    <div class="row">
+      <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" >
+        <div class="login-form">
+          <form action="{{ url_for('validate_email') }}" method="post">
+            <h1 style="font-weight:900;" class="login-h1">Email successfully validated</h1>
+
+            <h2 style="font-weight:500;" class="login-h1">Username: {{ username }}</h2>
+              <input type="hidden" id="username" name="username" value="{{ username }}">
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Please enter your password</span>
+              </div>
+              <input type="password" class="form-control" name="pass" value="{{ request.form.pass }}" placeholder="Enter your Password" aria-label="Password" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon2">Please re-enter your password</span>
+              </div>
+              <input type="password" class="form-control" name="password" value="{{ request.form.password }}" placeholder="Enter your Password" aria-label="Password" aria-describedby="basic-addon1">
+            </div>
+            <button type="submit" class="btn btn-info" value="Register">Register!</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+      {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}</p>
+      {% endif %}
+{% endblock %}

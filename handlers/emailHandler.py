@@ -14,7 +14,7 @@ logger = logging.getLogger('tornado-info')
 
 class Mailer(object):
     def __init__(self, **kwargs):
-        mandatory_args = ["username","password","server","port"]
+        mandatory_args = ["username","password","host","port"]
         for x in mandatory_args:
             if kwargs.get(x, False) == False:
                 raise ValueError("%s must be provided" % (x))
@@ -24,27 +24,27 @@ class Mailer(object):
 
 
     def send(self, **kwargs):
-        mandatory_args = ["subject","email_from","emails_to","emails_bcc","attachments_list"]
+        mandatory_args = ["subject","email_from","emails_to"]
         for x in mandatory_args:
             if not kwargs.get(x, False):
                 raise ValueError("%s is mandatory" % (x))
 
         toaddr_list = []
+        emails_bcc = kwargs.get('emails_bcc',[])
         for eaddress in kwargs['emails_to']:
             toaddr_list.append(eaddress)
-        for eaddress in kwargs['emails_bcc']:
+        for eaddress in emails_bcc:
             toaddr_list.append(eaddress)
-
         try:
             msg = MIMEMultipart('mixed')
             msg['Subject'] = kwargs['subject']
             msg['From'] = kwargs['email_from']
             msg['To'] = ','.join(kwargs['emails_to'])
-            msg['Bcc'] =  ','.join(kwargs['emails_bcc'])
+            msg['Bcc'] =  ','.join(emails_bcc)
 
-            text = kwargs['text_message']
-            html = kwargs['html_message']
-            attachments_list = kwargs['attachments_list']
+            text = kwargs.get('text_message', '')
+            html = kwargs.get('html_message', '')
+            attachments_list = kwargs.get('attachments_list',[])
             if text is not None and text != "":
                 msg.attach(MIMEText(text, 'plain'))
             if html is not None and html != "":
@@ -58,7 +58,7 @@ class Mailer(object):
                 part.add_header('Content-Disposition', 'attachment; filename="' + attachment.get('filename') + '"')
                 msg.attach(part)
 
-            self.server = smtplib.SMTP(host=self.server, port=self.port)
+            self.server = smtplib.SMTP(host=self.host, port=self.port)
             self.server.ehlo()
             self.server.starttls()
             self.server.ehlo()

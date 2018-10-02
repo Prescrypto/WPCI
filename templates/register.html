@@ -1,28 +1,31 @@
 {% extends "layout.html" %}
 {% block content %}
-    <div class= 'graybk'>
-      <h1>Please enter your data</h1>
-      <br>
-         <div class="login-form">
+<section class="login-section">
+  <div>
+    <div class="row">
+      <div id="login-card" class="col-lg-4 col-md-6 col-sm-12">
+        <div class="login-form">
           <form action="{{ url_for('register') }}" method="post">
-              <div class="control-group">
-            <input type="text" placeholder="Username" name="username" value="{{
-              request.form.username }}">
+            <h2 style="font-weight:900;" class="login-h1">Please enter your email</h2>
+            <p>Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</p>
+               {% if error %}
+                <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
+                {% endif %}
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Email</span>
               </div>
-              <div class="control-group">
-             <input type="password" placeholder="Password" name="password" value="{{
-              request.form.password }}">
-              </div>
-              <div class="control-group">
-              <input type="password" placeholder="Confirm Password" name="cpassword" value="{{
-              request.form.cpassword }}">
-              </div>
+              <input type="text" class="form-control" name="username" value="" placeholder="Enter your Email" aria-label="Username" aria-describedby="basic-addon1">
+            </div>
 
-            <input class="btn btn-default" type="submit" value="Register">
+
+            <button type="submit" class="btn btn-info" value="Register">Register!</button>
           </form>
-         </div>
-      {% if error %}
-        <p class="error"><strong>Error:</strong> {{ error }}</p>
-      {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
     </div>
 {% endblock %}

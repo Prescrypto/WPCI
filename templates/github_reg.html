@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="jumbo">
+    {%  if session.github_token %}
+        <h2>Github Permission Already Added</h2>
+    {% else %}
+        <a href="{{ url_for('gitlogin') }}">Add permission to Github</a>
+
+    {% endif %}
+    {% if error %}
+        <div class="error"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+        </div>
+{% endblock %}

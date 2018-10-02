@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+{% block content %}
+ {% if myuser %}
+<section class="login-section">
+
+   <div class="row">
+
+      <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" >
+
+        <div class="login-form">
+
+          <form action="{{ url_for('register_org') }}" method="post" enctype="multipart/form-data"  style="padding-bottom:10px;">
+            <h1 style="font-weight:900;" class="login-h1">Please Enter all the Organization information</h1>
+              {% if success %}
+              <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+              {% elif error %}
+                <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
+                {% endif %}
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Name </span>
+              </div>
+              <input type="text" class="form-control" name="org_name" value="{{ myuser.org_name }}" placeholder="Enter the organization Name" aria-label="Org Name" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Address</span>
+              </div>
+              <input type="text" class="form-control" name="org_address" value="{{ myuser.org_address }}" placeholder="Enter the organization Address" aria-label="Org Address" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Notification Email</span>
+              </div>
+              <input type="text" class="form-control" name="org_email" value="{{ myuser.org_email }}" placeholder="Enter the organization Email" aria-label="Org Email" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text">Type of Organization</span>
+              </div>
+              <input type="text" class="form-control" name="org_type" value="{{ myuser.org_type }}" placeholder="Enter the organization Type" aria-label="Username" aria-describedby="basic-addon1">
+            </div>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" >Logo</span>
+              </div>
+
+              <input type="hidden" name="prev_logo" value="{{ myuser.org_logo }}">
+              <input type="file" class="form-control" name="org_logo" value="" placeholder="Enter the organization Logo" aria-label="org logo" aria-describedby="basic-addon1">
+               {% if myuser.org_logo %}
+               <div style="padding-left:10px">
+                 <img style="padding-left:10px" width="96" height="48" src="data:image/jpeg;base64,{{ myuser.org_logo }}" alt="org_logo" />
+               </div>
+               {% endif %}
+
+            </div>
+            <button type="submit" class="btn btn-info" value="create">Save!</button>
+          </form>
+        </div>
+      </div>
+     </div>
+
+</section>
+{% endif %}
+
+
+{% endblock %}
