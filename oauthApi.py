@@ -497,7 +497,6 @@ def show_pdf(id):
                 render_options = {"companyname": user.org_name, "companytype": user.org_type,
                                   "companyaddress": user.org_address}
                 pdffile = render_pdf_base64(pdf_url, "main.tex", render_options)
-                logger.info("logued pdf file")
                 if not pdffile:
                     error = "Error rendering the pdf with the nda url"
                     logger.info(error)
