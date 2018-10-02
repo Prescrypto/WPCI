@@ -14,7 +14,7 @@ logger = logging.getLogger('tornado-info')
 
 class Mailer(object):
     def __init__(self, **kwargs):
-        mandatory_args = ["username","password","server","port"]
+        mandatory_args = ["username","password","host","port"]
         for x in mandatory_args:
             if kwargs.get(x, False) == False:
                 raise ValueError("%s must be provided" % (x))
@@ -58,7 +58,7 @@ class Mailer(object):
                 part.add_header('Content-Disposition', 'attachment; filename="' + attachment.get('filename') + '"')
                 msg.attach(part)
 
-            self.server = smtplib.SMTP(host=self.server, port=self.port)
+            self.server = smtplib.SMTP(host=self.host, port=self.port)
             self.server.ehlo()
             self.server.starttls()
             self.server.ehlo()

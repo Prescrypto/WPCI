@@ -35,6 +35,10 @@ VERIFICATION_HTML = "<h3>Hello,</h3>\
                <p>Click <a href='{}'>HERE</a> to verify your email.</p>\
                <p>Best regards,</p>"
 
+NOTIFICATION_HTML = "<h3>Hello,</h3>\
+               <p>The email {} downloaded your document with id: {} </p>\
+               <p>Best regards,</p>"
+
 BASE_PATH = "/docs/"
 PDF_URL = conf.BASE_URL + BASE_PATH +"pdf/"
 ADMIN_URL = conf.BASE_URL + BASE_PATH + "validate_email?code="
@@ -144,7 +148,7 @@ def register():
 
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
-                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
                     mymail.send(subject="Email Verification", email_from=SMTP_EMAIL, emails_to=[username],
                                 html_message=html_text)
                     return redirect(url_for('success'))
@@ -169,7 +173,7 @@ def register():
 
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
-                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
                     mymail.send(subject="Email Verification", email_from=SMTP_EMAIL, emails_to=[email],
                                 html_message=html_text)
                     return redirect(url_for('success'))
@@ -476,7 +480,7 @@ def show_pdf(id):
     pdffile = ""
     org_logo = ""
     ATTACH_CONTENT_TYPE = 'octet-stream'
-    mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, server=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
+    mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
     if request.method == 'GET':
         try:
@@ -619,9 +623,13 @@ def show_pdf(id):
                         #send the email with the result attachments
 
                         mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
-                                    emails_to=[signer_email], emails_bcc=[user.org_email],
+                                    emails_to=[signer_email],
                                     attachments_list=attachments_list,
                                     html_message=DEFAULT_HTML_TEXT)
+
+                        html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id)
+                        mymail.send(subject="Document Downloaded", email_from=conf.SMTP_EMAIL,
+                                    emails_to=[user.org_email],html_message=html_text)
 
                         message = "successfully sent your files "
 

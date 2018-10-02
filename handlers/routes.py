@@ -251,7 +251,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     attachments_list = []
     new_main_tex = "main2.tex"
     ATTACH_CONTENT_TYPE = 'octet-stream'
-    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
 
     if user_email is None or user_email== "":
         return("NO EMAIL TO HASH")
@@ -318,7 +318,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     attachments_list = []
     new_main_tex = "main2.tex"
     ATTACH_CONTENT_TYPE = 'octet-stream'
-    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
 
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
@@ -619,7 +619,7 @@ class RegisterUserByEmail(BaseHandler):
                     try:
 
                         html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
-                        mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+                        mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
                         mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[email],
                             html_message=html_text)
                         self.write(json.dumps({"response": "email sent"}))
