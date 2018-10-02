@@ -473,6 +473,10 @@ def authorized():
 def get_github_oauth_token():
     return session.get('github_token')
 
+@app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
+def redir_pdf(id):
+    return redirect(url_for('show_pdf', id=id))
+
 @app.route(BASE_PATH+'pdf/<id>', methods=['GET', 'POST'])
 def show_pdf(id):
     error = None
