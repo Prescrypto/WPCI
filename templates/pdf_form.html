@@ -1,6 +1,7 @@
 {% extends "pdflayout.html" %}
 {% block content %}
  <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+<script src="/static/js/smooth-scroll.polyfills.min.js"></script>
 
     <div class="row">
       {% if error %}
@@ -19,6 +20,7 @@
             <div class="jumbo">
               <h3><b> {{ org_name }}</b> requires you to sign this before you can continue.</h3>
              <h4>Please read carefully and sign to continue.</h4>
+
             </div>
 
 
@@ -59,17 +61,20 @@
               <div id="dynamic_container" >
               </div>
                 <div style="display:flex;align-items:bottom;padding-left:35%">
-                    <input  onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
-                  <label for="mycheck" style="padding-left:20px;"><h4>I agree to the above terms in this NDA</h4></label>
+                   <h2> <input  onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
+                       <label for="mycheck" style="padding-left:20px;"><b>I agree to the above terms in this NDA</b></label></h2>
 
                  </div>
 
             </div>
+        </div>
            <!-- closing Pdf Container-->
 
 
 
       <script type="text/javascript">
+
+
         var winheight= $( window ).height() - 60;
         $('#pdf_container').attr('style','height:'+ winheight +'px;overflow: scroll;');
         var pdfData = atob('{{ pdffile }}');
@@ -160,8 +165,7 @@
 
 
          }
-
-
+        var scroll = new SmoothScroll('a[href*="#"]');
 
 
       </script>
@@ -196,12 +200,8 @@
       </article>
     </section>
 
-    <script>
-      // Take user to try wpci-nda
-
-    </script>
     {% endif %}
-    </div>
+
 
 
 {% endblock %}

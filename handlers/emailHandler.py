@@ -35,13 +35,14 @@ class Mailer(object):
             toaddr_list.append(eaddress)
         for eaddress in emails_bcc:
             toaddr_list.append(eaddress)
-
+        print(toaddr_list)
         try:
             msg = MIMEMultipart('mixed')
             msg['Subject'] = kwargs['subject']
             msg['From'] = kwargs['email_from']
             msg['To'] = ','.join(kwargs['emails_to'])
             msg['Bcc'] =  ','.join(emails_bcc)
+            print("after bcc")
 
             text = kwargs.get('text_message', '')
             html = kwargs.get('html_message', '')
