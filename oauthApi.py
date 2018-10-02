@@ -114,14 +114,12 @@ def login():
             user = User.User(request.form.get("username"), request.form.get("password"))
             if user.check():
                 session["user"] = user.__dict__
-                github_token = user.get_attribute("github_token")
-                if github_token is not None:
-                    session["github_token"] = github_token
-                else:
-                    logger.info("no github session token")
                 return redirect(url_for('index'))
+            elif user.find():
+                error = 'Wrong password or email. Please try again.'
             else:
-                error = 'Invalid Credentials. Please try again.'
+                error = 'Invalid Credentials. Please register.'
+                return redirect(url_for('register', error=error))
 
         else:
             error = 'Invalid Credentials. Please try again.'
@@ -256,6 +254,7 @@ def view_docs():
     error = ''
     username = ''
     success = ''
+    doc_len = 0
     user = User.User()
     if 'user' in session:
         username = session['user']['username']
@@ -265,6 +264,8 @@ def view_docs():
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
+    success = request.args.get('success', '')
+
     if request.method == 'GET' or request.method == 'POST':
         docs = Document.Document()
         docs = docs.find_by_attr("org_id", user.org_id)
@@ -272,7 +273,7 @@ def view_docs():
         doc_len = len(document_list)
 
 
-    return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len, base_url = PDF_URL)
+    return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len, base_url = PDF_URL, success=success)
 
 @app.route(BASE_PATH+'edit_docs', methods=['GET', 'POST'])
 def edit_docs():
@@ -381,8 +382,8 @@ def documents(type):
                     logger.info(error)
                     return render_template('documents.html', type=type, error=error)
 
-                success= "Succesfully updated the information! Your Document link is: "+ PDF_URL +nda_url
-                return render_template('documents.html', type=type, error=error, success=success)
+                success= "Succesfully created your document, the Id is: "+ nda_url
+                return redirect(url_for('view_docs', success = success))
 
             except Exception as e:
                 logger.info("documents post " + str(e))
