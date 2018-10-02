@@ -265,7 +265,7 @@ def view_docs():
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-    if request.method == 'GET':
+    if request.method == 'GET' or request.method == 'POST':
         docs = Document.Document()
         docs = docs.find_by_attr("org_id", user.org_id)
         document_list = docs
@@ -288,7 +288,13 @@ def success():
 @app.route(BASE_PATH+'analytics/<id>', methods=['GET', 'POST'])
 def analytics(id):
     error=""
-    return render_template('analytics.html', id = id, error=error)
+    doc = None
+    nda = Document.Document()
+    thisnda = nda.find_by_nda_id(id)
+    if thisnda is not None:
+        doc = thisnda
+
+    return render_template('analytics.html', id = id, error=error, doc = doc)
 
 @app.route(BASE_PATH+'documents/<type>', methods=['GET', 'POST'])
 def documents(type):
@@ -496,6 +502,10 @@ def show_pdf(id):
                     logger.info(error)
                     return render_template('pdf_form.html', id=id, error=error)
 
+                temp_view_count = thisnda.get_attribute("view_count")
+                thisnda.set_attributes({"view_count": int(temp_view_count) + 1})
+                thisnda.update()
+
                 return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name)
 
             else:
@@ -614,6 +624,10 @@ def show_pdf(id):
                                     html_message=DEFAULT_HTML_TEXT)
 
                         message = "successfully sent your files "
+
+                        temp_down_count = thisnda.get_attribute("down_count")
+                        thisnda.set_attributes({"down_count": int(temp_down_count) + 1})
+                        thisnda.update()
 
                     except Exception as e: #except from temp directory
                         logger.info("sending the email with the documents "+ str(e))

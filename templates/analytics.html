@@ -3,45 +3,37 @@
 <section class="login-section">
   <div>
     <div id="general-form" class="row" >
-      <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" style="float:none;">
+      <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" style="margin-bottom:-10px;padding-bottom:10px;" >
         <div class="login-form">
-          <form action="{{ url_for('view_docs') }}" method="post">
-            <h1 style="font-weight:900;" class="login-h1">Please Enter all the Document information</h1>
-              {% if success %}
-                <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
-              {% elif error %}
+          <form action="{{ url_for('analytics', id=id) }}" method="post">
+            <h2 style="font-weight:900;" class="login-h1">Document Analytics</h2>
+              <h3 class="login-h1"><b>Name:</b> {{ doc.wp_name }}
+                  <p><b> Id:</b> {{ doc.nda_id }} </p></h3>
+              {% if error %}
                 <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
                 {{ error }}
-                {% if git_error %}
-                   , please click <a href="{{ url_for('github_reg') }}"> HERE </a>
-                    to reload your github token.
-                {% endif %}
-
                 </h3>
               {% endif %}
-             <table class="uk-table" id="document_table">
+             <table class="uk-table" id="document_table"  style="margin-bottom:10px;padding-bottom:10px;">
                 <caption></caption>
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Link</th>
+                        <th>Times viewed</th>
+                        <th>Times emailed</th>
 
                     </tr>
                 </thead>
                 <tbody>
-                     {% for item in document_list %}
                     <tr>
-                        <td>{{ item.wp_name }}</td>
-                        <td> <a href="{{ base_url + item.nda_id }}" target="_blank">{{ base_url + item.nda_id }}</a></td>
-                        <td> <a href="{{ url_for('analytics', id ='analytics' + item.nda_id) }}" target="_blank"><span uk-icon="icon: search; ratio: 1.5"></span></a></td>
+                        <td> {{ doc.view_count }}</td>
+                        <td> {{ doc.down_count }}</td>
                     </tr>
-                    {% endfor %}
                 </tbody>
             </table>
 
-
-            <button type="submit" class="btn btn-info" value="create">Save!</button>
           </form>
+            <button onClick="history.go(-1)" class="btn btn-info" value="back">Go back</button>
+
         </div>
       </div>
     </div>

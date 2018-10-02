@@ -35,6 +35,9 @@ class Document(object):
 
     def create_nda(self):
         try:
+            self.view_count = 0
+            self.down_count = 0
+
             if self.nda_url is None:
                 self.nda_url = ""
             if self.wp_url is None:
@@ -155,9 +158,11 @@ class Document(object):
         try:
             collection = NDA
             mydb = ManageDB(collection)
-            temp_nda= self.__dict__
-            temp_nda.pop("nda_id")
-            result = mydb.update({"nda_id": self.nda_id}, temp_nda)
+            temp_nda = self.__dict__
+            nda_id = temp_nda.pop("nda_id")
+            temp_nda.pop("_id")
+
+            result = mydb.update({"nda_id": nda_id}, temp_nda)
 
         except Exception as error:
             logger.info("updating user"+ str(error))
