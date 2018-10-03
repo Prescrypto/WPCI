@@ -9,7 +9,7 @@ import config as conf
 import datetime
 import json
 import fitz
-from models import User, Nda
+from models import User, Document
 from models.mongoManager import ManageDB
 import tempfile
 import time
@@ -22,6 +22,7 @@ import config as conf
 import base64
 from utils import *
 import jinja2
+from utils import is_valid_email
 
 latex_jinja_env = jinja2.Environment(
 	block_start_string = '\BLOCK{',
@@ -46,6 +47,7 @@ RENDER_EMAIL = "render_and_send_by_email"
 RENDER_HASH = "render_sethash_and_download"
 RENDER_NOHASH = "render_and_download"
 RENDER_URL= "render_by_url_parameters"
+BASE_PATH = "/docs/"
 
 #SMTP VARIABLES
 SMTP_PASS = conf.SMTP_PASS
@@ -249,7 +251,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
     attachments_list = []
     new_main_tex = "main2.tex"
     ATTACH_CONTENT_TYPE = 'octet-stream'
-    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
 
     if user_email is None or user_email== "":
         return("NO EMAIL TO HASH")
@@ -316,7 +318,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     attachments_list = []
     new_main_tex = "main2.tex"
     ATTACH_CONTENT_TYPE = 'octet-stream'
-    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, server=SMTP_ADDRESS, port=SMTP_PORT)
+    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
 
     user = User.User(userjson.get("username"), userjson.get("password"))
     github_token = user.get_attribute('github_token')
@@ -551,22 +553,26 @@ def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
             return False
 
 
-def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson):
+def create_dynamic_endpoint(document_dict, userjson):
     base_url= conf.BASE_URL
-    PDF_VIEW_URL = 'pdf/'
+    PDF_VIEW_URL = '/api/v1/pdf/'
     try:
-        nda = Nda.Nda()
-        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson)
-        if nda.check():
-            nda.update()
-        else:
-            nda.create()
-
-        return base_url+PDF_VIEW_URL+nda.id
+        user = User.User()
+        user = user.find_by_attr("username", userjson.get("username"))
+        if user is not False:
+            nda = Document.Document()
+            document_dict.update({"org_id": user.org_id})
+            nda.set_attributes(document_dict)
+            nda_id = nda.create_nda()
+            if nda_id is not False:
+                return base_url+PDF_VIEW_URL+nda_id
 
     except Exception as e:
         logger.info("error creating nda"+ str(e))
         return False
+
+    logger.info("Information not valid creating nda")
+    return False
 
 
 @jwtauth
@@ -595,6 +601,44 @@ class AuthLoginHandler(BaseHandler):
             self.set_secure_cookie("user", tornado.escape.json_encode(user))
         else:
             self.clear_cookie("user")
+
+class RegisterUserByEmail(BaseHandler):
+    '''receives a payload with the user data and stores it on the bd'''
+
+
+    def post(self):
+        VERIFICATION_HTML = "<h3>Hello,</h3>\
+                <p>Click <a href='{}'>HERE</a> to verify your email.</p>\
+                <p>Best regards,</p>"
+        try:
+            ADMIN_URL = conf.BASE_URL + BASE_PATH+"validate_email?code="
+            email = self.get_argument('email', "")
+
+            if is_valid_email(email):
+                user = User.User(email)
+                if user.find() is False:
+                    code = user.get_validation_code()
+                    if code is False:
+                        self.write(json.dumps({"error": "user"}))
+                    try:
+
+                        html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
+                        mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
+                        mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[email],
+                            html_message=html_text)
+                        self.write(json.dumps({"response": "email sent"}))
+                    except Exception as e:
+                        logger.info("sending email: "+str(e))
+                        self.write(json.dumps({"error": "email"}))
+                else:
+                    self.write(json.dumps({"error": "user"}))
+
+            else:
+                self.write(json.dumps({"error": "email"}))
+
+        except:
+            logger.info("registering user: " + str(e))
+            self.write(json.dumps({"error": "email"}))
 
 class RegisterUser(BaseHandler):
     '''receives a payload with the user data and stores it on the bd'''
@@ -687,52 +731,25 @@ class PostWpNda(BaseHandler):
     '''recives a post with the github repository url and renders it to PDF with clone_repo'''
 
     def post(self, userid):
-        wp_url = None
-        pdf_contract = None
-        pdf_url = None
-        wp_main_tex = "main.tex"
-        org_name = None
-        org_address = None
-        org_type = None
-        nda_logo = None
-        email = None
+        new_dict = {}
+
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
             if json_data.get("wp_url") is None or json_data.get("wp_url") == "":
                 self.write(json.dumps({"response": "Error, White paper url not found"}))
             else:
-                wp_url = json_data.get("wp_url")
-
-            if json_data.get("org_name") is None or json_data.get("org_name") == "":
-                self.write(json.dumps({"response": "Error, organization name not found"}))
-            else:
-                org_name = json_data.get("org_name")
-
-            if json_data.get("org_type") is None or json_data.get("org_type") == "":
-                self.write(json.dumps({"response": "Error, organization type not found"}))
-            else:
-                org_type = json_data.get("org_type")
-
-            if json_data.get("org_address") is None or json_data.get("org_address") == "":
-                self.write(json.dumps({"response": "Error, organization address not found"}))
-            else:
-                org_address = json_data.get("org_address")
+                new_dict["wp_url"]= json_data.get("wp_url")
 
             if json_data.get("wp_main_tex") is not None and json_data.get("wp_main_tex") != "":
-                wp_main_tex = json_data.get("wp_main_tex")
-
-
-            if json_data.get("logo") is not None and json_data.get("logo") != "":
-                nda_logo = json_data.get("logo")
-
-            if json_data.get("pdf") is not None and json_data.get("pdf") != "":
-                pdf_contract = json_data.get("pdf")
+                new_dict["main_tex"] = json_data.get("wp_main_tex")
+            else:
+                new_dict["main_tex"] = "main.tex"
 
             if json_data.get("pdf_url") is not None and json_data.get("pdf_url") != "":
-                pdf_url = json_data.get("pdf_url")
+                new_dict["nda_url"] = json_data.get("pdf_url")
 
             userjson = ast.literal_eval(userid)
-            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson)
+            result = create_dynamic_endpoint(new_dict, userjson)
             if result is not False:
                 self.write(json.dumps({"endpoint": result}))
             else:
