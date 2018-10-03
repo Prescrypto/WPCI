@@ -9,7 +9,7 @@ import config as conf
 import datetime
 import json
 import fitz
-from models import User, Nda
+from models import User, Document
 from models.mongoManager import ManageDB
 import tempfile
 import time
@@ -553,22 +553,26 @@ def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
             return False
 
 
-def create_dynamic_endpoint(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson):
+def create_dynamic_endpoint(document_dict, userjson):
     base_url= conf.BASE_URL
     PDF_VIEW_URL = '/api/v1/pdf/'
     try:
-        nda = Nda.Nda()
-        nda.set_attr(pdf, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson)
-        if nda.check():
-            nda.update()
-        else:
-            nda.create()
-
-        return base_url+PDF_VIEW_URL+nda.id
+        user = User.User()
+        user = user.find_by_attr("username", userjson.get("username"))
+        if user is not False:
+            nda = Document.Document()
+            document_dict.update({"org_id": user.org_id})
+            nda.set_attributes(document_dict)
+            nda_id = nda.create_nda()
+            if nda_id is not False:
+                return base_url+PDF_VIEW_URL+nda_id
 
     except Exception as e:
         logger.info("error creating nda"+ str(e))
         return False
+
+    logger.info("Information not valid creating nda")
+    return False
 
 
 @jwtauth
@@ -727,52 +731,25 @@ class PostWpNda(BaseHandler):
     '''recives a post with the github repository url and renders it to PDF with clone_repo'''
 
     def post(self, userid):
-        wp_url = None
-        pdf_contract = None
-        pdf_url = None
-        wp_main_tex = "main.tex"
-        org_name = None
-        org_address = None
-        org_type = None
-        nda_logo = None
-        email = None
+        new_dict = {}
+
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
             if json_data.get("wp_url") is None or json_data.get("wp_url") == "":
                 self.write(json.dumps({"response": "Error, White paper url not found"}))
             else:
-                wp_url = json_data.get("wp_url")
-
-            if json_data.get("org_name") is None or json_data.get("org_name") == "":
-                self.write(json.dumps({"response": "Error, organization name not found"}))
-            else:
-                org_name = json_data.get("org_name")
-
-            if json_data.get("org_type") is None or json_data.get("org_type") == "":
-                self.write(json.dumps({"response": "Error, organization type not found"}))
-            else:
-                org_type = json_data.get("org_type")
-
-            if json_data.get("org_address") is None or json_data.get("org_address") == "":
-                self.write(json.dumps({"response": "Error, organization address not found"}))
-            else:
-                org_address = json_data.get("org_address")
+                new_dict["wp_url"]= json_data.get("wp_url")
 
             if json_data.get("wp_main_tex") is not None and json_data.get("wp_main_tex") != "":
-                wp_main_tex = json_data.get("wp_main_tex")
-
-
-            if json_data.get("logo") is not None and json_data.get("logo") != "":
-                nda_logo = json_data.get("logo")
-
-            if json_data.get("pdf") is not None and json_data.get("pdf") != "":
-                pdf_contract = json_data.get("pdf")
+                new_dict["main_tex"] = json_data.get("wp_main_tex")
+            else:
+                new_dict["main_tex"] = "main.tex"
 
             if json_data.get("pdf_url") is not None and json_data.get("pdf_url") != "":
-                pdf_url = json_data.get("pdf_url")
+                new_dict["nda_url"] = json_data.get("pdf_url")
 
             userjson = ast.literal_eval(userid)
-            result = create_dynamic_endpoint(pdf_contract, pdf_url, wp_url, wp_main_tex, org_name, org_address, org_type, nda_logo, userjson)
+            result = create_dynamic_endpoint(new_dict, userjson)
             if result is not False:
                 self.write(json.dumps({"endpoint": result}))
             else:
