@@ -107,10 +107,6 @@ class Document(object):
             mydb = ManageDB(collection)
             docs = mydb.select(key, value)
             if len(docs) > 0:
-                #for doc in docs:
-                 #   self.__dict__ = doc
-                  #  result.append(self)
-                   # self.__dict__ = {}
                 result = docs
 
                 return result
