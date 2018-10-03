@@ -625,14 +625,15 @@ def show_pdf(id):
                             attachments_list.append(nda_attachment)
 
                         #send the email with the result attachments
+                        sender_format = "{} <{}>"
 
-                        mymail.send(subject="Documentation", email_from=conf.SMTP_EMAIL,
+                        mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
                                     emails_to=[signer_email],
                                     attachments_list=attachments_list,
                                     html_message=DEFAULT_HTML_TEXT)
 
                         html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id)
-                        mymail.send(subject="Document Downloaded", email_from=conf.SMTP_EMAIL,
+                        mymail.send(subject="Document Downloaded", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
                                     emails_to=[user.org_email],html_message=html_text)
 
                         message = "successfully sent your files "
