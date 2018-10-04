@@ -28,9 +28,15 @@ SMTP_PORT = conf.SMTP_PORT
 SENDER_NAME = "Andrea from Wpci"
 
 UPLOAD_FOLDER = os.path.join("/static/images")
+
+BASE_PATH = "/docs/"
+PDF_URL = conf.BASE_URL + BASE_PATH +"pdf/"
+ADMIN_URL = conf.BASE_URL + BASE_PATH + "validate_email?code="
+
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
         <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
         <p>Best regards,</p>"
+
 
 VERIFICATION_HTML = "<h1>Complete your WPCI registration</h1>\
                 <p>You are receiving this email because you requested an account to try wpci</p>\
@@ -41,9 +47,6 @@ NOTIFICATION_HTML = "<h3>Hello,</h3>\
                <p>The email {} downloaded your document with id: {} </p>\
                <p>Best regards,</p>"
 
-BASE_PATH = "/docs/"
-PDF_URL = conf.BASE_URL + BASE_PATH +"pdf/"
-ADMIN_URL = conf.BASE_URL + BASE_PATH + "validate_email?code="
 
 app = Flask(__name__)
 app.debug = True
