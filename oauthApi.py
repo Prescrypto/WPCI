@@ -25,7 +25,7 @@ SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
-SENDER_NAME = "Andrea Arriaga"
+SENDER_NAME = "Andrea from Wpci"
 
 UPLOAD_FOLDER = os.path.join("/static/images")
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
@@ -153,7 +153,7 @@ def register():
 
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
-                    mymail.send(subject="Email Verification", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
+                    mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[username], html_message=html_text)
                     return redirect(url_for('success'))
 
@@ -177,7 +177,7 @@ def register():
 
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
-                    mymail.send(subject="Email Verification", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
+                    mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[email], html_message=html_text)
                     return redirect(url_for('success'))
 
