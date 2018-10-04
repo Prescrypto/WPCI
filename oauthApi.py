@@ -25,14 +25,16 @@ SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
+SENDER_NAME = "Andrea Arriaga"
 
 UPLOAD_FOLDER = os.path.join("/static/images")
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
         <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
         <p>Best regards,</p>"
 
-VERIFICATION_HTML = "<h3>Hello,</h3>\
-               <p>Click <a href='{}'>HERE</a> to verify your email.</p>\
+VERIFICATION_HTML = "<h1>Complete your WPCI registration</h1>\
+                <p>You are receiving this email because you requested an account to try wpci</p>\
+               <p>Click <a href='{}'>{}</a> to verify your email.</p>\
                <p>Best regards,</p>"
 
 NOTIFICATION_HTML = "<h3>Hello,</h3>\
@@ -135,6 +137,9 @@ def login():
 def register():
     error = None
     message = ""
+    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
+    sender_format = "{} <{}>"
+
     if request.method == 'POST':
         username = request.form['username']
         if username:
@@ -147,10 +152,9 @@ def register():
                     return render_template('register.html', error=error)
 
                 try:
-                    html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
-                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
-                    mymail.send(subject="Email Verification", email_from=SMTP_EMAIL, emails_to=[username],
-                                html_message=html_text)
+                    html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
+                    mymail.send(subject="Email Verification", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
+                                emails_to=[username], html_message=html_text)
                     return redirect(url_for('success'))
 
                 except Exception as e:
@@ -172,10 +176,9 @@ def register():
                     return render_template('register.html', error=error)
 
                 try:
-                    html_text = VERIFICATION_HTML.format(ADMIN_URL + code)
-                    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
-                    mymail.send(subject="Email Verification", email_from=SMTP_EMAIL, emails_to=[email],
-                                html_message=html_text)
+                    html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
+                    mymail.send(subject="Email Verification", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
+                                emails_to=[email], html_message=html_text)
                     return redirect(url_for('success'))
 
                 except Exception as e:
@@ -235,8 +238,8 @@ def register_org():
                 data.pop("prev_logo")
                 user.set_attributes(data)
                 user.update()
-                success= "Succesfully updated the information!"
-                return render_template('register_org.html', error=error, success=success,  myuser=user)
+
+                return redirect(url_for('index'))
 
             except Exception as e:
                 logger.info("registering org " + str(e))
