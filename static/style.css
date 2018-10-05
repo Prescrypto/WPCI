@@ -211,3 +211,11 @@ margin-bottom: 10px;
   padding-right: 1em;
   padding-top: .5em;
 }
+.uk-card-title {
+    font-size: 7.5rem !important;
+    line-height: 1.4;
+}
+.uk-card-title-sm {
+    font-size: 1.8rem !important;
+    line-height: 1.4;
+}
