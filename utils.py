@@ -4,6 +4,14 @@ import re
 
 from models import User, Nda
 from models.mongoManager import ManageDB
+from jira import JIRA
+import config as conf
+import logging
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
+
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
@@ -25,3 +33,25 @@ def is_valid_email(email):
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def create_jira_issue(summary, description, comment="", project_key="PROP", task_type="Task"):
+    # Method to create JIRA issue
+    try:
+        authed_jira = JIRA(server=conf.JIRA_URL,basic_auth=(conf.JIRA_USER, conf.JIRA_PASSWORD))
+        issue_dict = {
+            'project': {'key': project_key},
+            'description': description,
+            'issuetype': {'name': task_type},
+            'summary' : summary,
+        }
+        if not conf.PRODUCTION:
+            issue_dict["project"] = {'key' : 'DEVPROP'}
+            issue_dict["summary"] = '[DEV] ' + summary
+
+        new_issue = authed_jira.create_issue(fields=issue_dict)
+        # add comments
+        if comment != "":
+            authed_jira.add_comment(new_issue, comment)
+
+    except Exception as e:
+        logger.error( "Error al Crear Issue en JIRA : %s." % e)

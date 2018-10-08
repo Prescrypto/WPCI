@@ -13,7 +13,6 @@ from handlers.emailHandler import Mailer
 from models import User, Nda, Document
 from handlers.WSHandler import *
 from utils import *
-from utils import is_valid_email, allowed_file
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +27,7 @@ SMTP_PORT = conf.SMTP_PORT
 SENDER_NAME = "Andrea from Wpci"
 
 UPLOAD_FOLDER = os.path.join("/static/images")
+LANGUAGE = "en"
 
 BASE_PATH = "/docs/"
 PDF_URL = conf.BASE_URL + BASE_PATH +"pdf/"
@@ -146,6 +146,12 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         if username:
+            msg = "New WPCI registration: {}".format(username)
+            create_jira_issue(
+                summary=msg,
+                description="Nos han enviado su mail desde wpci try it button",
+                comment="COOKIES: {}".format(request.cookies)
+            )
             user = User.User(username)
             if user.find() is False:
                 code = user.get_validation_code()
@@ -605,6 +611,7 @@ def show_pdf(id):
                                         "name": signer_name
                                     }],
                                 "params": {
+                                    "locale": LANGUAGE,
                                     "title": user.org_name + " contract",
                                     "file_name": NDA_FILE_NAME,
                                     "logo": org_logo

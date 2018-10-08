@@ -20,3 +20,8 @@ CRYPTO_SECRET = os.environ.get('CRYPTO_SECRET', '')
 CRYPTO_USERNAME = os.environ.get('CRYPTO_USERNAME', '')
 CRYPTO_PASS = os.environ.get('CRYPTO_PASS', '')
 CRYPTO_SIGN_URL = os.environ.get('CRYPTO_SIGN_URL', '')
+# Settings JIRA
+JIRA_URL = os.environ['JIRA_URL']
+JIRA_USER = os.environ['JIRA_USER']
+JIRA_PASSWORD = os.environ['JIRA_PASSWORD']
+PRODUCTION = os.environ['PRODUCTION']
