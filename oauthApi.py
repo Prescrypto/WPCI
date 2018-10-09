@@ -496,10 +496,18 @@ def show_pdf(id):
     pdffile = ""
     org_logo = ""
     ATTACH_CONTENT_TYPE = 'octet-stream'
+    FIRST_SESSION = False
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
     if request.method == 'GET':
         try:
+            if 'first_session' in session:
+                FIRST_SESSION = False
+
+            else:
+                session['first_session'] = True
+                FIRST_SESSION = True
+
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
@@ -526,7 +534,7 @@ def show_pdf(id):
                 thisnda.set_attributes({"view_count": int(temp_view_count) + 1})
                 thisnda.update()
 
-                return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name)
+                return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name, tour_js=FIRST_SESSION)
 
             else:
                 error = 'ID not found'

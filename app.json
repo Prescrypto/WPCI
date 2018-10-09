@@ -57,6 +57,18 @@
     "CRYPTO_SIGN_URL": {
         "required": true
       },
+    "JIRA_USER": {
+	"required": true
+      },
+    "JIRA_PASSWORD": {
+	"required": true
+      },
+    "JIRA_URL": {
+	"required": true
+      },
+    "PRODUCTION": {
+	"required": true
+      },
     "GITHUB_OAUTH_URI": {
         "required": true
       }
