@@ -25,8 +25,10 @@
                 </thead>
                 <tbody>
                     <tr>
+                        {% if has_paid %}
                         <td> {{ doc.view_count }}</td>
                         <td> {{ doc.down_count }}</td>
+                        {% endif %}
                     </tr>
                 </tbody>
             </table>
@@ -39,5 +41,35 @@
     </div>
   </div>
 </section>
+
+{% if not has_paid %}
+<!-- This is the paywall modal -->
+        <div id="modal-pay" uk-modal>
+            <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-middle" >
+                  <div class="uk-text-center">
+                <div class="form-group">
+                     <h2 class="uk-modal-title"><b>You're just one step away </b> </h2>
+                  <label> To get your analytics, just click the button to continue to your favorite payment method</label>
+                </div>
+                     <button  id="paybtn" name="paybtn" onclick="click_get_it()" class="btn btn-info" >Get it now!</button>
+                </div>
+            </div>
+        </div>
+
+ <script type="text/javascript">
+     UIkit.modal($('#modal-pay')).show();
+
+     $('#modal-pay').on('hide.uk.modal', function(){
+         window.location = "{{ url_for('view_docs') }}";
+     });
+
+     function click_get_it() {
+            document.getElementById("paybtn").hidden = true;
+            window.location = "{{ pay_url }}?email={{ email }}&plan_id=wpci-staging-test-100";
+      }
+
+ </script>
+
+{% endif %}
 
 {% endblock %}

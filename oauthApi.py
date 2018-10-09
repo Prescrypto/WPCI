@@ -164,7 +164,7 @@ def register():
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
                     mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[username], html_message=html_text)
-                    return redirect(url_for('success'))
+                    return redirect(url_for('register_success'))
 
                 except Exception as e:
                     logger.info("sending email: " + str(e))
@@ -188,7 +188,7 @@ def register():
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
                     mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[email], html_message=html_text)
-                    return redirect(url_for('success'))
+                    return redirect(url_for('register_success'))
 
                 except Exception as e:
                     logger.info("sending email: " + str(e))
@@ -297,21 +297,51 @@ def edit_docs():
     return render_template('edit_docs.html', error=error)
 
 @app.route(BASE_PATH+'success', methods=['GET'])
-def success():
+def register_success():
     error=""
     message = ""
-    return render_template('success.html', error=error)
+    return render_template('register_success.html', error=error)
+
+@app.route(BASE_PATH+'pay_success', methods=['GET'])
+def pay_success():
+    error=""
+    message = ""
+    return render_template('pay_success.html', error=error)
+
 
 @app.route(BASE_PATH+'analytics/<id>', methods=['GET', 'POST'])
 def analytics(id):
     error=""
     doc = None
-    nda = Document.Document()
-    thisnda = nda.find_by_nda_id(id)
-    if thisnda is not None:
-        doc = thisnda
+    has_paid = False
+    user_email = None
+    EXTERNAL_PAY = "/extra_services/external_payment/"
+    username = ''
+    success = ''
+    try:
+        user = User.User()
+        if 'user' in session:
+            username = session['user']['username']
+            # we get all the user data by the username
+            user = user.find_by_attr("username", username)
+        else:
+            logger.info("The user is not logued in")
+            return redirect(url_for('login'))
 
-    return render_template('analytics.html', id = id, error=error, doc = doc)
+        nda = Document.Document()
+        thisnda = nda.find_by_nda_id(id)
+        if thisnda is not None:
+            doc = thisnda
+
+        has_paid = getattr(user, "has_paid", False)
+        user_email = user.username
+    except Exception as e:
+        logger.error(str(e))
+        render_template('analytics.html', id=id, error=error)
+
+
+    return render_template('analytics.html', id = id, error=error, doc = doc, has_paid = has_paid,
+                           email= user_email, pay_url=conf.PAY_URL+EXTERNAL_PAY)
 
 @app.route(BASE_PATH+'documents/<type>', methods=['GET', 'POST'])
 def documents(type):

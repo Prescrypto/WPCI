@@ -654,6 +654,21 @@ class RegisterUser(BaseHandler):
         except:
             self.write(json.dumps({"response": "error registering user"}))
 
+class WebhookConfirm(BaseHandler):
+    '''receives a payload with the user data and stores it on the bd'''
+    def post(self):
+        try:
+            user = User.User()
+            token = self.get_argument("token", "")
+            username = self.get_argument("username", "")
+            if token != "" and username != "":
+                user = user.find_by_attr("username", username)
+                user.set_attributes({"has_paid": True})
+                user.update()
+
+                self.write_json({"response": "ok"}, 200)
+        except:
+            self.write_json({"error": "error getting response"}, 500)
 
 @jwtauth
 class PostRepoHash(BaseHandler):
