@@ -341,7 +341,7 @@ def analytics(id):
 
 
     return render_template('analytics.html', id = id, error=error, doc = doc, has_paid = has_paid,
-                           email= user_email, pay_url=conf.PAY_URL+EXTERNAL_PAY)
+                           email= user_email, pay_url=conf.PAY_URL+EXTERNAL_PAY, plan_id=conf.PAY_PLAN_ID)
 
 @app.route(BASE_PATH+'documents/<type>', methods=['GET', 'POST'])
 def documents(type):

@@ -25,4 +25,5 @@ JIRA_URL = os.environ['JIRA_URL']
 JIRA_USER = os.environ['JIRA_USER']
 JIRA_PASSWORD = os.environ['JIRA_PASSWORD']
 PRODUCTION = os.environ['PRODUCTION']
-PAY_URL = os.environ.get('PAY_URL', 'https://prescrypto-development.herokuapp.com')
+PAY_URL = os.environ['PAY_URL']
+PAY_PLAN_ID = os.environ['PAY_PLAN_ID']
