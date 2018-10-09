@@ -659,14 +659,16 @@ class WebhookConfirm(BaseHandler):
     def post(self):
         try:
             user = User.User()
-            token = self.get_argument("token", "")
-            username = self.get_argument("username", "")
-            if token != "" and username != "":
-                user = user.find_by_attr("username", username)
-                user.set_attributes({"has_paid": True})
-                user.update()
+            json_data = json.loads(self.request.body.decode('utf-8'))
+            if json_data.get("token") is not None and json_data.get("username") is not None :
+                user = user.find_by_attr("username", json_data.get("username"))
+                if json_data.get("token") == user.pay_token:
+                    user.set_attributes({"has_paid": True})
+                    user.update()
 
-                self.write_json({"response": "ok"}, 200)
+                    self.write_json({"response": "ok"}, 200)
+                else:
+                    self.write_json({"error": "error on token"}, 500)
         except:
             self.write_json({"error": "error getting response"}, 500)
 

@@ -65,7 +65,7 @@
 
      function click_get_it() {
             document.getElementById("paybtn").hidden = true;
-            window.location = "{{ pay_url }}?email={{ email }}&plan_id={{ plan_id }}";
+            window.location = "{{ pay_url }}?email={{ email }}&plan_id={{ plan_id }}&token={{ token }}";
       }
 
  </script>

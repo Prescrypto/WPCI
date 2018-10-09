@@ -314,7 +314,6 @@ def analytics(id):
     error=""
     doc = None
     has_paid = False
-    user_email = None
     EXTERNAL_PAY = "/extra_services/external_payment/"
     username = ''
     success = ''
@@ -334,14 +333,17 @@ def analytics(id):
             doc = thisnda
 
         has_paid = getattr(user, "has_paid", False)
-        user_email = user.username
+        token = get_hash([user.username, conf.PAY_PLAN_ID])
+        user.set_attributes({"pay_token":token})
+        user.update()
+
     except Exception as e:
         logger.error(str(e))
         render_template('analytics.html', id=id, error=error)
 
 
     return render_template('analytics.html', id = id, error=error, doc = doc, has_paid = has_paid,
-                           email= user_email, pay_url=conf.PAY_URL+EXTERNAL_PAY, plan_id=conf.PAY_PLAN_ID)
+                           email= user.username, pay_url=conf.PAY_URL+EXTERNAL_PAY, plan_id=conf.PAY_PLAN_ID, token=token)
 
 @app.route(BASE_PATH+'documents/<type>', methods=['GET', 'POST'])
 def documents(type):
