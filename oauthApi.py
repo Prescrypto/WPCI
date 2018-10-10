@@ -325,7 +325,13 @@ def pay_success():
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-    return render_template('pay_success.html', error=error)
+    has_paid = getattr(user, "has_paid", False)
+    if has_paid == "":
+        has_paid = True
+    else:
+        has_paid = False
+
+    return render_template('pay_success.html', error=error, has_paid=has_paid)
 
 
 @app.route(BASE_PATH+'analytics/<id>', methods=['GET', 'POST'])
