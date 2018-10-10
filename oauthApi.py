@@ -295,6 +295,15 @@ def view_docs():
 @app.route(BASE_PATH+'edit_docs', methods=['GET', 'POST'])
 def edit_docs():
     error=""
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
     return render_template('edit_docs.html', error=error)
 
 @app.route(BASE_PATH+'success', methods=['GET'])
@@ -307,6 +316,15 @@ def register_success():
 def pay_success():
     error=""
     message = ""
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
     return render_template('pay_success.html', error=error)
 
 
@@ -334,8 +352,6 @@ def analytics(id):
             doc = thisnda
 
         has_paid = getattr(user, "has_paid", False)
-        token = get_hash([user.username, conf.PAY_PLAN_ID])
-        user.update()
 
     except Exception as e:
         logger.error(str(e))
@@ -343,7 +359,7 @@ def analytics(id):
 
 
     return render_template('analytics.html', id = id, error=error, doc = doc, has_paid = has_paid,
-                           email= user.username, pay_url=conf.PAY_URL+EXTERNAL_PAY, plan_id=conf.PAY_PLAN_ID, token=token)
+                           pay_url="{}{}?email={}&plan_id={}".format(conf.PAY_URL,EXTERNAL_PAY,user.username, conf.PAY_PLAN_ID))
 
 @app.route(BASE_PATH+'documents/<type>', methods=['GET', 'POST'])
 def documents(type):
