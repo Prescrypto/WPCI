@@ -52,17 +52,17 @@
                      <h2 class="uk-modal-title"><b>You're just one step away </b> </h2>
                   <label> To get your analytics, just click the button to continue to your favorite payment method</label>
                 </div>
-                     <button  id="paybtn1" name="paybtn" onclick="click_get_it()" class="btn btn-info" >Get it now!</button>
+                     <button  id="paybtn" name="paybtn" onclick="click_get_it()" class="btn btn-info" >Get it now!</button>
                 {% elif has_paid == "subscription.payment_failed" %}
                   <h2 class="uk-modal-title"><b>You're just one step away </b> </h2>
                   <label> To get your analytics, your payment has failed please contact us to check what was wrong.</label>
                 </div>
-                     <button  id="paybtn2" name="paybtn" onclick="contact()" class="btn btn-info" >Contact</button>
+                     <button  id="paybtn" name="paybtn" onclick="contact()" class="btn btn-info" >Contact</button>
                  {% elif has_paid == "subscription.canceled" %}
                 <h2 class="uk-modal-title"><b>You're just one step away </b> </h2>
                   <label> To get your analytics, your subscription has been canceled please pay now to get all the tools</label>
                 </div>
-                     <button  id="paybtn3" name="paybtn" onclick="click_get_it()" class="btn btn-info" >Get it now!</button>
+                     <button  id="paybtn" name="paybtn" onclick="click_get_it()" class="btn btn-info" >Get it now!</button>
                  {% endif %}
               </div>
             </div>
