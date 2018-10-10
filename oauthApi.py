@@ -6,6 +6,7 @@ import logging
 import base64
 import tempfile
 import subprocess
+from tornado.template import Loader
 import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import jwtauth, validate_token, render_pdf_base64, create_download_pdf
@@ -334,7 +335,6 @@ def analytics(id):
 
         has_paid = getattr(user, "has_paid", False)
         token = get_hash([user.username, conf.PAY_PLAN_ID])
-        user.set_attributes({"pay_token":token})
         user.update()
 
     except Exception as e:
@@ -679,11 +679,13 @@ def show_pdf(id):
 
                         #send the email with the result attachments
                         sender_format = "{} <{}>"
+                        loader = Loader("templates/email")
+                        button = loader.load("cta_button.html")
 
                         mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
                                     emails_to=[signer_email],
                                     attachments_list=attachments_list,
-                                    html_message=DEFAULT_HTML_TEXT)
+                                    html_message=DEFAULT_HTML_TEXT+ button.generate())
 
                         html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id)
                         mymail.send(subject="Document Downloaded", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),

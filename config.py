@@ -27,3 +27,4 @@ JIRA_PASSWORD = os.environ['JIRA_PASSWORD']
 PRODUCTION = os.environ['PRODUCTION']
 PAY_URL = os.environ['PAY_URL']
 PAY_PLAN_ID = os.environ['PAY_PLAN_ID']
+PAY_TOKEN = os.environ.get('PAY_TOKEN', '')
