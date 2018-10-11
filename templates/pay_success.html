@@ -8,15 +8,16 @@
 
             <div class="card-body">
 
-                 <span style="color:#0b0e4d;margin-left:10px;margin-right:10px;" uk-icon="icon: credit-card; ratio: 5"></span>
+                 <span style="color:#0b0e4d;" uk-icon="icon: credit-card; ratio: 5"></span>
         {% if has_paid %}
-                <h2 class="card-title message"><strong>Successfully Payed!</strong></h2>
+
             </div>
           </div>
           <div class="card text-center bg-light border-0">
             <div class="card-body">
-                <h5>Thank you for your payment,</h5>
-                <h5> We will process it and soon you will be able to get all the tools on WPCI.</h5>
+                <h2 class="card-title message"><strong>Successfully Paid!</strong></h2>
+                <h5><b>Start using your new services!</b></h5>
+                <button style="height:100px;width:200px;" id="gotobtn" name="gotobtn" onclick="go_to_docs()" class="btn btn-info" >Start Now!</button>
         {% else %}
                  <h2 class="card-title message"><strong>There was an error on your payment</strong></h2>
             </div>
@@ -37,4 +38,12 @@
       </article>
     </section>
 
+    <script type="text/javascript">
+         function go_to_docs() {
+            var new_url = "{{ url_for('view_docs') }}";
+                window.location = new_url;
+          }
+    </script>
+
 {% endblock %}
+

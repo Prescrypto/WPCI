@@ -328,10 +328,10 @@ def pay_success():
         return redirect(url_for('login'))
 
     has_paid = getattr(user, "has_paid", False)
-    if has_paid == "":
-        has_paid = True
-    else:
+    if has_paid is False or has_paid == "subscription.payment_failed" or has_paid == "subscription.canceled":
         has_paid = False
+    else:
+        has_paid = True
 
     return render_template('pay_success.html', error=error, has_paid=has_paid)
 
@@ -360,6 +360,11 @@ def analytics(id):
             doc = thisnda
 
         has_paid = getattr(user, "has_paid", False)
+        print(has_paid)
+        if has_paid is False or has_paid == "subscription.payment_failed" or has_paid == "subscription.canceled":
+            has_paid = False
+        else:
+            has_paid = True
 
     except Exception as e:
         logger.error(str(e))
@@ -714,7 +719,9 @@ def show_pdf(id):
                                     html_message=DEFAULT_HTML_TEXT+ button.generate().decode("utf-8"))
 
                         html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id,analytics_link,analytics_link)
-                        mymail.send(subject=notification_subject, email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
+                        mymail.send(subject=notification_subject,
+                                    attachments_list=attachments_list,
+                                    email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
                                     emails_to=[user.org_email],html_message=html_text)
 
                         message = "successfully sent your files "
