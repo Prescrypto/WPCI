@@ -2,7 +2,7 @@ import time
 import hashlib
 import re
 
-from models import User, Nda
+from models import User
 from models.mongoManager import ManageDB
 from jira import JIRA
 import config as conf

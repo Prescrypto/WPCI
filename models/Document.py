@@ -67,7 +67,7 @@ class Document(object):
         try:
             collection = NDA
             mydb = ManageDB(collection)
-            docs = mydb.select("id", self.id)
+            docs = mydb.select("nda_id", self.nda_id)
             if len(docs) > 0:
                 result = True
 

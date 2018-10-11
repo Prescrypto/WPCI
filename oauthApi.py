@@ -11,7 +11,7 @@ import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import jwtauth, validate_token, render_pdf_base64, create_download_pdf
 from handlers.emailHandler import Mailer
-from models import User, Nda, Document
+from models import User, Document
 from handlers.WSHandler import *
 from utils import *
 
@@ -38,15 +38,17 @@ DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
         <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
         <p>Best regards,</p>"
 
+VERIFICATION_HTML = "<h1>Hey,</h1>\
+                <p>Thanks for your interest on WPCI, you're almost done. </p>\
+               <p>Click HERE <a href='{}'>{}</a> to verify your email.</p>\
+                <p>Best!</p>\
+               <p>Andrea</p>"
 
-VERIFICATION_HTML = "<h1>Complete your WPCI registration</h1>\
-                <p>You are receiving this email because you requested an account to try wpci</p>\
-               <p>Click <a href='{}'>{}</a> to verify your email.</p>\
-               <p>Best regards,</p>"
-
-NOTIFICATION_HTML = "<h3>Hello,</h3>\
-               <p>The email {} downloaded your document with id: {} </p>\
-               <p>Best regards,</p>"
+NOTIFICATION_HTML = "<h3>Hi!</h3>\
+               <p> {} has just downloaded the following document {}!</p>\
+               <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
+                <p>Keep crushing it!</p>\
+                <p>WPCI Admin</p>"
 
 
 app = Flask(__name__)
@@ -703,14 +705,16 @@ def show_pdf(id):
                         sender_format = "{} <{}>"
                         loader = Loader("templates/email")
                         button = loader.load("cta_button.html")
+                        notification_subject = "Your Document {} has been downloaded".format(thisnda.nda_id)
+                        analytics_link = "{}{}analytics/{}".format(conf.BASE_URL,BASE_PATH,thisnda.nda_id )
 
                         mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
                                     emails_to=[signer_email],
                                     attachments_list=attachments_list,
                                     html_message=DEFAULT_HTML_TEXT+ button.generate().decode("utf-8"))
 
-                        html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id)
-                        mymail.send(subject="Document Downloaded", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
+                        html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id,analytics_link,analytics_link)
+                        mymail.send(subject=notification_subject, email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
                                     emails_to=[user.org_email],html_message=html_text)
 
                         message = "successfully sent your files "
