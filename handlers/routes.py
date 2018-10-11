@@ -663,7 +663,6 @@ class WebhookConfirm(BaseHandler):
             if json_data.get("token") is not None and json_data.get("user_email") is not None :
                 user = user.find_by_attr("username", json_data.get("user_email"))
                 if json_data.get("token") == conf.PAY_TOKEN and json_data.get("payment_status") is not None:
-
                     user.set_attributes({"has_paid": json_data.get("payment_status")})
                     user.update()
 
