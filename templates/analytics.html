@@ -71,7 +71,7 @@
 
 
  <script type="text/javascript">
- {% if has_paid is None or has_paid == "subscription.payment_failed" or has_paid == "subscription.canceled" %}
+ {% if has_paid is false or has_paid == "subscription.payment_failed" or has_paid == "subscription.canceled" %}
      UIkit.modal($('#modal-pay')).show();
 
 
