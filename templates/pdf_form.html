@@ -1,7 +1,7 @@
 {% extends "pdflayout.html" %}
 {% block content %}
  <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
-<script src="/static/js/smooth-scroll.polyfills.min.js"></script>
+
 
     <div class="row">
       {% if error %}
@@ -17,12 +17,12 @@
       {% elif pdffile %}
           <div class="leftcolumn col-lg-3 col-md-12" style="margin-bottom:-10px;padding-bottom:10px;">
               <!--Jumbo box organization name-->
-            <div class="jumbo">
+            <div class="jumbo" id="org_title">
               <h3><b> {{ org_name }}</b> requires you to sign this before you can continue.</h3>
              <h4>Please read carefully and sign to continue.</h4>
 
             </div>
-
+          </div>
 
 
                  <!-- This is the modal -->
@@ -53,26 +53,47 @@
         </div>
 
 
-          </div>
+
         <!--Closing Form-->
         <div class="col-lg-9 col-md-12" style="margin-bottom:-10px;padding-bottom: 10px;">
            <!--Pdf Container-->
             <div id="pdf_container" style="height: 800px;overflow: scroll;">
               <div id="dynamic_container" >
               </div>
-                <div style="display:flex;align-items:bottom;padding-left:35%">
+                <div id="checkdiv" style="display:flex;align-items:bottom;padding-left:35%">
                    <h2> <input  onclick="checkChanged()" id="mycheck" name="mycheck" type="checkbox" style="transform: scale(2);margin-top: 4px;">
                        <label for="mycheck" style="padding-left:20px;"><b>I agree to the above terms in this NDA</b></label></h2>
 
                  </div>
 
             </div>
+            <div id="lastdiv"></div>
         </div>
            <!-- closing Pdf Container-->
 
 
 
+
       <script type="text/javascript">
+
+         var tour = new Tour({
+            steps: [
+          {
+            element: "#org_title",
+            title: "First",
+            content: "Please read this NDA before you sign it"
+          },
+          {
+            element: "#lastdiv",
+            title: "Sign!",
+            content: "Check this if you agree with the NDA then enter your name and email so we can send you the documentation"
+          }
+        ],
+        storage: false,
+        backdrop :true,
+        template: '<div class="popover" role="tooltip"> <div class="arrow"></div> <h3 class="popover-title"></h3> <div class="popover-content"></div> <div class="popover-navigation"> <div class="btn-group"> <button class="btn btn-sm btn-default" data-role="prev">&laquo; Ant</button> <button class="btn btn-sm btn-default" data-role="next">Sig &raquo;</button> <button class="btn btn-sm btn-default" data-role="pause-resume" data-pause-text="Pause" data-resume-text="Resume">Pause</button> </div> <button class="btn btn-sm btn-default" data-role="end">Finish Tour</button> </div> </div>'
+        });
+
 
 
         var winheight= $( window ).height() - 60;
@@ -82,10 +103,6 @@
         // Get div#container and cache it for later use
         var wholecontainer = document.getElementById("pdf_container");
         var container = document.getElementById("dynamic_container");
-
-         function get_back(){
-         window.location.reload();
-       }
 
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
 
@@ -131,11 +148,12 @@
 
                   // Render PDF page
                   page.render(renderContext);
+
+
                 });
+
+
             }
-
-
-
 
         }, function (reason) {
           // PDF loading error
@@ -144,8 +162,10 @@
 
         function click_button() {
             document.getElementById("signbtn").hidden = true;
-            $('#spinner').html('<p id="spinner"><div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div></p?');
+            $('#spinner').html('<p id="spinner"><div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div></p>');
         }
+
+
 
         $('#modal-sign').on('hide.uk.modal', function(){
          document.getElementById("signbtn").hidden = false;
@@ -165,10 +185,36 @@
 
 
          }
-        var scroll = new SmoothScroll('a[href*="#"]');
 
 
-      </script>
+         </script>
+
+{% if tour_js %}
+<script type="text/javascript">
+
+     $(document).ready(function() {
+        //Check if the first time that a medic see the view
+        // TourJS script here
+        function show_tour(){
+
+              // Initialize the tour
+                tour.init();
+              //scroll to the bottom
+                $('#pdf_container').scrollTop($('#pdf_container')[0].scrollHeight);
+
+                // Start the tour
+                tour.start();
+           };
+           window.setTimeout( show_tour, 1000 );
+
+        });
+
+         </script>
+{% endif %}
+
+
+
+
 
     {% elif message %}
 
@@ -202,6 +248,7 @@
 
     {% endif %}
 
+    </div>
 
 
 {% endblock %}

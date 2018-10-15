@@ -25,8 +25,10 @@
                 </thead>
                 <tbody>
                     <tr>
+                        {% if has_paid %}
                         <td> {{ doc.view_count }}</td>
                         <td> {{ doc.down_count }}</td>
+                        {% endif %}
                     </tr>
                 </tbody>
             </table>
@@ -39,5 +41,45 @@
     </div>
   </div>
 </section>
+
+
+<!-- This is the paywall modal -->
+        <div id="modal-pay" uk-modal>
+            <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-middle" >
+              <div class="uk-text-center">
+                <div class="form-group">
+                     <h2 class="uk-modal-title"><b>This is a paid only feature </b> </h2>
+                  <label> To get detailed analytics, please update your payment method</label>
+                  <label> <b>You will be redirected to prescrypto.com to process payment, don't worry.</b></label>
+                </div>
+                    <p id="spinner"></p>
+                     <button  id="paybtn" name="paybtn" onclick="click_get_it()" class="btn btn-info" >Get it!</button>
+              </div>
+            </div>
+        </div>
+
+
+
+ <script type="text/javascript">
+ {% if has_paid is sameas false %}
+     UIkit.modal($('#modal-pay')).show();
+
+
+
+     $('#modal-pay').on('hide.uk.modal', function(){
+         window.location = "{{ url_for('view_docs') }}";
+     });
+
+ {% endif %}
+
+     function click_get_it() {
+            document.getElementById("paybtn").hidden = true;
+             $('#spinner').html('<p id="spinner"><div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div></p>');
+            window.location = "{{ pay_url }}";
+      }
+
+ </script>
+
+
 
 {% endblock %}

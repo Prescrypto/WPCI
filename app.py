@@ -18,9 +18,11 @@ web_app = Application([
     (r"/"+API_BASE_PATH+"login", routes.AuthLoginHandler),
     (r"/"+API_BASE_PATH+"signin", routes.RegisterUser),
     (r"/"+API_BASE_PATH+"register", routes.RegisterUserByEmail),
+    (r"/"+API_BASE_PATH+"payments/webhook/confirmation", routes.WebhookConfirm),
     (r"/"+API_BASE_PATH+"pdf/(.*)", FallbackHandler, dict(fallback=oauth_app)),
     (r"/"+DOCS_BASE_PATH+"(.*)", FallbackHandler, dict(fallback=oauth_app)),
     (r"/(.*\.css)", StaticFileHandler, {"path": cwd}),
+    (r"/(.*\.js)", StaticFileHandler, {"path": cwd}),
     (r"/(.*\.svg)", StaticFileHandler, {"path": cwd}),
     (r'.*', routes.APINotFoundHandler)],
     debug=True)
