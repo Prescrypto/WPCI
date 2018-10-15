@@ -360,7 +360,7 @@ def analytics(id):
             doc = thisnda
 
         has_paid = getattr(user, "has_paid", False)
-        print(has_paid)
+
         if has_paid is False or has_paid == "subscription.payment_failed" or has_paid == "subscription.canceled":
             has_paid = False
         else:
@@ -408,6 +408,16 @@ def documents(type):
 
                 if data.get("nda_url") is not None and data.get("nda_url") != "":
                     NDA_NOT_EMPTY = True
+                    if data.get("wp_description") == "":
+                        data["wp_description"] = user.org_name + " requires you to sign this before you can continue. Please\
+                        read carefully and sign to continue."
+
+                    if data.get("wp_getit_btn") == "":
+                        data["wp_getit_btn"] = "I agree to the above terms in this NDA"
+                else:
+                    if data.get("wp_getit_btn") == "":
+                        data["wp_getit_btn"] = "To get the complete document please check this box and fill the following fields"
+
                 if data.get("wp_url") is not None and data.get("wp_url") != "":
                     WP_NOT_EMPTY = True
 
@@ -554,6 +564,7 @@ def redir_pdf(id):
 def show_pdf(id):
     error = None
     message = None
+    has_nda = False
     pdffile = ""
     org_logo = ""
     ATTACH_CONTENT_TYPE = 'octet-stream'
@@ -595,7 +606,12 @@ def show_pdf(id):
                 thisnda.set_attributes({"view_count": int(temp_view_count) + 1})
                 thisnda.update()
 
-                return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name, tour_js=FIRST_SESSION)
+                if thisnda.nda_url != "":
+                    has_nda = True
+
+                return render_template('pdf_form.html', id=id, error=error, has_nda=has_nda,
+                                       pdffile=pdffile, wp_description=thisnda.wp_description,
+                                       wp_getit_btn=thisnda.wp_getit_btn, tour_js=FIRST_SESSION)
 
             else:
                 error = 'ID not found'

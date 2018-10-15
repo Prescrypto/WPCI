@@ -46,7 +46,7 @@ class Document(object):
             if self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
 
-                self.nda_id = '{}_nda_{}'.format(user.org_name.strip().strip("."), str(int(time.time() * 1000)))
+                self.nda_id = '{}_{}'.format(user.org_name.strip().strip("."), str(int(time.time() * 1000)))
                 result = self.create()
                 if not result:
                     logger.info("couldn't save the nda to the db")

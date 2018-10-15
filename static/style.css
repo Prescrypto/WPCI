@@ -204,6 +204,16 @@ margin-bottom: 10px;
     padding-right: 1em;
     padding-top: .5em;
 }
+.btn-green-square{
+    background-color: #50A898;
+    border-radius: 7px;
+    font-weight: 700!important;
+    align-items: center;
+    padding-left: 1em;
+    padding-right: 1em;
+    cursor: pointer;
+    text-align: center;
+}
 
 .try-nda{
   font-weight: 900!important;
