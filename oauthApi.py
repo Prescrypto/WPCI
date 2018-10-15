@@ -667,7 +667,7 @@ def show_pdf(id):
                     try:
                         if render_wp_only or render_nda_only is False:
                             wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
-                            wpci_result = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
+                            wpci_result, complete_hash = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
                                 error = "Error rendering the white paper"
@@ -676,6 +676,8 @@ def show_pdf(id):
 
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
+
+                            client_hash = complete_hash
 
                             # this is the payload for the white paper file
                             wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
