@@ -573,12 +573,7 @@ def show_pdf(id):
 
     if request.method == 'GET':
         try:
-            if 'first_session' in session:
-                FIRST_SESSION = False
 
-            else:
-                session['first_session'] = True
-                FIRST_SESSION = True
 
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
@@ -608,6 +603,11 @@ def show_pdf(id):
 
                 if thisnda.nda_url != "":
                     has_nda = True
+
+                if 'first_session' not in session and has_nda:
+                    FIRST_SESSION = True
+                    session['first_session'] = True
+
 
                 return render_template('pdf_form.html', id=id, error=error, has_nda=has_nda,
                                        pdffile=pdffile, wp_description=thisnda.wp_description,
