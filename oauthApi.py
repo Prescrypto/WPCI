@@ -360,7 +360,7 @@ def analytics(id):
             doc = thisnda
 
         has_paid = getattr(user, "has_paid", False)
-        print(has_paid)
+
         if has_paid is False or has_paid == "subscription.payment_failed" or has_paid == "subscription.canceled":
             has_paid = False
         else:
@@ -408,6 +408,16 @@ def documents(type):
 
                 if data.get("nda_url") is not None and data.get("nda_url") != "":
                     NDA_NOT_EMPTY = True
+                    if data.get("wp_description") == "":
+                        data["wp_description"] = user.org_name + " requires you to sign this before you can continue. Please\
+                        read carefully and sign to continue."
+
+                    if data.get("wp_getit_btn") == "":
+                        data["wp_getit_btn"] = "I agree to the above terms in this NDA"
+                else:
+                    if data.get("wp_getit_btn") == "":
+                        data["wp_getit_btn"] = "To get the complete document please check this box and fill the following fields"
+
                 if data.get("wp_url") is not None and data.get("wp_url") != "":
                     WP_NOT_EMPTY = True
 
@@ -554,6 +564,7 @@ def redir_pdf(id):
 def show_pdf(id):
     error = None
     message = None
+    has_nda = False
     pdffile = ""
     org_logo = ""
     ATTACH_CONTENT_TYPE = 'octet-stream'
@@ -562,12 +573,7 @@ def show_pdf(id):
 
     if request.method == 'GET':
         try:
-            if 'first_session' in session:
-                FIRST_SESSION = False
 
-            else:
-                session['first_session'] = True
-                FIRST_SESSION = True
 
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
@@ -595,7 +601,17 @@ def show_pdf(id):
                 thisnda.set_attributes({"view_count": int(temp_view_count) + 1})
                 thisnda.update()
 
-                return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name, tour_js=FIRST_SESSION)
+                if thisnda.nda_url != "":
+                    has_nda = True
+
+                if 'first_session' not in session and has_nda:
+                    FIRST_SESSION = True
+                    session['first_session'] = True
+
+
+                return render_template('pdf_form.html', id=id, error=error, has_nda=has_nda,
+                                       pdffile=pdffile, wp_description=thisnda.wp_description,
+                                       wp_getit_btn=thisnda.wp_getit_btn, tour_js=FIRST_SESSION)
 
             else:
                 error = 'ID not found'
@@ -651,7 +667,7 @@ def show_pdf(id):
                     try:
                         if render_wp_only or render_nda_only is False:
                             wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
-                            wpci_result = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
+                            wpci_result, complete_hash = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
                                 error = "Error rendering the white paper"
@@ -660,6 +676,8 @@ def show_pdf(id):
 
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
+
+                            client_hash = complete_hash
 
                             # this is the payload for the white paper file
                             wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,

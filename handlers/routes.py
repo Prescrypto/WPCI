@@ -466,14 +466,12 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
-    print("starting render pedf: ", main_tex)
+    complete_hash = ""
     new_main_tex = "main2.tex"
     if email is None or email== "":
-        return False
+        return False, False
 
     store_petition(repo_url, RENDER_HASH, email)
-    logger.info("No private access")
-
     watermark = "Document generated for: "+ email
 
     clone = 'git clone ' + repo_url
@@ -516,14 +514,14 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             document.close()
 
             pdffile = open(file_full_path, 'rb').read()
-            return pdffile
+            return pdffile, complete_hash
 
         except IOError as e:
             logger.info('IOError'+ str(e))
-            return False
+            return False, False
         except Exception as e:
             logger.info("other error"+ str(e))
-            return False
+            return False, False
 
 
 def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
