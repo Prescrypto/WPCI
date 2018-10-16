@@ -284,7 +284,12 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ new_main_tex , shell=True, cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
 
             pointa = fitz.Point(AXIS_X,AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
@@ -356,6 +361,10 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
             run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
                                                cwd=filesdir)
             pointa = fitz.Point(AXIS_X, AXIS_Y)
@@ -425,7 +434,12 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ new_main_tex , shell=True, cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
 
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
@@ -452,13 +466,12 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
+    complete_hash = ""
     new_main_tex = "main2.tex"
     if email is None or email== "":
-        return False
+        return False, False
 
     store_petition(repo_url, RENDER_HASH, email)
-    logger.info("No private access")
-
     watermark = "Document generated for: "+ email
 
     clone = 'git clone ' + repo_url
@@ -482,7 +495,12 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex "+ new_main_tex , shell=True, cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
 
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
@@ -496,21 +514,21 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             document.close()
 
             pdffile = open(file_full_path, 'rb').read()
-            return pdffile
+            return pdffile, complete_hash
 
         except IOError as e:
             logger.info('IOError'+ str(e))
-            return False
+            return False, False
         except Exception as e:
             logger.info("other error"+ str(e))
-            return False
+            return False, False
 
 
 def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
-    new_main_tex = "main2.tex"
+    new_main_tex = "main.tex"
     store_petition(repo_url, RENDER_NOHASH, "")
     logger.info("No private access")
 
@@ -532,7 +550,13 @@ def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
                 new_main_tex = main_tex
 
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True, cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             file_full_path64 = filesdir + "/" + new_main_tex.split(".")[0] + ".base64"
             with open(file_full_path, 'rb') as f:
@@ -654,6 +678,27 @@ class RegisterUser(BaseHandler):
         except:
             self.write(json.dumps({"response": "error registering user"}))
 
+class WebhookConfirm(BaseHandler):
+    '''receives a payload with the user data and stores it on the bd'''
+    def post(self):
+        try:
+            user = User.User()
+            json_data = json.loads(self.request.body.decode('utf-8'))
+            if json_data.get("token") is not None and json_data.get("user_email") is not None :
+                user = user.find_by_attr("username", json_data.get("user_email"))
+                if json_data.get("token") == conf.PAY_TOKEN and json_data.get("payment_status") is not None:
+                    user.set_attributes({"has_paid": json_data.get("payment_status")})
+                    user.update()
+
+                    self.write_json({"response": "ok"}, 200)
+                else:
+                    error = "error on token"
+                    logger.info(error)
+                    self.write_json({"error": error}, 401)
+        except:
+            error= "error getting response"
+            logger.error(error)
+            self.write_json({"error": error}, 500)
 
 @jwtauth
 class PostRepoHash(BaseHandler):

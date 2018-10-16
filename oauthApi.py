@@ -6,14 +6,14 @@ import logging
 import base64
 import tempfile
 import subprocess
+from tornado.template import Loader
 import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import jwtauth, validate_token, render_pdf_base64, create_download_pdf
 from handlers.emailHandler import Mailer
-from models import User, Nda, Document
+from models import User, Document
 from handlers.WSHandler import *
 from utils import *
-from utils import is_valid_email, allowed_file
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +28,7 @@ SMTP_PORT = conf.SMTP_PORT
 SENDER_NAME = "Andrea from Wpci"
 
 UPLOAD_FOLDER = os.path.join("/static/images")
+LANGUAGE = "en"
 
 BASE_PATH = "/docs/"
 PDF_URL = conf.BASE_URL + BASE_PATH +"pdf/"
@@ -37,15 +38,17 @@ DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
         <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
         <p>Best regards,</p>"
 
+VERIFICATION_HTML = "<h1>Hey,</h1>\
+                <p>Thanks for your interest on WPCI, you're almost done. </p>\
+               <p>Click HERE <a href='{}'>{}</a> to verify your email.</p>\
+                <p>Best!</p>\
+               <p>Andrea</p>"
 
-VERIFICATION_HTML = "<h1>Complete your WPCI registration</h1>\
-                <p>You are receiving this email because you requested an account to try wpci</p>\
-               <p>Click <a href='{}'>{}</a> to verify your email.</p>\
-               <p>Best regards,</p>"
-
-NOTIFICATION_HTML = "<h3>Hello,</h3>\
-               <p>The email {} downloaded your document with id: {} </p>\
-               <p>Best regards,</p>"
+NOTIFICATION_HTML = "<h3>Hi!</h3>\
+               <p> {} has just downloaded the following document {}!</p>\
+               <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
+                <p>Keep crushing it!</p>\
+                <p>WPCI Admin</p>"
 
 
 app = Flask(__name__)
@@ -146,6 +149,12 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         if username:
+            msg = "New WPCI registration: {}".format(username)
+            create_jira_issue(
+                summary=msg,
+                description="Nos han enviado su mail desde wpci try it button",
+                comment="COOKIES: {}".format(request.cookies)
+            )
             user = User.User(username)
             if user.find() is False:
                 code = user.get_validation_code()
@@ -158,7 +167,7 @@ def register():
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
                     mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[username], html_message=html_text)
-                    return redirect(url_for('success'))
+                    return redirect(url_for('register_success'))
 
                 except Exception as e:
                     logger.info("sending email: " + str(e))
@@ -182,7 +191,7 @@ def register():
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
                     mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[email], html_message=html_text)
-                    return redirect(url_for('success'))
+                    return redirect(url_for('register_success'))
 
                 except Exception as e:
                     logger.info("sending email: " + str(e))
@@ -288,24 +297,82 @@ def view_docs():
 @app.route(BASE_PATH+'edit_docs', methods=['GET', 'POST'])
 def edit_docs():
     error=""
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
     return render_template('edit_docs.html', error=error)
 
 @app.route(BASE_PATH+'success', methods=['GET'])
-def success():
+def register_success():
     error=""
     message = ""
-    return render_template('success.html', error=error)
+    return render_template('register_success.html', error=error)
+
+@app.route(BASE_PATH+'pay_success', methods=['GET'])
+def pay_success():
+    error=""
+    message = ""
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
+    has_paid = getattr(user, "has_paid", False)
+    if has_paid is False or has_paid == "subscription.payment_failed" or has_paid == "subscription.canceled":
+        has_paid = False
+    else:
+        has_paid = True
+
+    return render_template('pay_success.html', error=error, has_paid=has_paid)
+
 
 @app.route(BASE_PATH+'analytics/<id>', methods=['GET', 'POST'])
 def analytics(id):
     error=""
     doc = None
-    nda = Document.Document()
-    thisnda = nda.find_by_nda_id(id)
-    if thisnda is not None:
-        doc = thisnda
+    has_paid = False
+    EXTERNAL_PAY = "/extra_services/external_payment/"
+    username = ''
+    success = ''
+    try:
+        user = User.User()
+        if 'user' in session:
+            username = session['user']['username']
+            # we get all the user data by the username
+            user = user.find_by_attr("username", username)
+        else:
+            logger.info("The user is not logued in")
+            return redirect(url_for('login'))
 
-    return render_template('analytics.html', id = id, error=error, doc = doc)
+        nda = Document.Document()
+        thisnda = nda.find_by_nda_id(id)
+        if thisnda is not None:
+            doc = thisnda
+
+        has_paid = getattr(user, "has_paid", False)
+
+        if has_paid is False or has_paid == "subscription.payment_failed" or has_paid == "subscription.canceled":
+            has_paid = False
+        else:
+            has_paid = True
+
+    except Exception as e:
+        logger.error(str(e))
+        render_template('analytics.html', id=id, error=error)
+
+
+    return render_template('analytics.html', id = id, error=error, doc = doc, has_paid = has_paid,
+                           pay_url="{}{}?email={}&plan_id={}".format(conf.PAY_URL,EXTERNAL_PAY,user.username, conf.PAY_PLAN_ID))
 
 @app.route(BASE_PATH+'documents/<type>', methods=['GET', 'POST'])
 def documents(type):
@@ -341,6 +408,16 @@ def documents(type):
 
                 if data.get("nda_url") is not None and data.get("nda_url") != "":
                     NDA_NOT_EMPTY = True
+                    if data.get("wp_description") == "":
+                        data["wp_description"] = user.org_name + " requires you to sign this before you can continue. Please\
+                        read carefully and sign to continue."
+
+                    if data.get("wp_getit_btn") == "":
+                        data["wp_getit_btn"] = "I agree to the above terms in this NDA"
+                else:
+                    if data.get("wp_getit_btn") == "":
+                        data["wp_getit_btn"] = "To get the complete document please check this box and fill the following fields"
+
                 if data.get("wp_url") is not None and data.get("wp_url") != "":
                     WP_NOT_EMPTY = True
 
@@ -487,13 +564,17 @@ def redir_pdf(id):
 def show_pdf(id):
     error = None
     message = None
+    has_nda = False
     pdffile = ""
     org_logo = ""
     ATTACH_CONTENT_TYPE = 'octet-stream'
+    FIRST_SESSION = False
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
     if request.method == 'GET':
         try:
+
+
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
@@ -520,7 +601,17 @@ def show_pdf(id):
                 thisnda.set_attributes({"view_count": int(temp_view_count) + 1})
                 thisnda.update()
 
-                return render_template('pdf_form.html', id=id, error=error, pdffile=pdffile, org_name=user.org_name)
+                if thisnda.nda_url != "":
+                    has_nda = True
+
+                if 'first_session' not in session and has_nda:
+                    FIRST_SESSION = True
+                    session['first_session'] = True
+
+
+                return render_template('pdf_form.html', id=id, error=error, has_nda=has_nda,
+                                       pdffile=pdffile, wp_description=thisnda.wp_description,
+                                       wp_getit_btn=thisnda.wp_getit_btn, tour_js=FIRST_SESSION)
 
             else:
                 error = 'ID not found'
@@ -576,7 +667,7 @@ def show_pdf(id):
                     try:
                         if render_wp_only or render_nda_only is False:
                             wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
-                            wpci_result = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
+                            wpci_result, complete_hash = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
                                 error = "Error rendering the white paper"
@@ -585,6 +676,8 @@ def show_pdf(id):
 
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
+
+                            client_hash = complete_hash
 
                             # this is the payload for the white paper file
                             wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
@@ -605,6 +698,7 @@ def show_pdf(id):
                                         "name": signer_name
                                     }],
                                 "params": {
+                                    "locale": LANGUAGE,
                                     "title": user.org_name + " contract",
                                     "file_name": NDA_FILE_NAME,
                                     "logo": org_logo
@@ -632,14 +726,20 @@ def show_pdf(id):
 
                         #send the email with the result attachments
                         sender_format = "{} <{}>"
+                        loader = Loader("templates/email")
+                        button = loader.load("cta_button.html")
+                        notification_subject = "Your Document {} has been downloaded".format(thisnda.nda_id)
+                        analytics_link = "{}{}analytics/{}".format(conf.BASE_URL,BASE_PATH,thisnda.nda_id )
 
                         mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
                                     emails_to=[signer_email],
                                     attachments_list=attachments_list,
-                                    html_message=DEFAULT_HTML_TEXT)
+                                    html_message=DEFAULT_HTML_TEXT+ button.generate().decode("utf-8"))
 
-                        html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id)
-                        mymail.send(subject="Document Downloaded", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
+                        html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id,analytics_link,analytics_link)
+                        mymail.send(subject=notification_subject,
+                                    attachments_list=attachments_list,
+                                    email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
                                     emails_to=[user.org_email],html_message=html_text)
 
                         message = "successfully sent your files "

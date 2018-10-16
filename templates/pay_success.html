@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block content %}
+<!-- Success message-->
+    <section class="container" style="padding-top:4em;">
+      <article class="row justify-content-md-center">
+        <div class="col-sm-12 col-md-8">
+          <div class="card text-center border-0">
+
+            <div class="card-body">
+
+                 <span style="color:#0b0e4d;" uk-icon="icon: credit-card; ratio: 5"></span>
+        {% if has_paid %}
+
+            </div>
+          </div>
+          <div class="card text-center bg-light border-0">
+            <div class="card-body">
+                <h2 class="card-title message"><strong>Successfully Paid!</strong></h2>
+                <h5><b>Start using your new services!</b></h5>
+                <button style="height:100px;width:200px;" id="gotobtn" name="gotobtn" onclick="go_to_docs()" class="btn btn-info" >Start Now!</button>
+        {% else %}
+                 <h2 class="card-title message"><strong>There was an error on your payment</strong></h2>
+            </div>
+          </div>
+          <div class="card text-center bg-light border-0">
+            <div class="card-body">
+                <h5>Please try again,</h5>
+                <h5> or contact with our support service.</h5>
+
+
+        {% endif %}
+
+              <span style="margin-bottom:.5em;"></span>
+
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <script type="text/javascript">
+         function go_to_docs() {
+            var new_url = "{{ url_for('view_docs') }}";
+                window.location = new_url;
+          }
+    </script>
+
+{% endblock %}
+
