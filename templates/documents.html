@@ -6,7 +6,7 @@
 
       <div id="login-card" class="col-lg-6 col-md-12 col-sm-12" >
         <div class="login-form">
-          <form action="{{ url_for('documents', type=type) }}" method="post">
+          <form action="{{ url_for('documents', type=type, render=render) }}" method="post">
             <h1 style="font-weight:900;" class="login-h1">Please Enter all the Document information</h1>
               {% if success %}
                 <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
@@ -36,12 +36,14 @@
               </div>
               <input type="text" class="form-control" name="wp_url" value="" placeholder="Enter the white paper url" aria-label="WP url" aria-describedby="basic-addon1">
             </div>
+              {% if render == "latex"%}
              <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >White paper main tex name (must be on the root)</span>
               </div>
               <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
             </div>
+              {% endif %}
               <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >Nda Url</span>
@@ -65,12 +67,14 @@
               </div>
               <input type="text" class="form-control" name="wp_url" value="" placeholder="Enter the white paper url" aria-label="WP url" aria-describedby="basic-addon1">
             </div>
+              {% if render == "latex"%}
              <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >White paper main tex name (must be on the root)</span>
               </div>
               <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
             </div>
+              {% endif %}
              {% endif %}
 
             <div class="input-group mb-3">

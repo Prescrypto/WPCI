@@ -22,7 +22,12 @@ import config as conf
 import base64
 from utils import *
 import jinja2
-from utils import is_valid_email
+from utils import is_valid_email, get_id_from_url
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+from googleapiclient.http import MediaIoBaseDownload
+import io
 
 latex_jinja_env = jinja2.Environment(
 	block_start_string = '\BLOCK{',
@@ -244,6 +249,12 @@ def store_petition(remote_url, petition_type, username='anonymous'):
     return result
 
 
+def generate_credentials():
+    with open("google_secret_format.txt", "r") as my_cred_file :
+        result = my_cred_file.read() % (conf.GOOGLE_CLIENT_ID, conf.GOOGLE_PROJECT_ID, conf.GOOGLE_CLIENT_SECRET, conf.BASE_URL)
+        with open(conf.CLIENT_SECRETS_FILE, "w") as cred_json:
+            cred_json.write(result)
+
 def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text="", options ={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
@@ -462,6 +473,65 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
             logger.info("other error"+ str(e))
             return("ERROR")
 
+
+def create_download_pdf_google(pdf_url, user_credentials, email):
+    file_full_path = file_full_path64 = ""
+    pdf_id = get_id_from_url(pdf_url)
+    if pdf_id is False:
+        return False
+
+    # Load credentials from the session.
+    credentials = google.oauth2.credentials.Credentials(
+        **user_credentials
+    )
+
+    timestamp = str(time.time())
+    watermark = "Document generated for: " + email
+    complete_hash = get_hash([timestamp, email], [pdf_id])
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            file_full_path64 = tmpdir + "/" + pdf_id + ".base64"
+            file_full_path = tmpdir + "/" + pdf_id + ".pdf"
+            drive = googleapiclient.discovery.build(
+                conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
+
+            request = drive.files().export_media(fileId=pdf_id,
+                                                 mimeType='application/pdf')
+
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
+            done = False
+            while done is False:
+                status, done = downloader.next_chunk()
+                print("Download %d%%." % int(status.progress() * 100))
+
+            with open(file_full_path, 'wb') as mypdf:
+                mypdf.write(fh.getvalue())
+
+            pointa = fitz.Point(AXIS_X, AXIS_Y)
+            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
+            document = fitz.open(file_full_path)
+            for page in document:
+                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
+                                rotate=WATERMARK_ROTATION)
+                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
+                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
+            document.save(file_full_path, incremental=1)
+            document.close()
+
+            pdffile = open(file_full_path, 'rb').read()
+
+            return pdffile, complete_hash
+
+        except IOError as e:
+            logger.info('google render IOError' + str(e))
+            return False, False
+        except Exception as e:
+            logger.info("other error google render" + str(e))
+            return False, False
+
+
 def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
@@ -524,13 +594,12 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             return False, False
 
 
-def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
+def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
     new_main_tex = "main.tex"
     store_petition(repo_url, RENDER_NOHASH, "")
-    logger.info("No private access")
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
@@ -568,13 +637,50 @@ def render_pdf_base64(repo_url, main_tex= "main.tex", options={}):
 
             return (pdffile)
 
-
         except IOError as e:
             logger.info('IOError'+ str(e))
             return False
         except Exception as e:
             logger.info("other error"+ str(e))
             return False
+
+
+def render_pdf_base64_google(pdf_url, user_credentials):
+    file_full_path= file_full_path64 = ""
+
+    pdf_id = get_id_from_url(pdf_url)
+    if pdf_id is False:
+        return False
+
+    # Load credentials from the session.
+    credentials = google.oauth2.credentials.Credentials(
+        **user_credentials
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_full_path64 = tmpdir + "/" + pdf_id + ".base64"
+        file_full_path = tmpdir + "/" + pdf_id + ".pdf"
+        drive = googleapiclient.discovery.build(
+            conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
+
+        request = drive.files().export_media(fileId=pdf_id,
+                                             mimeType='application/pdf')
+
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+            print("Download %d%%." % int(status.progress() * 100))
+
+
+        with open(file_full_path64, 'wb') as ftemp:
+            # write in a new file the base64
+            ftemp.write(base64.b64encode(fh.getvalue()))
+
+        pdffile = open(file_full_path64, 'r').read()
+
+        return (pdffile)
 
 
 def create_dynamic_endpoint(document_dict, userjson):

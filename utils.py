@@ -55,3 +55,25 @@ def create_jira_issue(summary, description, comment="", project_key="PROP", task
 
     except Exception as e:
         logger.error( "Error al Crear Issue en JIRA : %s." % e)
+
+def credentials_to_dict(credentials):
+  return {'token': credentials.token,
+          'refresh_token': credentials.refresh_token,
+          'token_uri': credentials.token_uri,
+          'client_id': credentials.client_id,
+          'client_secret': credentials.client_secret,
+          'scopes': credentials.scopes}
+
+def get_id_from_url(pdf_url):
+    pdf_id = ""
+    # https://docs.google.com/document/d/1kvcIofihvrWq3o5KekoqVX6gZeTVP8oCm3oX-UnjMK8/edit?usp=sharing
+    if pdf_url.find("/d/") > -1:
+        temp_url = pdf_url.split("/d/")[1]
+        pdf_id = temp_url.split("/edit")[0]
+    elif pdf_url.find("id=") > -1:
+        pdf_id = pdf_url.split("=")[1]
+    else:
+        logger.info("Document id not found in url")
+        return False
+
+    return pdf_id

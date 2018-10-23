@@ -6,31 +6,32 @@
     <div>
     {%  if session.user %}
 
+
         <div class="uk-child-width-expand@s uk-text-center" uk-grid>
             <div>
                 <div class="uk-card uk-card-hover uk-card-default uk-card-large" >
                      <div class="uk-card-header">
-                         <div class="uk-card-badge uk-label" title="Share a link to a document and make the users sign an NDA before they get the document">
+                         <div class="uk-card-badge uk-label" title="You can create any type of document in google docs and get it as a pdf">
                               Help
                           </div>
-                        <h3 class="uk-card-title-sm" > White paper + Signed Nda</h3>
+                        <h3 class="uk-card-title-sm" > Google Docs </h3>
 
                     </div>
                     <div class="uk-card-body">
-                        <h2><a href="{{ url_for('documents', type='wp_nda', render= render ) }}"  >Share a link with a Sign Wall.</a></h2>
+                        <h2><a href="{{ url_for('edit_docs', render='google') }}"  >Get your document from google docs.</a></h2>
                     </div>
                 </div>
             </div>
             <div>
                 <div class="uk-card uk-card-hover uk-card-default uk-card-large">
                      <div class="uk-card-header">
-                        <h3 class="uk-card-title-sm"> White paper</h3>
-                         <div class="uk-card-badge uk-label" title="Share a link to a document and get the stadistics on how many times it is viewed and emailed">
+                        <h3 class="uk-card-title-sm"> Latex </h3>
+                         <div class="uk-card-badge uk-label" title="Yo can create your document with latex or overleaf and then get it as a pdf">
                               Help
                           </div>
                     </div>
                     <div class="uk-card-body">
-                        <h2><a href="{{ url_for('documents', type='wp', render=render ) }}"  >Share a link</a></h2>
+                        <h2><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
                     </div>
                 </div>
             </div>

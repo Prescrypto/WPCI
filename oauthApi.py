@@ -9,11 +9,15 @@ import subprocess
 from tornado.template import Loader
 import config as conf
 from models.mongoManager import ManageDB
-from handlers.routes import jwtauth, validate_token, render_pdf_base64, create_download_pdf
+from handlers.routes import *
 from handlers.emailHandler import Mailer
 from models import User, Document
 from handlers.WSHandler import *
 from utils import *
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+from googleapiclient.http import MediaIoBaseDownload
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -294,8 +298,8 @@ def view_docs():
 
     return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len, base_url = PDF_URL, success=success)
 
-@app.route(BASE_PATH+'edit_docs', methods=['GET', 'POST'])
-def edit_docs():
+@app.route(BASE_PATH+'google_latex_docs', methods=['GET', 'POST'])
+def google_latex_docs():
     error=""
     user = User.User()
     if 'user' in session:
@@ -306,7 +310,22 @@ def edit_docs():
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-    return render_template('edit_docs.html', error=error)
+    return render_template('google_latex_docs.html', error=error)
+
+
+@app.route(BASE_PATH+'edit_docs/<render>', methods=['GET', 'POST'])
+def edit_docs(render):
+    error=""
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
+    return render_template('edit_docs.html', error=error, render = render)
 
 @app.route(BASE_PATH+'success', methods=['GET'])
 def register_success():
@@ -374,8 +393,8 @@ def analytics(id):
     return render_template('analytics.html', id = id, error=error, doc = doc, has_paid = has_paid,
                            pay_url="{}{}?email={}&plan_id={}".format(conf.PAY_URL,EXTERNAL_PAY,user.username, conf.PAY_PLAN_ID))
 
-@app.route(BASE_PATH+'documents/<type>', methods=['GET', 'POST'])
-def documents(type):
+@app.route(BASE_PATH+'documents/<type>/<render>', methods=['GET', 'POST'])
+def documents(type, render):
     error=''
     username=''
     success = ''
@@ -389,6 +408,7 @@ def documents(type):
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        print(type)
         NDA_NOT_EMPTY = False
         WP_NOT_EMPTY = False
         if request.form['wp_name']:
@@ -398,7 +418,7 @@ def documents(type):
                 if id_property is False or name_property is False:
                     error= "There is no organization information"
                     logger.info(error)
-                    return render_template('documents.html', type=type, error=error, org_name=error)
+                    return render_template('documents.html', type=type, render=render, error=error, org_name=error)
 
                 doc = Document.Document(user.org_id)
                 data= request.form.to_dict()
@@ -421,53 +441,58 @@ def documents(type):
                 if data.get("wp_url") is not None and data.get("wp_url") != "":
                     WP_NOT_EMPTY = True
 
-                '''Check if the permissions are enough for the repositories if the 
-                user is authenticated then use a different url with github authentication'''
-                github_token = user.github_token
-                if github_token is None or github_token == '':
-                    logger.info("github token is not set")
+                if render == "latex":
+                    '''Check if the permissions are enough for the repositories if the 
+                    user is authenticated then use a different url with github authentication'''
+                    github_token = user.github_token
+                    if github_token is None or github_token == '':
+                        logger.info("github token is not set")
+                        try:
+                            GITHUB_URL = "github.com"
+                            if NDA_NOT_EMPTY and GITHUB_URL in data.get("nda_url").split("/"):
+                                data["nda_url"] = "git://{}".format(data.get("nda_url").split("://")[1])
+                            if WP_NOT_EMPTY and GITHUB_URL in data.get("wp_url").split("/"):
+                                data["wp_url"] = "git://{}".format(data.get("wp_url").split("://")[1])
+                        except:
+                            error ="error getting correct url on git for public access"
+                            logger.info(error)
+                            return render_template('documents.html', type=type, render=render, error=error)
+
+                    else:
+                        try:
+                            if NDA_NOT_EMPTY:
+                                data["nda_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("nda_url").split("://")[1])
+                            if WP_NOT_EMPTY:
+                                data["wp_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("wp_url").split("://")[1])
+                        except:
+                            error = "error getting correct url on git for private access"
+                            logger.info(error)
+                            return render_template('documents.html', type=type, render=render, error=error)
+
                     try:
-                        GITHUB_URL = "github.com"
-                        if NDA_NOT_EMPTY and GITHUB_URL in data.get("nda_url").split("/"):
-                            data["nda_url"] = "git://{}".format(data.get("nda_url").split("://")[1])
-                        if WP_NOT_EMPTY and GITHUB_URL in data.get("wp_url").split("/"):
-                            data["wp_url"] = "git://{}".format(data.get("wp_url").split("://")[1])
+                        with tempfile.TemporaryDirectory() as tmpdir:
+                            if NDA_NOT_EMPTY:
+                                clone = 'git clone ' + data["nda_url"]
+                                subprocess.check_output(clone, shell=True, cwd=tmpdir)
+                            if WP_NOT_EMPTY:
+                                clone = 'git clone ' + data["wp_url"]
+                                subprocess.check_output(clone, shell=True, cwd=tmpdir)
                     except:
-                        error ="error getting correct url on git for public access"
+                        error= "You don't have permissions to clone the repository provided"
                         logger.info(error)
-                        return render_template('documents.html', type=type, error=error)
+                        return render_template('documents.html', type=type, render=render, error=error, git_error = "error")
 
-                else:
-                    try:
-                        if NDA_NOT_EMPTY:
-                            data["nda_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("nda_url").split("://")[1])
-                        if WP_NOT_EMPTY:
-                            data["wp_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("wp_url").split("://")[1])
-                    except:
-                        error = "error getting correct url on git for private access"
-                        logger.info(error)
-                        return render_template('documents.html', type=type, error=error)
+                elif render == "google":
+                    print("google")
 
-                try:
-                    with tempfile.TemporaryDirectory() as tmpdir:
-                        if NDA_NOT_EMPTY:
-                            clone = 'git clone ' + data["nda_url"]
-                            subprocess.check_output(clone, shell=True, cwd=tmpdir)
-                        if WP_NOT_EMPTY:
-                            clone = 'git clone ' + data["wp_url"]
-                            subprocess.check_output(clone, shell=True, cwd=tmpdir)
-                except:
-                    error= "You don't have permissions to clone the repository provided"
-                    logger.info(error)
-                    return render_template('documents.html', type=type, error=error, git_error = "error")
-
-
+                data["type"] = type
+                data["render"] = render
                 doc.set_attributes(data)
                 nda_url = doc.create_nda()
                 if not nda_url:
                     error= "couldn't create the nda"
                     logger.info(error)
-                    return render_template('documents.html', type=type, error=error)
+                    return render_template('documents.html', type=type, render=render, error=error)
 
                 success= "Succesfully created your document, the Id is: "+ nda_url
                 return redirect(url_for('view_docs', success = success))
@@ -480,10 +505,10 @@ def documents(type):
             error = 'Invalid Values. Please try again.'
             logger.info(error)
 
-        return render_template('documents.html', type=type, error=error)
+        return render_template('documents.html', type=type, render=render, error=error)
 
     if request.method == 'GET':
-        return render_template('documents.html', type=type, error=error)
+        return render_template('documents.html', type=type, render=render, error=error)
 
 
 
@@ -556,6 +581,49 @@ def authorized():
 def get_github_oauth_token():
     return session.get('github_token')
 
+@app.route(BASE_PATH+'google_authorize')
+def google_authorize():
+    # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+      conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES)
+
+    flow.redirect_uri = url_for('oauth2callback', _external=True)
+
+    authorization_url, state = flow.authorization_url(
+      # Enable offline access so that you can refresh an access token without
+      # re-prompting the user for permission. Recommended for web server apps.
+      access_type='offline',
+      # Enable incremental authorization. Recommended as a best practice.
+      include_granted_scopes='true')
+
+    # Store the state so the callback can verify the auth server response.
+    session['state'] = state
+
+    return redirect(authorization_url)
+
+@app.route(BASE_PATH+'oauth2callback')
+def oauth2callback():
+    # Specify the state when creating the flow in the callback so that it can
+    # verified in the authorization server response.
+    state = session['state']
+
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+      conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES, state=state)
+    flow.redirect_uri = url_for('oauth2callback', _external=True)
+
+    # Use the authorization server's response to fetch the OAuth 2.0 tokens.
+    authorization_response = request.url
+    flow.fetch_token(authorization_response=authorization_response)
+
+    # Store credentials in the session.
+    # ACTION ITEM: In a production app, you likely want to save these
+    #              credentials in a persistent database instead.
+    credentials = flow.credentials
+    session['credentials'] = credentials_to_dict(credentials)
+
+    return redirect(url_for('test_api_request'))
+
+
 @app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
 def redir_pdf(id):
     return redirect(url_for('show_pdf', id=id))
@@ -587,11 +655,25 @@ def show_pdf(id):
                         pdf_url = thisnda.wp_url
                 else:
                     pdf_url = thisnda.nda_url
+
                 user = User.User()
                 user = user.find_by_attr("org_id", thisnda.org_id)
                 render_options = {"companyname": user.org_name, "companytype": user.org_type,
                                   "companyaddress": user.org_address}
-                pdffile = render_pdf_base64(pdf_url, "main.tex", render_options)
+
+                doc_type = getattr(thisnda, "render", False)
+                if doc_type is not False and doc_type == "google":
+                    google_token = getattr(user, "google_token", False)
+                    if google_token is not False:
+                        pdffile = render_pdf_base64_google(pdf_url,
+                          {'token': user.google_token,
+                          'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
+                          'client_id': conf.GOOGLE_CLIENT_ID,
+                           'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                            'scopes': conf.SCOPES})
+                else:
+                    pdffile = render_pdf_base64_latex(pdf_url, "main.tex", render_options)
+
                 if not pdffile:
                     error = "Error rendering the pdf with the nda url"
                     logger.info(error)
@@ -667,7 +749,21 @@ def show_pdf(id):
                     try:
                         if render_wp_only or render_nda_only is False:
                             wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
-                            wpci_result, complete_hash = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
+
+                            doc_type = getattr(thisnda, "render", False)
+                            if doc_type is not False and doc_type == "google":
+                                google_token = getattr(user, "google_token", False)
+                                if google_token is not False:
+                                    wpci_result, complete_hash = create_download_pdf_google(thisnda.wp_url,
+                                            {'token': user.google_token,
+                                             'refresh_token': user.google_refresh_token,
+                                             'token_uri': conf.GOOGLE_TOKEN_URI,
+                                             'client_id': conf.GOOGLE_CLIENT_ID,
+                                             'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                             'scopes': conf.SCOPES},
+                                             signer_email)
+                            else:
+                                wpci_result, complete_hash = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
                                 error = "Error rendering the white paper"
