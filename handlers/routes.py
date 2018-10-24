@@ -497,7 +497,6 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
             done = False
             while done is False:
                 status, done = downloader.next_chunk()
-                print("Download %d%%." % int(status.progress() * 100))
 
             with open(file_full_path, 'wb') as mypdf:
                 mypdf.write(fh.getvalue())
@@ -664,8 +663,6 @@ def render_pdf_base64_google(pdf_url, user_credentials):
         done = False
         while done is False:
             status, done = downloader.next_chunk()
-            print("Download %d%%." % int(status.progress() * 100))
-
 
         with open(file_full_path64, 'wb') as ftemp:
             # write in a new file the base64

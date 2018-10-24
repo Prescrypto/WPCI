@@ -18,6 +18,7 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 from googleapiclient.http import MediaIoBaseDownload
+from oauth2client.client import OAuth2WebServerFlow
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -644,6 +645,7 @@ def google_authorize():
 
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
       conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES)
+
     flow.redirect_uri = url_for('oauth2callback', _external=True)
 
     authorization_url, state = flow.authorization_url(
@@ -694,9 +696,6 @@ def oauth2callback():
 
     return redirect(url_for('google_latex_docs'))
 
-@app.route(BASE_PATH+'index/google38fb6f671eadab58.html')
-def google38fb6f671eadab58():
-    return render_template('google38fb6f671eadab58.html')
 
 @app.route(BASE_PATH+'oauth2callback/google38fb6f671eadab58.html')
 def oauthgoogle38fb6f671eadab58():
