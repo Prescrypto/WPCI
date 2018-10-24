@@ -695,7 +695,7 @@ def oauth2callback():
 
     return redirect(url_for('google_latex_docs'))
 
-@app.route('/google38fb6f671eadab58')
+@app.route(BASE_PATH+'index/google38fb6f671eadab58.html')
 def google38fb6f671eadab58():
     return render_template('google38fb6f671eadab58.html')
 
