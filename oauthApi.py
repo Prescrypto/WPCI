@@ -408,7 +408,6 @@ def documents(type, render):
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        print(type)
         NDA_NOT_EMPTY = False
         WP_NOT_EMPTY = False
         if request.form['wp_name']:
@@ -483,7 +482,6 @@ def documents(type, render):
                         return render_template('documents.html', type=type, render=render, error=error, url_error = "git_error")
 
                 elif render == "google":
-                    print("google")
                     try:
                         google_token = getattr(user, "google_token", False)
                         if google_token is not False:
