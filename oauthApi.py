@@ -699,6 +699,10 @@ def oauth2callback():
 def google38fb6f671eadab58():
     return render_template('google38fb6f671eadab58.html')
 
+@app.route(BASE_PATH+'oauth2callback/google38fb6f671eadab58.html')
+def google38fb6f671eadab58():
+    return render_template('google38fb6f671eadab58.html')
+
 
 @app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
 def redir_pdf(id):
