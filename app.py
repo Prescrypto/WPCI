@@ -24,6 +24,7 @@ web_app = Application([
     (r"/(.*\.css)", StaticFileHandler, {"path": cwd}),
     (r"/(.*\.js)", StaticFileHandler, {"path": cwd}),
     (r"/(.*\.svg)", StaticFileHandler, {"path": cwd}),
+    (r"/(.*\.txt)", StaticFileHandler, {"path": cwd}),
     (r'.*', routes.APINotFoundHandler)],
     debug=True)
 

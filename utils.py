@@ -7,6 +7,8 @@ from models.mongoManager import ManageDB
 from jira import JIRA
 import config as conf
 import logging
+from tornado.template import Loader
+import os
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -77,3 +79,10 @@ def get_id_from_url(pdf_url):
         return False
 
     return pdf_id
+
+def generate_credentials():
+    loader = Loader("static/auth")
+    my_cred_file = loader.load("google_secret_format.txt")
+    result = my_cred_file.generate().decode("utf-8") % (conf.GOOGLE_CLIENT_ID, conf.GOOGLE_PROJECT_ID, conf.GOOGLE_CLIENT_SECRET, conf.BASE_URL+"/docs/")
+    with open(conf.CLIENT_SECRETS_FILE, "w") as cred_json:
+        cred_json.write(result)

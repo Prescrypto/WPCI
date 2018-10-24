@@ -248,13 +248,6 @@ def store_petition(remote_url, petition_type, username='anonymous'):
 
     return result
 
-
-def generate_credentials():
-    with open("google_secret_format.txt", "r") as my_cred_file :
-        result = my_cred_file.read() % (conf.GOOGLE_CLIENT_ID, conf.GOOGLE_PROJECT_ID, conf.GOOGLE_CLIENT_SECRET, conf.BASE_URL)
-        with open(conf.CLIENT_SECRETS_FILE, "w") as cred_json:
-            cred_json.write(result)
-
 def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text="", options ={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''

@@ -15,10 +15,14 @@
                 {{ error }}
                 {% if org_name %}
                    , Click <a href="{{ url_for('register_org') }}"> HERE to register an organization</a>
-                {% endif %}
-                {% if git_error %}
-                   , please click <a href="{{ url_for('github_reg') }}"> HERE </a>
-                    to reload your github token.
+                {% else %}
+                    {% if url_error == "google_error" %}
+                       , please click <a href="{{ url_for('google_authorize') }}"> HERE </a>
+                        to reload your google permissions.
+                    {% else %}
+                       , please click <a href="{{ url_for('github_reg') }}"> HERE </a>
+                        to reload your github token.
+                    {% endif %}
                 {% endif %}
 
                 </h3>
@@ -88,7 +92,7 @@
               <div class="input-group-prepend">
                 <span class="input-group-text" >Get the document button description</span>
               </div>
-              <input type="text" class="form-control" name="wp_getit_btn" value="" placeholder="wp_getit_btn" aria-label="wp_getit_btn" aria-describedby="basic-addon1">
+              <input type="text" class="form-control" name="wp_getit_btn" value="" placeholder="button description" aria-label="wp_getit_btn" aria-describedby="basic-addon1">
             </div>
 
             <button type="submit" class="btn btn-info" value="create">Save!</button>

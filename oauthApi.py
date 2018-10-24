@@ -480,10 +480,68 @@ def documents(type, render):
                     except:
                         error= "You don't have permissions to clone the repository provided"
                         logger.info(error)
-                        return render_template('documents.html', type=type, render=render, error=error, git_error = "error")
+                        return render_template('documents.html', type=type, render=render, error=error, url_error = "git_error")
 
                 elif render == "google":
                     print("google")
+                    try:
+                        google_token = getattr(user, "google_token", False)
+                        if google_token is not False:
+                            user_credentials = {'token': user.google_token,
+                              'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
+                              'client_id': conf.GOOGLE_CLIENT_ID,
+                               'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                'scopes': conf.SCOPES}
+
+                            credentials = google.oauth2.credentials.Credentials(
+                                **user_credentials
+                            )
+
+                            pdf_id_nda = pdf_id_wp = True
+                            if NDA_NOT_EMPTY:
+                                pdf_id_nda = get_id_from_url(data["nda_url"])
+                            if WP_NOT_EMPTY:
+                                pdf_id_wp = get_id_from_url(data["wp_url"])
+
+                            if pdf_id_nda is False or pdf_id_wp is False:
+                                error = "error getting correct google document url please check it and try again"
+                                logger.info(error)
+                                return render_template('documents.html', type=type, render=render, error=error)
+
+                            with tempfile.TemporaryDirectory() as tmpdir:
+                                drive = googleapiclient.discovery.build(
+                                    conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
+
+                                if NDA_NOT_EMPTY:
+                                    req_pdf = drive.files().export_media(fileId=pdf_id_nda,
+                                                                         mimeType='application/pdf')
+                                    fh = io.BytesIO()
+                                    downloader = MediaIoBaseDownload(fh, req_pdf, chunksize=conf.CHUNKSIZE)
+                                    done = False
+                                    while done is False:
+                                        status, done = downloader.next_chunk()
+
+                                if WP_NOT_EMPTY:
+                                    req_pdf2 = drive.files().export_media(fileId=pdf_id_wp,
+                                                                         mimeType='application/pdf')
+                                    fh = io.BytesIO()
+                                    downloader = MediaIoBaseDownload(fh, req_pdf2, chunksize=conf.CHUNKSIZE)
+                                    done = False
+                                    while done is False:
+                                        status, done = downloader.next_chunk()
+
+                        else:
+                            error = "You don't have permissions for google docs"
+                            return render_template('documents.html', type=type, render=render, error=error,
+                                                   url_error="google_error")
+
+
+                    except Exception as e:
+                        logger.info("testing google doc: "+ str(e))
+                        error = "You don't have permissions for google docs"
+                        return render_template('documents.html', type=type, render=render, error=error,
+                                               url_error="google_error")
+
 
                 data["type"] = type
                 data["render"] = render
@@ -583,10 +641,11 @@ def get_github_oauth_token():
 
 @app.route(BASE_PATH+'google_authorize')
 def google_authorize():
-    # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
+    #we generate a credentials file with the env vars stored in this machine
+    generate_credentials()
+
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
       conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES)
-
     flow.redirect_uri = url_for('oauth2callback', _external=True)
 
     authorization_url, state = flow.authorization_url(
@@ -603,6 +662,15 @@ def google_authorize():
 
 @app.route(BASE_PATH+'oauth2callback')
 def oauth2callback():
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
     # Specify the state when creating the flow in the callback so that it can
     # verified in the authorization server response.
     state = session['state']
@@ -620,8 +688,12 @@ def oauth2callback():
     #              credentials in a persistent database instead.
     credentials = flow.credentials
     session['credentials'] = credentials_to_dict(credentials)
+    print(session['credentials'])
+    user.google_token = session['credentials'].get("token")
+    user.google_refresh_token = session['credentials'].get("refresh_token")
+    user.update()
 
-    return redirect(url_for('test_api_request'))
+    return redirect(url_for('google_latex_docs'))
 
 
 @app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
