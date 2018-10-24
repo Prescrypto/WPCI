@@ -695,6 +695,10 @@ def oauth2callback():
 
     return redirect(url_for('google_latex_docs'))
 
+@app.route(BASE_PATH+'google38fb6f671eadab58')
+def google38fb6f671eadab58():
+    return render_template('google38fb6f671eadab58.html')
+
 
 @app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
 def redir_pdf(id):
