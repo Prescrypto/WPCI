@@ -69,7 +69,7 @@ AXIS_X_LOWER = 28
 WATERMARK_ROTATION = 90
 WATERMARK_FONT = "Times-Roman"
 WATERMARK_SIZE = 10
-FLIP_MATRIX = fitz.Matrix(1.0, -1.0)
+FLIP_MATRIX = fitz.Matrix(1.0, -1.0) # this generates [a=1,b=0,c=0,d=-1,e=0,f= 0]
 
 # The default message to be sent in the body of the email
 DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
