@@ -1,11 +1,15 @@
+#python
 import json
 import os
 import sys
-import config as conf
 from requests.auth import HTTPBasicAuth
 import requests
 import base64
 import logging
+
+#internal
+import config as conf
+
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 

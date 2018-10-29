@@ -1,8 +1,11 @@
+import logging
+#mongodb
 from pymongo import MongoClient
 from pymongo.collation import Collation
 from bson.objectid import ObjectId
+#internal
 import config as conf
-import logging
+
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)

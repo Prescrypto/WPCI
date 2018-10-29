@@ -1,10 +1,15 @@
-from models.mongoManager import ManageDB
+#python
+import time
+import logging
+
+#mongodb
 import pymongo
 from pymongo import MongoClient
-import config as conf
 from passlib.context import CryptContext
-import logging
-import time
+
+#internal
+from models.mongoManager import ManageDB
+import config as conf
 from utils import get_hash
 
 # Load Logging definition
