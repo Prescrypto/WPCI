@@ -1,11 +1,16 @@
+#python
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
-from tornado.template import Loader
 import logging
 from email import encoders
-import config as conf
 import smtplib
+#web app
+from tornado.template import Loader
+
+#internal
+import config as conf
+
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)

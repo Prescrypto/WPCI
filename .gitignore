@@ -9,3 +9,6 @@ config/
 # Vagrant files
 .vagrant/
 build/.texlive
+client_secret\.json
+
+\.idea/
