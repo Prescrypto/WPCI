@@ -37,9 +37,16 @@ $ vagrant ssh
 $ cd /vagrant/
 $ gunicorn app:application --bind=0.0.0.0:8000 --timeout 120
 ```
+When running locally, disable OAuthlib's HTTPs verification.
+ACTION ITEM for developers:
+   When running in production *do not* leave this option enabled.
+   os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
 
 ## Latex Notes
 
 - TO ADD new package => Just add the package on `texlive.packages` file and do a vagrant up
 - TexLive install Dir => `./build/.texlive` on vagrant `/vagrant/build/.textlive`
+
+
 
