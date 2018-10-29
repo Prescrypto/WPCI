@@ -9,6 +9,12 @@ API_BASE_PATH = "api/v1/"
 cwd = os.getcwd() # used by static file server
 # execute asynchronously action
 
+# When running locally, disable OAuthlib's HTTPs verification.
+# ACTION ITEM for developers:
+#     When running in production *do not* leave this option enabled.
+#os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+
 '''Initializing the application with routes'''
 web_app = Application([
     (r"/"+API_BASE_PATH+"helloworld", routes.HelloWorld),
@@ -24,6 +30,7 @@ web_app = Application([
     (r"/(.*\.css)", StaticFileHandler, {"path": cwd}),
     (r"/(.*\.js)", StaticFileHandler, {"path": cwd}),
     (r"/(.*\.svg)", StaticFileHandler, {"path": cwd}),
+    (r"/(.*\.txt)", StaticFileHandler, {"path": cwd}),
     (r'.*', routes.APINotFoundHandler)],
     debug=True)
 

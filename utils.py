@@ -7,6 +7,8 @@ from models.mongoManager import ManageDB
 from jira import JIRA
 import config as conf
 import logging
+from tornado.template import Loader
+import os
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -55,3 +57,32 @@ def create_jira_issue(summary, description, comment="", project_key="PROP", task
 
     except Exception as e:
         logger.error( "Error al Crear Issue en JIRA : %s." % e)
+
+def credentials_to_dict(credentials):
+  return {'token': credentials.token,
+          'refresh_token': credentials.refresh_token,
+          'token_uri': credentials.token_uri,
+          'client_id': credentials.client_id,
+          'client_secret': credentials.client_secret,
+          'scopes': credentials.scopes}
+
+def get_id_from_url(pdf_url):
+    pdf_id = ""
+    # https://docs.google.com/document/d/1kvcIofihvrWq3o5KekoqVX6gZeTVP8oCm3oX-UnjMK8/edit?usp=sharing
+    if pdf_url.find("/d/") > -1:
+        temp_url = pdf_url.split("/d/")[1]
+        pdf_id = temp_url.split("/edit")[0]
+    elif pdf_url.find("id=") > -1:
+        pdf_id = pdf_url.split("=")[1]
+    else:
+        logger.info("Document id not found in url")
+        return False
+
+    return pdf_id
+
+def generate_credentials():
+    loader = Loader("static/auth")
+    my_cred_file = loader.load("google_secret_format.txt")
+    result = my_cred_file.generate().decode("utf-8") % (conf.GOOGLE_CLIENT_ID, conf.GOOGLE_PROJECT_ID, conf.GOOGLE_CLIENT_SECRET, conf.BASE_URL+"/docs/")
+    with open(conf.CLIENT_SECRETS_FILE, "w") as cred_json:
+        cred_json.write(result)

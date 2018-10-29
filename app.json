@@ -75,6 +75,15 @@
     "PAY_PLAN_ID": {
 	  "required": true
       },
+    "GOOGLE_CLIENT_ID": {
+	  "required": true
+      },
+    "GOOGLE_PROJECT_ID": {
+	  "required": true
+      },
+    "GOOGLE_CLIENT_SECRET": {
+	  "required": true
+      },	
     "GITHUB_OAUTH_URI": {
         "required": true
       }
