@@ -1,14 +1,20 @@
+#python
 import time
 import hashlib
 import re
+import logging
+import os
 
+#external app
+from jira import JIRA
+
+#web app
+from tornado.template import Loader
+
+#internal
+import config as conf
 from models import User
 from models.mongoManager import ManageDB
-from jira import JIRA
-import config as conf
-import logging
-from tornado.template import Loader
-import os
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)

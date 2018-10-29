@@ -1,33 +1,40 @@
-from tornado.web import  os
-import tornado
+#python
 import logging
-from tornado import gen, ioloop
 import ast
-from handlers.apiBaseHandler import BaseHandler
 import jwt
-import config as conf
 import datetime
 import json
-import fitz
-from models import User, Document
-from models.mongoManager import ManageDB
 import tempfile
 import time
 import hashlib
 import os
 import subprocess
 import glob
-from handlers.emailHandler import Mailer
-import config as conf
 import base64
-from utils import *
+import io
+
+#web app
+from tornado.web import  os
+import tornado
+from tornado import gen, ioloop
 import jinja2
-from utils import is_valid_email, get_id_from_url
+
+#google oauth
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 from googleapiclient.http import MediaIoBaseDownload
-import io
+
+#pdf context
+import fitz
+
+#internal
+from handlers.apiBaseHandler import BaseHandler
+import config as conf
+from models import User, Document
+from models.mongoManager import ManageDB
+from handlers.emailHandler import Mailer
+from utils import *
 
 latex_jinja_env = jinja2.Environment(
 	block_start_string = '\BLOCK{',

@@ -1,8 +1,12 @@
-from handlers import routes
+#python
+import os
+#web app
 from tornado.wsgi import WSGIAdapter
 from tornado.web import Application, FallbackHandler, StaticFileHandler
+
+#internal
+from handlers import routes
 from oauthApi import oauth_app
-import os
 
 DOCS_BASE_PATH = "docs/"
 API_BASE_PATH = "api/v1/"

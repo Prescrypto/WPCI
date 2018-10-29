@@ -1,12 +1,26 @@
-from flask import Flask, redirect, url_for, session, request, jsonify, render_template
-from werkzeug.utils import secure_filename
-from flask_oauthlib.client import OAuth
-from tornado.wsgi import WSGIContainer, WSGIAdapter
+#python
 import logging
 import base64
 import tempfile
 import subprocess
+
+#web app
+from flask import Flask, redirect, url_for, session, request, jsonify, render_template
+from werkzeug.utils import secure_filename
+from flask_oauthlib.client import OAuth
+from tornado.wsgi import WSGIContainer, WSGIAdapter
 from tornado.template import Loader
+
+#google oauth
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+from googleapiclient.http import MediaIoBaseDownload
+
+#github oauth
+from oauth2client.client import OAuth2WebServerFlow
+
+#internal
 import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import *
@@ -14,11 +28,7 @@ from handlers.emailHandler import Mailer
 from models import User, Document
 from handlers.WSHandler import *
 from utils import *
-import google.oauth2.credentials
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-from googleapiclient.http import MediaIoBaseDownload
-from oauth2client.client import OAuth2WebServerFlow
+
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
