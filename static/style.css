@@ -31,7 +31,7 @@ header h1.logo:hover {
   text-decoration: none;
 }
 .login-nav{
-  display: flex;
+
   justify-content: space-between;
 }
 /* Message flashing */
@@ -94,7 +94,7 @@ header h1.logo:hover {
 
 .container {
   width: 940px;
-  margin: 0 auto;
+  margin: auto;
 }
 .leftcolumn{
   padding:60px;
@@ -102,9 +102,9 @@ header h1.logo:hover {
   color:#fff;
 }
 div.jumbo {
-  padding: 20px;
-  margin:40px;
-  margin-top:60px;
+  padding: 1em;
+  margin:1em;
+  margin-top:4em;
   color:#071323;
   text-align:center;
   background-color: #eeeeee;

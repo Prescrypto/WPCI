@@ -18,7 +18,7 @@
           <div class="leftcolumn col-lg-3 col-md-12" style="margin-bottom:-10px;padding-bottom:10px;">
               <!--Jumbo box organization name-->
             <div class="jumbo" id="org_title">
-              <h4>{{ wp_description }}</h4>
+              <strong><p style="font-size:2em;" >{{ wp_description }}</p></strong>
 
             </div>
           </div>
@@ -58,7 +58,7 @@
             <div id="pdf_container" style="height: 800px;overflow: scroll;">
               <div id="dynamic_container" >
               </div>
-                <div id="checkdiv" style="display:flex;align-items:bottom;padding-left:2%">
+                <div id="checkdiv" style="align-items:bottom;padding-left:2%">
                    <h2> <input  onclick="thisClick()" id="getit_input" name="getit_input" value="" >
                        <label for="getit_input" id="lagetit_input" name="lagetit_input">{{ wp_getit_btn }}</label></h2>
 
@@ -74,12 +74,12 @@
       {% if has_nda %}
         var myinput = document.getElementById("getit_input");
         myinput.type = 'checkbox';
-        myinput.style = "transform: scale(2);margin-top: 4px;margin-left: 5em;";
-        document.getElementById("lagetit_input").style = "font-weight:bold;padding-left:20px;";
+        myinput.style = "transform: scale(2);margin-top: 4px;margin-right: 0.5em;";
+        document.getElementById("lagetit_input").style = "font-weight:bold;align:center;";
 
       {% else %}
        var myinput = document.getElementById("getit_input");
-       myinput.style = "margin-bottom: 10px;margin-right: 300px;margin-left: 10em;";
+       myinput.style = "margin-bottom: 10px;align:center;";
        myinput.type = 'submit';
        myinput.classList.add("btn-green-square");
        myinput.value = "Get it!";
