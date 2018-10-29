@@ -56,18 +56,3 @@ jira==2.0.0
 #github oauth
 oauth2client==4.1.3
 oauthlib==2.1.0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
