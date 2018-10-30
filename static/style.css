@@ -93,7 +93,7 @@ header h1.logo:hover {
  */
 
 .container {
-  width: 940px;
+  width: 100%;
   margin: auto;
 }
 .leftcolumn{
