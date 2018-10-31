@@ -15,8 +15,9 @@
 <body>
  <header>
   	<div class="container">
+         <h1 class="logo"><a href=""><img style="width:150px; margin:0;" src="/static/images/wpci.svg" alt=""></a></h1>
   	  <strong><nav class="login-nav">
-          <h1 class="logo"><a href=""><img style="width:150px; margin:0;" src="/static/images/wpci.svg" alt=""></a></h1>
+
         <ul class="menu" style="margin-top: 0px !important;" >
           <li><a href="{{ url_for('index') }}">Home</a></li>
           {% if session.user %}
@@ -32,7 +33,7 @@
   	</div>
    </header>
 
-   <div class="container-fluid" >
+   <div class="container-fluid" style="padding-right:0px !important;padding-left: 0px !important;" >
 
       {% block content %}
         {% endblock %}

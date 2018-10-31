@@ -229,3 +229,8 @@ margin-bottom: 10px;
     font-size: 1.8rem !important;
     line-height: 1.4;
 }
+@media screen and (max-width: 678px){
+  nav{
+    display: none;
+  }
+}
