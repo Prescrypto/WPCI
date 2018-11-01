@@ -191,7 +191,7 @@ margin-bottom: 10px;
 }
 #login-card{
   background: #fff;
-  margin: 150px auto;
+  margin: 150px 15%;
   padding: 50px;
   border-radius: 10px;
 }
@@ -215,6 +215,11 @@ margin-bottom: 10px;
     text-align: center;
 }
 
+.btn-info{
+    margin-top: 0.5em !important;
+    margin-bottom: 0.5em !important;
+}
+
 .try-nda{
   font-weight: 900!important;
   padding-left: 1em;
@@ -235,8 +240,42 @@ margin-bottom: 10px;
 
 }
 
-@media screen and (max-width: 678px){
-  nav{
-    display: none;
-  }
+.sr-only {
+    border: 0;
+    clip: rect(0,0,0,0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
 }
+
+.navbar-default {
+     background-color: transparent !important;
+     border-color: transparent !important;
+}
+.navbar-default .navbar-nav>li>a {
+    color: #fff !important;
+}
+
+@media (min-width: 700px) {
+    .card-margin{
+        margin-left: 32%;
+    }
+
+
+}
+
+
+@media (max-width: 700px) {
+    #login-card{
+      background: #fff;
+      margin: 150px 2%;
+      padding: 50px;
+      border-radius: 10px;
+    }
+
+
+}
+

@@ -3,13 +3,15 @@
 <section class="login-section">
   <div>
     <div class="row remove-padding">
-      <div id="login-card" class="col-lg-4 col-md-6 col-sm-12">
+      <div id="login-card" class="col-lg-8 col-md-8 col-sm-12">
         <div class="login-form">
           <form action="{{ url_for('login') }}" method="post">
             <h1 style="font-weight:900;" class="login-h1">Please login</h1>
              {% if error %}
                 <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
                 {% endif %}
+
+            <div class="card-margin">
             <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >Username</span>
@@ -22,6 +24,8 @@
                 <span class="input-group-text" id="basic-addon2">Password</span>
               </div>
               <input type="password" class="form-control" name="password" value="{{request.form.password }}" placeholder="Enter your Password" aria-label="Username" aria-describedby="basic-addon1">
+            </div>
+
             </div>
             <button type="submit" class="btn btn-info" value="Login">Login</button>
           </form>

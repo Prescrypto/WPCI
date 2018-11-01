@@ -5,7 +5,7 @@
 
    <div class="row remove-padding">
 
-      <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" >
+      <div id="login-card" class="col-lg-8 col-md-8 col-sm-12" >
 
         <div class="login-form">
 
@@ -16,6 +16,8 @@
               {% elif error %}
                 <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
                 {% endif %}
+
+            <div class="card-margin">
             <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >Name </span>
@@ -57,6 +59,8 @@
                {% endif %}
 
             </div>
+
+              </div>
             <button type="submit" class="btn btn-info" value="create">Save!</button>
           </form>
         </div>

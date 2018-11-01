@@ -4,7 +4,7 @@
 
      <div class="row remove-padding" >
 
-      <div id="login-card" class="col-lg-6 col-md-12 col-sm-12" >
+      <div id="login-card" class="col-lg-8 col-md-8 col-sm-12" >
         <div class="login-form">
           <form action="{{ url_for('documents', type=type, render=render) }}" method="post">
             <h1 style="font-weight:900;" class="login-h1">Please Enter all the Document information</h1>
@@ -27,6 +27,7 @@
 
                 </h3>
               {% endif %}
+            <div class="card-margin">
              <div class="input-group mb-3">
               <div class="input-group-prepend">
                 <span class="input-group-text" >Document Name</span>
@@ -95,6 +96,7 @@
               <input type="text" class="form-control" name="wp_getit_btn" value="" placeholder="button description" aria-label="wp_getit_btn" aria-describedby="basic-addon1">
             </div>
 
+            </div>
             <button type="submit" class="btn btn-info" value="create">Save!</button>
           </form>
         </div>
