@@ -277,10 +277,6 @@ margin-bottom: 10px;
     }
 
 
-html{
-    background: #333333 !important;
-}
-
 @media (max-width: 700px) {
     #login-card{
       background: #fff;
