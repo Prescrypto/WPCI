@@ -263,9 +263,10 @@ margin-bottom: 10px;
    margin-right: 0px !important;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 400px) {
     .card-margin{
-        margin-left: 32%;
+       width: 26%;
+  margin: 0 auto;
     }
 
 
