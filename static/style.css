@@ -271,7 +271,15 @@ margin-bottom: 10px;
 
 
 }
+.container-fluid {
+    height: 100% !important;
+    overflow-y: hidden !important; /* don't show content that exceeds my height */
+    }
 
+
+html{
+    background: #333333 !important;
+}
 
 @media (max-width: 700px) {
     #login-card{
