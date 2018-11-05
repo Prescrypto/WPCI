@@ -3,7 +3,8 @@
 
 <h1 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" >Welcome to your WPCI admin panel</h1>
 
-    <div>
+    <div >
+
     {%  if session.user %}
 
 
@@ -59,4 +60,6 @@
         <div class="error"><strong>Error:</strong> {{ error }}</div>
     {% endif %}
         </div>
+
+
 {% endblock %}

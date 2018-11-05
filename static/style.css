@@ -13,7 +13,6 @@ body {
 
 header {
   background-color: #071323;
-  height: 75px;
   width: 100%;
   opacity: .9;
 }
@@ -31,7 +30,7 @@ header h1.logo:hover {
   text-decoration: none;
 }
 .login-nav{
-  display: flex;
+
   justify-content: space-between;
 }
 /* Message flashing */
@@ -93,8 +92,8 @@ header h1.logo:hover {
  */
 
 .container {
-  width: 940px;
-  margin: 0 auto;
+  width: 100%;
+  margin: auto;
 }
 .leftcolumn{
   padding:60px;
@@ -102,9 +101,9 @@ header h1.logo:hover {
   color:#fff;
 }
 div.jumbo {
-  padding: 20px;
-  margin:40px;
-  margin-top:60px;
+  padding: 1em;
+  margin:1em;
+  margin-top:4em;
   color:#071323;
   text-align:center;
   background-color: #eeeeee;
@@ -191,7 +190,7 @@ margin-bottom: 10px;
 }
 #login-card{
   background: #fff;
-  margin: 150px auto;
+  margin: 150px 15%;
   padding: 50px;
   border-radius: 10px;
 }
@@ -215,6 +214,11 @@ margin-bottom: 10px;
     text-align: center;
 }
 
+.btn-info{
+    margin-top: 0.5em !important;
+    margin-bottom: 0.5em !important;
+}
+
 .try-nda{
   font-weight: 900!important;
   padding-left: 1em;
@@ -226,6 +230,61 @@ margin-bottom: 10px;
     line-height: 1.4;
 }
 .uk-card-title-sm {
-    font-size: 1.8rem !important;
+    font-size: 1.4rem !important;
     line-height: 1.4;
+
 }
+
+.remove-padding{
+    margin-right: 0 !important;
+    margin-left:0 !important;
+
+}
+
+.sr-only {
+    border: 0;
+    clip: rect(0,0,0,0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}
+
+.navbar-default {
+     background-color: transparent !important;
+     border-color: transparent !important;
+}
+.navbar-default .navbar-nav>li>a {
+    color: #fff !important;
+}
+.navbar-header {
+   margin-right: 0px !important;
+}
+
+@media (min-width: 350px) {
+    .card-margin{
+       width: 60%;
+  margin: 0 auto;
+    }
+
+
+}
+.container-fluid {
+    height: 100% !important;
+    overflow-y: hidden !important; /* don't show content that exceeds my height */
+    }
+
+
+@media (max-width: 700px) {
+    #login-card{
+      background: #fff;
+      margin: 150px 2%;
+      padding: 50px;
+      border-radius: 10px;
+    }
+
+
+}
+
