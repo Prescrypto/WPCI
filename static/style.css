@@ -263,7 +263,7 @@ margin-bottom: 10px;
    margin-right: 0px !important;
 }
 
-@media (min-width: 400px) {
+@media (min-width: 300px) {
     .card-margin{
        width: 26%;
   margin: 0 auto;
