@@ -3,8 +3,9 @@
 <section >
 
     <div style="padding-top: 20px;">
-      <div id="login-card" style="padding-top:2em;" class="col-lg-8 col-md-8 col-sm-12" >
-
+     <div class="row remove-padding" >
+      <div id="login-card" class="col-lg-6 col-md-12 col-sm-12" style="margin: 0 !important;">
+        <div class="login-form">
 
           <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
 
@@ -64,10 +65,11 @@
             {% endif %}
 
           </form>
+        </div>
             <button style="margin-left:40%" onClick="history.go(-1)" class="btn btn-info" value="back">Go back</button>
 
 
-
+      </div>
       </div>
   </div>
 </section>
