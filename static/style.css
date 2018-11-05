@@ -263,9 +263,9 @@ margin-bottom: 10px;
    margin-right: 0px !important;
 }
 
-@media (min-width: 300px) {
+@media (min-width: 350px) {
     .card-margin{
-       width: 26%;
+       width: 60%;
   margin: 0 auto;
     }
 
