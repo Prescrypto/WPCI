@@ -1,14 +1,22 @@
 {% extends "layout.html" %}
+{% block cssblock %}
+  <style>
+    html{
+      background: #333333 !important;
+    }
+  </style>
+{% endblock cssblock %}
+
 {% block content %}
 <section class="login-section">
   <div>
-    <div id="general-form" class="row" >
-      <div id="login-card" class="col-lg-6 col-md-6 col-sm-12" >
+    <div id="general-form" class="row remove-padding" >
+      <div id="login-card" class="col-lg-6 col-md-8 col-sm-8" >
         <div class="login-form">
           <form action="{{ url_for('analytics', id=id) }}" method="post">
             <h2 style="font-weight:900;" class="login-h1">Document Analytics</h2>
-              <h3 class="login-h1"><b>Name:</b> {{ doc.wp_name }}
-                  <p><b> Id:</b> {{ doc.nda_id }} </p></h3>
+              <h4 class="login-h1"><b>Name:</b> {{ doc.wp_name }}
+                  <p><b> Id:</b> {{ doc.nda_id }} </p></h4>
               {% if error %}
                 <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
                 {{ error }}
