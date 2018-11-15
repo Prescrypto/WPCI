@@ -9,6 +9,7 @@ from flask import Flask, redirect, url_for, session, request, jsonify, render_te
 from werkzeug.utils import secure_filename
 from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
+from flask_sslify import SSLify
 from tornado.template import Loader
 
 #google oauth
@@ -67,6 +68,7 @@ NOTIFICATION_HTML = "<h3>Hi!</h3>\
 
 
 app = Flask(__name__)
+sslify = SSLify(app)
 app.debug = True
 app.secret_key = conf.SECRET
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -263,6 +265,7 @@ def register_org():
                     return render_template('register_org.html', error=error, myuser=user)
 
                 data.pop("prev_logo")
+                data["google_refresh_token"] = ""
                 user.set_attributes(data)
                 user.update()
 
