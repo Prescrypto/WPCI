@@ -26,12 +26,14 @@ Flask==1.0.2
 Flask-OAuthlib==0.9.5
 gunicorn==19.9.0
 httplib2==0.11.3
-requests==2.19.1
+
+requests==2.20.1
 requests-oauthlib==1.0.0
 requests-toolbelt==0.8.0
 tornado==5.0.2
 Werkzeug==0.14.1
 urllib3==1.23
+Flask-SSLify==0.1.5 
 
 #pdf_context
 PyMuPDF==1.13.11
