@@ -265,6 +265,7 @@ def register_org():
                     return render_template('register_org.html', error=error, myuser=user)
 
                 data.pop("prev_logo")
+                data["google_refresh_token"] = ""
                 user.set_attributes(data)
                 user.update()
 
