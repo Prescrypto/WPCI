@@ -659,14 +659,14 @@ def google_authorize():
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
       conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES)
 
-    flow.redirect_uri = url_for('oauth2callback', _external=True)
+    flow.redirect_uri = conf.BASE_URL + BASE_PATH + "oauth2callback"
 
     authorization_url, state = flow.authorization_url(
       # Enable offline access so that you can refresh an access token without
       # re-prompting the user for permission. Recommended for web server apps.
       access_type='offline',
       # Enable incremental authorization. Recommended as a best practice.
-      include_granted_scopes='true')
+      include_granted_scopes='false')
 
     # Store the state so the callback can verify the auth server response.
     session['state'] = state
@@ -690,7 +690,7 @@ def oauth2callback():
 
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
       conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES, state=state)
-    flow.redirect_uri = url_for('oauth2callback', _external=True)
+    flow.redirect_uri = conf.BASE_URL + BASE_PATH + "oauth2callback"
 
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
     authorization_response = request.url
