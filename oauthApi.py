@@ -701,7 +701,6 @@ def oauth2callback():
     #              credentials in a persistent database instead.
     credentials = flow.credentials
     session['credentials'] = credentials_to_dict(credentials)
-    print(session['credentials'])
     if session['credentials'].get("token") is not None and session['credentials'].get("token") != "null":
         user.google_token = session['credentials'].get("token")
     if session['credentials'].get("refresh_token") is not None and session['credentials'].get("refresh_token")!= "null":
@@ -733,8 +732,6 @@ def show_pdf(id):
 
     if request.method == 'GET':
         try:
-
-
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
@@ -763,6 +760,7 @@ def show_pdf(id):
                           'client_id': conf.GOOGLE_CLIENT_ID,
                            'client_secret': conf.GOOGLE_CLIENT_SECRET,
                             'scopes': conf.SCOPES})
+
                 else:
                     pdffile = render_pdf_base64_latex(pdf_url, "main.tex", render_options)
 
@@ -846,7 +844,7 @@ def show_pdf(id):
                             if doc_type is not False and doc_type == "google":
                                 google_token = getattr(user, "google_token", False)
                                 if google_token is not False:
-                                    wpci_result, complete_hash = create_download_pdf_google(thisnda.wp_url,
+                                    wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(thisnda.wp_url,
                                             {'token': user.google_token,
                                              'refresh_token': user.google_refresh_token,
                                              'token_uri': conf.GOOGLE_TOKEN_URI,
@@ -855,7 +853,7 @@ def show_pdf(id):
                                              'scopes': conf.SCOPES},
                                              signer_email)
                             else:
-                                wpci_result, complete_hash = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
+                                wpci_result, complete_hash, WPCI_FILE_NAME  = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
                                 error = "Error rendering the white paper"

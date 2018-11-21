@@ -478,6 +478,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
 
 def create_download_pdf_google(pdf_url, user_credentials, email):
     file_full_path = file_full_path64 = ""
+    file_tittle = "document.pdf"
     pdf_id = get_id_from_url(pdf_url)
     if pdf_id is False:
         return False
@@ -500,6 +501,8 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
 
             request = drive.files().export_media(fileId=pdf_id,
                                                  mimeType='application/pdf')
+            metadata = drive.files().get(fileId=pdf_id).execute()
+            file_tittle = metadata.get("title").strip(" ") + ".pdf"
 
             fh = io.BytesIO()
             downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
@@ -524,19 +527,20 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
 
             pdffile = open(file_full_path, 'rb').read()
 
-            return pdffile, complete_hash
+            return pdffile, complete_hash, file_tittle
 
         except IOError as e:
             logger.info('google render IOError' + str(e))
-            return False, False
+            return False, False, False
         except Exception as e:
             logger.info("other error google render" + str(e))
-            return False, False
+            return False, False, False
 
 
 def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
+    file_tittle = "document.pdf"
     file_full_path = ''
     complete_hash = ""
     new_main_tex = "main2.tex"
@@ -554,6 +558,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
+            file_tittle = repo_name.strip(" ") + ".pdf"
             filesdir = os.path.join(tmpdir, repo_name)
             if options != {}: #if there are special conditions to render
                 # modify the original template:
@@ -586,14 +591,14 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             document.close()
 
             pdffile = open(file_full_path, 'rb').read()
-            return pdffile, complete_hash
+            return pdffile, complete_hash, file_tittle
 
         except IOError as e:
             logger.info('IOError'+ str(e))
-            return False, False
+            return False, False, False
         except Exception as e:
             logger.info("other error"+ str(e))
-            return False, False
+            return False, False, False
 
 
 def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):
