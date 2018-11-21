@@ -523,7 +523,7 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
 
             if mime_type == "application/vnd.google-apps.presentation":
                 pointa = fitz.Point(AXIS_X_GOOGLE, AXIS_Y- PRESENTATION_OFFSET)
-                pointb = fitz.Point(AXIS_X_GOOGLE, AXIS_Y_LOWER- PRESENTATION_OFFSET
+                pointb = fitz.Point(AXIS_X_GOOGLE, AXIS_Y_LOWER- PRESENTATION_OFFSET)
                 WATERMARK_ROTATION = 0
             elif mime_type == "application/vnd.google-apps.spreadsheet":
                 pointa = fitz.Point(AXIS_X, AXIS_Y)
