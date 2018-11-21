@@ -70,9 +70,12 @@ SMTP_PORT = conf.SMTP_PORT
 
 # Axis for the pdf header
 AXIS_X = 15
+AXIS_X_GOOGLE = 220
 AXIS_Y = 500
 AXIS_Y_GOOGLE = 200
 AXIS_X_LOWER = 28
+AXIS_Y_LOWER = AXIS_Y + 11
+PRESENTATION_OFFSET = 130
 WATERMARK_ROTATION = 90
 WATERMARK_FONT = "Times-Roman"
 WATERMARK_SIZE = 10
@@ -479,6 +482,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
 def create_download_pdf_google(pdf_url, user_credentials, email):
     file_full_path = file_full_path64 = ""
     file_tittle = "document.pdf"
+    MORPH = None
     pdf_id = get_id_from_url(pdf_url)
     if pdf_id is False:
         return False
@@ -503,6 +507,7 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
                                                  mimeType='application/pdf')
             metadata = drive.files().get(fileId=pdf_id).execute()
             file_tittle = metadata.get("title").strip(" ") + ".pdf"
+            mime_type = metadata.get("mimeType")
 
             fh = io.BytesIO()
             downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
@@ -514,14 +519,27 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
             with open(file_full_path, 'wb') as mypdf:
                 mypdf.write(fh.getvalue())
 
-            pointa = fitz.Point(AXIS_X, AXIS_Y_GOOGLE)
-            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y_GOOGLE)
+            print("mime", mime_type)
+
+            if mime_type == "application/vnd.google-apps.presentation":
+                pointa = fitz.Point(AXIS_X_GOOGLE, AXIS_Y- PRESENTATION_OFFSET)
+                pointb = fitz.Point(AXIS_X_GOOGLE, AXIS_Y_LOWER- PRESENTATION_OFFSET
+                WATERMARK_ROTATION = 0
+            elif mime_type == "application/vnd.google-apps.spreadsheet":
+                pointa = fitz.Point(AXIS_X, AXIS_Y)
+                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
+
+            else:
+                pointa = fitz.Point(AXIS_X, AXIS_Y_GOOGLE)
+                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y_GOOGLE)
+                MORPH = (pointb, FLIP_MATRIX)
+
             document = fitz.open(file_full_path)
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
-                                rotate=WATERMARK_ROTATION, morph=(pointa, FLIP_MATRIX))
+                                rotate=WATERMARK_ROTATION, morph=MORPH)
                 page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
-                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION, morph=(pointb, FLIP_MATRIX))
+                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION, morph=MORPH)
             document.save(file_full_path, incremental=1)
             document.close()
 
