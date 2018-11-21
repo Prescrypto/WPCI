@@ -32,10 +32,7 @@ GOOGLE_TOKEN_URI = "https://www.googleapis.com/oauth2/v3/token"
 GOOGLE_CLIENT_ID=os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_PROJECT_ID = os.environ.get('GOOGLE_PROJECT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
-
-SCOPES = ['https://www.googleapis.com/auth/drive',
-                  'https://www.googleapis.com/auth/drive.file',
-                  'https://www.googleapis.com/auth/drive.readonly']
+SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 CLIENT_SECRETS_FILE = "client_secret.json"
 API_SERVICE_NAME = 'drive'
 API_VERSION = 'v2'
