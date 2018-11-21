@@ -70,7 +70,6 @@ SMTP_PORT = conf.SMTP_PORT
 
 # Axis for the pdf header
 AXIS_X = 15
-AXIS_X_GOOGLE = 220
 AXIS_Y = 500
 AXIS_Y_GOOGLE = 200
 AXIS_X_LOWER = 28
@@ -522,9 +521,8 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
             print("mime", mime_type)
 
             if mime_type == "application/vnd.google-apps.presentation":
-                pointa = fitz.Point(AXIS_X_GOOGLE, AXIS_Y- PRESENTATION_OFFSET)
-                pointb = fitz.Point(AXIS_X_GOOGLE, AXIS_Y_LOWER- PRESENTATION_OFFSET)
-                WATERMARK_ROTATION = 0
+                pointa = fitz.Point(AXIS_X, AXIS_Y- PRESENTATION_OFFSET)
+                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y- PRESENTATION_OFFSET)
             elif mime_type == "application/vnd.google-apps.spreadsheet":
                 pointa = fitz.Point(AXIS_X, AXIS_Y)
                 pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
