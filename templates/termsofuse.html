@@ -4,7 +4,7 @@
 <h1 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" >Terminos y condiciones de servicio</h1>
 
     <div>
-    {%  if session.user %}
+
 
 
          <div class="uk-child-width-expand@s uk-text-center" uk-grid>
@@ -237,10 +237,5 @@
          </div>
 
 
-
-    {% endif %}
-    {% if error %}
-        <div class="error"><strong>Error:</strong> {{ error }}</div>
-    {% endif %}
         </div>
 {% endblock %}
