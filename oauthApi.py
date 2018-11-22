@@ -665,6 +665,7 @@ def google_authorize():
       # Enable offline access so that you can refresh an access token without
       # re-prompting the user for permission. Recommended for web server apps.
       access_type='offline',
+        approval_prompt='force',
       # Enable incremental authorization. Recommended as a best practice.
       include_granted_scopes='false')
 
@@ -701,6 +702,7 @@ def oauth2callback():
     #              credentials in a persistent database instead.
     credentials = flow.credentials
     session['credentials'] = credentials_to_dict(credentials)
+    print(session['credentials'])
     if session['credentials'].get("token") is not None and session['credentials'].get("token") != "null":
         user.google_token = session['credentials'].get("token")
     if session['credentials'].get("refresh_token") is not None and session['credentials'].get("refresh_token")!= "null":
