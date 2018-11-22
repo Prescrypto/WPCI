@@ -73,6 +73,8 @@ AXIS_X = 15
 AXIS_Y = 500
 AXIS_Y_GOOGLE = 200
 AXIS_X_LOWER = 28
+AXIS_Y_LOWER = AXIS_Y + 11
+PRESENTATION_OFFSET = 130
 WATERMARK_ROTATION = 90
 WATERMARK_FONT = "Times-Roman"
 WATERMARK_SIZE = 10
@@ -478,6 +480,8 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
 
 def create_download_pdf_google(pdf_url, user_credentials, email):
     file_full_path = file_full_path64 = ""
+    file_tittle = "document.pdf"
+    MORPH = None
     pdf_id = get_id_from_url(pdf_url)
     if pdf_id is False:
         return False
@@ -500,6 +504,9 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
 
             request = drive.files().export_media(fileId=pdf_id,
                                                  mimeType='application/pdf')
+            metadata = drive.files().get(fileId=pdf_id).execute()
+            file_tittle = metadata.get("title").strip(" ") + ".pdf"
+            mime_type = metadata.get("mimeType")
 
             fh = io.BytesIO()
             downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
@@ -511,32 +518,45 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
             with open(file_full_path, 'wb') as mypdf:
                 mypdf.write(fh.getvalue())
 
-            pointa = fitz.Point(AXIS_X, AXIS_Y_GOOGLE)
-            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y_GOOGLE)
+            print("mime", mime_type)
+
+            if mime_type == "application/vnd.google-apps.presentation":
+                pointa = fitz.Point(AXIS_X, AXIS_Y- PRESENTATION_OFFSET)
+                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y- PRESENTATION_OFFSET)
+            elif mime_type == "application/vnd.google-apps.spreadsheet":
+                pointa = fitz.Point(AXIS_X, AXIS_Y)
+                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
+
+            else:
+                pointa = fitz.Point(AXIS_X, AXIS_Y_GOOGLE)
+                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y_GOOGLE)
+                MORPH = (pointb, FLIP_MATRIX)
+
             document = fitz.open(file_full_path)
             for page in document:
                 page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
-                                rotate=WATERMARK_ROTATION, morph=(pointa, FLIP_MATRIX))
+                                rotate=WATERMARK_ROTATION, morph=MORPH)
                 page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
-                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION, morph=(pointb, FLIP_MATRIX))
+                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION, morph=MORPH)
             document.save(file_full_path, incremental=1)
             document.close()
 
             pdffile = open(file_full_path, 'rb').read()
 
-            return pdffile, complete_hash
+            return pdffile, complete_hash, file_tittle
 
         except IOError as e:
             logger.info('google render IOError' + str(e))
-            return False, False
+            return False, False, False
         except Exception as e:
             logger.info("other error google render" + str(e))
-            return False, False
+            return False, False, False
 
 
 def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
     '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
+    file_tittle = "document.pdf"
     file_full_path = ''
     complete_hash = ""
     new_main_tex = "main2.tex"
@@ -554,6 +574,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             timestamp = str(time.time())
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
+            file_tittle = repo_name.strip(" ") + ".pdf"
             filesdir = os.path.join(tmpdir, repo_name)
             if options != {}: #if there are special conditions to render
                 # modify the original template:
@@ -586,14 +607,14 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             document.close()
 
             pdffile = open(file_full_path, 'rb').read()
-            return pdffile, complete_hash
+            return pdffile, complete_hash, file_tittle
 
         except IOError as e:
             logger.info('IOError'+ str(e))
-            return False, False
+            return False, False, False
         except Exception as e:
             logger.info("other error"+ str(e))
-            return False, False
+            return False, False, False
 
 
 def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):

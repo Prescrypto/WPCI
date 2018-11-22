@@ -665,6 +665,7 @@ def google_authorize():
       # Enable offline access so that you can refresh an access token without
       # re-prompting the user for permission. Recommended for web server apps.
       access_type='offline',
+        approval_prompt='force',
       # Enable incremental authorization. Recommended as a best practice.
       include_granted_scopes='false')
 
@@ -714,6 +715,13 @@ def oauth2callback():
 def oauthgoogle38fb6f671eadab58():
     return render_template('google38fb6f671eadab58.html')
 
+@app.route(BASE_PATH+'termsofuse')
+def termsofuse():
+    return render_template('termsofuse.html')
+
+@app.route(BASE_PATH+'privacypolicy')
+def privacypolicy():
+    return render_template('privacypolicy.html')
 
 @app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
 def redir_pdf(id):
@@ -732,8 +740,6 @@ def show_pdf(id):
 
     if request.method == 'GET':
         try:
-
-
             nda = Document.Document()
             thisnda = nda.find_by_nda_id(id)
             if thisnda is not None:
@@ -762,6 +768,7 @@ def show_pdf(id):
                           'client_id': conf.GOOGLE_CLIENT_ID,
                            'client_secret': conf.GOOGLE_CLIENT_SECRET,
                             'scopes': conf.SCOPES})
+
                 else:
                     pdffile = render_pdf_base64_latex(pdf_url, "main.tex", render_options)
 
@@ -845,7 +852,7 @@ def show_pdf(id):
                             if doc_type is not False and doc_type == "google":
                                 google_token = getattr(user, "google_token", False)
                                 if google_token is not False:
-                                    wpci_result, complete_hash = create_download_pdf_google(thisnda.wp_url,
+                                    wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(thisnda.wp_url,
                                             {'token': user.google_token,
                                              'refresh_token': user.google_refresh_token,
                                              'token_uri': conf.GOOGLE_TOKEN_URI,
@@ -854,7 +861,7 @@ def show_pdf(id):
                                              'scopes': conf.SCOPES},
                                              signer_email)
                             else:
-                                wpci_result, complete_hash = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
+                                wpci_result, complete_hash, WPCI_FILE_NAME  = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
                                 error = "Error rendering the white paper"
