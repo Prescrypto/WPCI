@@ -714,6 +714,13 @@ def oauth2callback():
 def oauthgoogle38fb6f671eadab58():
     return render_template('google38fb6f671eadab58.html')
 
+@app.route(BASE_PATH+'termsofuse')
+def termsofuse():
+    return render_template('termsofuse.html')
+
+@app.route(BASE_PATH+'privacypolicy')
+def privacypolicy():
+    return render_template('privacypolicy.html')
 
 @app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
 def redir_pdf(id):
