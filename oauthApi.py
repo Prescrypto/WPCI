@@ -702,7 +702,6 @@ def oauth2callback():
     #              credentials in a persistent database instead.
     credentials = flow.credentials
     session['credentials'] = credentials_to_dict(credentials)
-    print(session['credentials'])
     if session['credentials'].get("token") is not None and session['credentials'].get("token") != "null":
         user.google_token = session['credentials'].get("token")
     if session['credentials'].get("refresh_token") is not None and session['credentials'].get("refresh_token")!= "null":
