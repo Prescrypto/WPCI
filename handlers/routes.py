@@ -737,6 +737,40 @@ def get_link_status(doc_id):
         return False
 
 
+def get_b64_pdf(doc_id, userjson):
+    result = False
+    try:
+        user = User.User()
+        user = user.find_by_attr("username", userjson.get("username"))
+        if user is not False:
+            doc = Document.Document()
+            docs = doc.find_by_attr("nda_id", doc_id)
+            if len(docs) > 0:
+                doc = docs[0]
+            else:
+                return result
+            doc_type = getattr(doc, "type", False)
+            if doc_type is False:
+                google_token = getattr(user, "google_token", False)
+                if google_token is not False:
+                    user_credentials = {'token': user.google_token,
+                              'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
+                              'client_id': conf.GOOGLE_CLIENT_ID,
+                               'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                'scopes': conf.SCOPES}
+                    bytes =  render_pdf_base64_google(doc.get("wp_url"), user_credentials)
+                else:
+                    return result
+            else:
+                bytes =  render_pdf_base64_latex(doc.get("wp_url"))
+            return bytes
+
+    except Exception as e:
+        logger.info("error rendering the document link " + str(e))
+
+    return result
+
+
 def create_dynamic_endpoint(document_dict, userjson):
     base_url= conf.BASE_URL
     PDF_VIEW_URL = '/api/v1/pdf/'
@@ -979,12 +1013,12 @@ class DocEdit(BaseHandler):
                 self.write(json.dumps({"doc_link": conf.BASE_URL +BASE_PATH+"pdf/" + mylink}))
             elif json_data.get("action") == "delete":
                 if delete_link(doc_id):
-                    self.write(json.dumps({"status":"deleted"}))
+                    self.write(json.dumps({"doc_status":"deleted"}))
                 else:
-                    self.write(json.dumps({"status": "failed"}))
+                    self.write(json.dumps({"doc_status": "failed"}))
 
             else:
-                self.write(json.dumps({"status": "failed"}))
+                self.write(json.dumps({"doc_status": "failed"}))
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
 
@@ -999,9 +1033,30 @@ class DocStatus(BaseHandler):
             doc_id = json_data.get("doc_id")
             result = get_link_status(doc_id)
             if result is not False:
-                self.write(json.dumps({"status": result}))
+                self.write(json.dumps({"doc_status": result}))
             else:
-                self.write(json.dumps({"status": "failed"}))
+                self.write(json.dumps({"doc_status": "failed"}))
+
+
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+
+@jwtauth
+class DocRenderPDF(BaseHandler):
+    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+
+    def post(self, userid):
+        new_dict = {}
+        json_data = json.loads(self.request.body.decode('utf-8'))
+        if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
+            doc_id = json_data.get("doc_id")
+            userjson = ast.literal_eval(userid)
+            result = get_b64_pdf(doc_id, userjson)
+            if result is not False:
+                self.write(json.dumps({"document": result}))
+            else:
+                self.write(json.dumps({"error": "failed"}))
 
 
         else:

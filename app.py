@@ -23,6 +23,7 @@ cwd = os.getcwd() # used by static file server
 web_app = Application([
     (r"/"+API_BASE_PATH+"doc_edit", routes.DocEdit),
     (r"/"+API_BASE_PATH+"doc_status", routes.DocStatus),
+    (r"/"+API_BASE_PATH+"doc_get", routes.DocRenderPDF),
     (r"/"+API_BASE_PATH+"renderrepohash", routes.PostRepoHash),
     (r"/"+API_BASE_PATH+"renderurl", routes.RenderUrl),
     (r"/"+API_BASE_PATH+"wp_nda", routes.PostWpNda),
