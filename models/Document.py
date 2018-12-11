@@ -40,6 +40,7 @@ class Document(object):
 
     def create_nda(self):
         try:
+            self.link_count = 0
             self.view_count = 0
             self.down_count = 0
 
@@ -51,7 +52,7 @@ class Document(object):
             if self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
 
-                self.nda_id = '{}_{}'.format(user.org_name.strip().strip("."), str(int(time.time() * 1000)))
+                self.nda_id = '{}_{}'.format(user.wp_name.strip().strip(" "), str(int(time.time() * 1000)))
                 result = self.create()
                 if not result:
                     logger.info("couldn't save the nda to the db")
@@ -166,7 +167,7 @@ class Document(object):
             result = mydb.update({"nda_id": nda_id}, temp_nda)
 
         except Exception as error:
-            logger.info("updating user"+ str(error))
+            logger.info("updating document"+ str(error))
             result = None
 
         finally:

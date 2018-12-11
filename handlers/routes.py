@@ -31,7 +31,7 @@ import fitz
 #internal
 from handlers.apiBaseHandler import BaseHandler
 import config as conf
-from models import User, Document
+from models import User, Document, Link
 from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
 from utils import *
@@ -518,8 +518,6 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
             with open(file_full_path, 'wb') as mypdf:
                 mypdf.write(fh.getvalue())
 
-            print("mime", mime_type)
-
             if mime_type == "application/vnd.google-apps.presentation":
                 pointa = fitz.Point(AXIS_X, AXIS_Y- PRESENTATION_OFFSET)
                 pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y- PRESENTATION_OFFSET)
@@ -702,6 +700,41 @@ def render_pdf_base64_google(pdf_url, user_credentials):
         pdffile = open(file_full_path64, 'r').read()
 
         return (pdffile)
+
+
+def create_link(doc_id):
+    result = False
+    try:
+        mylink = Link.Link(doc_id)
+        result = mylink.create_link()
+        return result
+
+    except Exception as e:
+        logger.info("error creating the link"+ str(e))
+        return False
+
+
+def delete_link(doc_id):
+    result = False
+    try:
+        mylink = Link.Link(doc_id)
+        result = mylink.delete_link()
+        return True
+
+    except Exception as e:
+        logger.info("error deleting the link" + str(e))
+        return False
+
+def get_link_status(doc_id):
+    result = False
+    try:
+        mylink = Link.Link()
+        result = mylink.find_by_link(doc_id)
+        return result.status
+
+    except Exception as e:
+        logger.info("error deleting the link" + str(e))
+        return False
 
 
 def create_dynamic_endpoint(document_dict, userjson):
@@ -932,13 +965,45 @@ class PostWpNda(BaseHandler):
             self.write(json.dumps({"response": "Error"}))
 
 
-"""No autentication endpoint"""
-class HelloWorld(BaseHandler):
-    def get(self):
-        self.write(json.dumps({"response": "hello world"}))
+@jwtauth
+class DocEdit(BaseHandler):
+    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
 
-    def post(self):
-        self.write(json.dumps({"response": "hello world"}))
+    def post(self, userid):
+        new_dict = {}
+        json_data = json.loads(self.request.body.decode('utf-8'))
+        if json_data.get("action") is not None and json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
+            doc_id = json_data.get("doc_id")
+            if json_data.get("action") == "create":
+                mylink = create_link(doc_id)
+                self.write(json.dumps({"doc_link": conf.BASE_URL +BASE_PATH+"pdf/" + mylink}))
+            elif json_data.get("action") == "delete":
+                if delete_link(doc_id):
+                    self.write(json.dumps({"status":"deleted"}))
+                else:
+                    self.write(json.dumps({"status": "failed"}))
+
+            else:
+                self.write(json.dumps({"status": "failed"}))
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+@jwtauth
+class DocStatus(BaseHandler):
+    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+
+    def post(self, userid):
+        new_dict = {}
+        json_data = json.loads(self.request.body.decode('utf-8'))
+        if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
+            doc_id = json_data.get("doc_id")
+            result = get_link_status(doc_id)
+            if result is not False:
+                self.write(json.dumps({"status": result}))
+            else:
+                self.write(json.dumps({"status": "failed"}))
 
 
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
 
