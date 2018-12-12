@@ -116,7 +116,7 @@ def index():
             if len(docs) > 0:
                 step_3 = True
 
-        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3)
+        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user)
 
 
 @app.route(BASE_PATH+'github_reg')
@@ -335,6 +335,13 @@ def edit_docs(render):
         username = session['user']['username']
         # we get all the user data by the username
         user = user.find_by_attr("username", username)
+        google_token = getattr(user, "google_token", False)
+        if render == "google" and user.github_token is None:
+            error = "google_error"
+
+        elif render == "latex" and google_token is False:
+            error = "github_error"
+
     else:
         logger.info("The user is not logued in")
         return redirect(url_for('login'))

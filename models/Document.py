@@ -45,6 +45,7 @@ class Document(object):
             self.down_count = 0
             self.type = ""
 
+
             if self.nda_url is None:
                 self.nda_url = ""
             if self.wp_url is None:
@@ -53,7 +54,7 @@ class Document(object):
             if self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
 
-                self.nda_id = '{}_{}'.format(user.wp_name.strip().strip(" "), str(int(time.time() * 1000)))
+                self.nda_id = '{}_{}'.format(self.wp_name.strip().strip(" "), str(int(time.time() * 1000)))
                 result = self.create()
                 if not result:
                     logger.info("couldn't save the nda to the db")
@@ -131,7 +132,7 @@ class Document(object):
 
 
     def create(self):
-        '''creates a new user on the bd'''
+        '''creates a new document on the bd'''
         result = False
         mydb = None
         if self.org_id is None or self.nda_id is None:
@@ -144,7 +145,7 @@ class Document(object):
             result = mydb.insert_json(temp_nda)
 
         except Exception as error:
-            logger.info("creating user "+ str(error))
+            logger.info("creating document "+ str(error))
 
         finally:
             if mydb is not None:

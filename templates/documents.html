@@ -39,19 +39,19 @@
                 <div class="form-group">
                 <label class="input-group-text" >Document Name</label>
 
-              <input type="text" class="form-control" name="wp_name" value="" placeholder="Enter the Document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
+              <input type="text" class="form-control" name="wp_name" value="" placeholder="Enter the document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
             </div>
             {% if type == "wp_nda"%}
             <div class="form-group">
-                <label class="input-group-text" >White Paper url</label>
+                <label class="input-group-text" >Document url</label>
 
-              <input type="text" class="form-control" name="wp_url" value="" placeholder="Enter the white paper url" aria-label="WP url" aria-describedby="basic-addon1">
+              <input type="text" class="form-control" name="wp_url" value="" placeholder="Copy and paste the Doc URL" aria-label="WP url" aria-describedby="basic-addon1">
             </div>
               {% if render == "latex"%}
              <div class="form-group">
-                <label class="input-group-text" >White paper main tex name (must be on the root)</label>
+                <label class="input-group-text" >Document main tex name (must be on the root)</label>
 
-              <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
+              <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex name" aria-label="Main Tex" aria-describedby="basic-addon1">
             </div>
               {% endif %}
               <div class="form-group">
@@ -70,13 +70,13 @@
            {% elif type == "wp"%}
               <input type="hidden" name="nda_url" value="">
                <div class="form-group">
-                <label class="input-group-text" >White Paper url</label>
+                <label class="input-group-text" >Document url</label>
 
-              <input type="text" class="form-control" name="wp_url" value="" placeholder="Enter the white paper url" aria-label="WP url" aria-describedby="basic-addon1">
+              <input type="text" class="form-control" name="wp_url" value="" placeholder="“Copy and paste a Google Doc URL”" aria-label="WP url" aria-describedby="basic-addon1">
             </div>
               {% if render == "latex"%}
              <div class="form-group">
-                <label class="input-group-text" >White paper main tex name (must be on the root)</label>
+                <label class="input-group-text" >Document main tex name (must be on the root)</label>
 
               <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
             </div>
@@ -84,13 +84,13 @@
              {% endif %}
 
             <div class="form-group">
-                <label class="input-group-text" >Sidebar Description</label>
+                <label class="input-group-text" >Sidebar Description (optional)</label>
 
               <input type="text" class="form-control" name="wp_description" value="" placeholder="Description" aria-label="Description" aria-describedby="basic-addon1">
             </div>
 
             <div class="form-group">
-                <label class="input-group-text" >Get the document button description</label>
+                <label class="input-group-text" >Get the document button description (optional)</label>
 
               <input type="text" class="form-control" name="wp_getit_btn" value="" placeholder="button description" aria-label="wp_getit_btn" aria-describedby="basic-addon1">
             </div>
