@@ -95,8 +95,10 @@ github = oauth.remote_app(
 def index():
     error = ''
     username = ''
+    document_list = []
     step_2 = False
     step_3 = False
+    doc_len = 0
 
     user = User.User()
     if 'user' in session:
@@ -116,7 +118,12 @@ def index():
             if len(docs) > 0:
                 step_3 = True
 
-        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user)
+            docs = Document.Document()
+            docs = docs.find_by_attr("org_id", user.org_id)
+            document_list = docs
+            doc_len = len(document_list)
+
+        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user, document_list = document_list, doc_len=doc_len)
 
 
 @app.route(BASE_PATH+'github_reg')

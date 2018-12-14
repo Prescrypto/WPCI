@@ -121,7 +121,64 @@
 
                 </div>
             </li>
-            <li >This is step 3 <a href="#" uk-switcher-item="previous">Previous item</a></li>
+            <li >
+                <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
+
+
+                      {% if error %}
+                        <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
+                        {{ error }}
+                        </h3>
+                      {% endif %}
+                      {% if doc_len > 0 %}
+                       <h3 style="font-weight:900;" >You can create links or check the analytics of each document</h3>
+
+                         <table class="uk-table uk-table-responsive" id="document_table" >
+                            <caption></caption>
+                            <thead>
+                                <tr>
+                                    <th align="center">Name</th>
+                                    <th align="center">Document ID</th>
+                                    <th align="center">Type</th>
+                                    <th>Date</th>
+                                    <th></th>
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                 {% for item in document_list %}
+                                <tr>
+                                    <td align="center">{{ item.wp_name }}</td>
+                                    <td align="center" >
+                                        <a id="{{ item.nda_id }}" href="{{ url_for('analytics', id =item.nda_id) }}" >
+                                            {{ item.nda_id }}
+                                        </a>
+                                    </td>
+                                    <td align="center">
+                                        <p>Google or Github</p>
+                                    </td>
+                                    <td align="center">
+
+                                       <p>Date</p>
+
+                                    </td>
+                                    <td align="center">
+                                        <span style="color:#3366BB;" class="uk-button" onClick="copyFunction( '{{ item.nda_id }}' )" uk-icon="icon: copy; ratio: 1.5">
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+
+                    {% else %}
+                      <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
+                    {% endif %}
+
+                  </form>
+
+            </li>
         </ul>
 
     {% endif %}

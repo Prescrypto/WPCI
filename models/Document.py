@@ -44,6 +44,7 @@ class Document(object):
             self.view_count = 0
             self.down_count = 0
             self.type = ""
+            self.date = str(int(time.time() * 1000))
 
 
             if self.nda_url is None:
