@@ -137,10 +137,10 @@
                             <caption></caption>
                             <thead>
                                 <tr>
-                                    <th align="center">Name</th>
-                                    <th align="center">Document ID</th>
-                                    <th align="center">Type</th>
-                                    <th>Date</th>
+                                    <th style="text-align:center">Name</th>
+                                    <th style="text-align:center">Document ID</th>
+                                    <th style="text-align:center">Type</th>
+                                    <th style="text-align:center">Date</th>
                                     <th></th>
 
                                 </tr>
@@ -155,11 +155,19 @@
                                         </a>
                                     </td>
                                     <td align="center">
-                                        <p>Google or Github</p>
+                                        {% if item.render %}
+                                            {{ item.render }}
+                                        {% else %}
+                                            Unknown
+                                        {% endif %}
                                     </td>
                                     <td align="center">
 
-                                       <p>Date</p>
+                                       {% if item.date %}
+                                            {{ item.date }}
+                                        {% else %}
+                                            Unknown
+                                        {% endif %}
 
                                     </td>
                                     <td align="center">

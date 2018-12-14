@@ -43,7 +43,6 @@ class Document(object):
             self.link_count = 0
             self.view_count = 0
             self.down_count = 0
-            self.type = ""
             self.date = str(int(time.time() * 1000))
 
 
