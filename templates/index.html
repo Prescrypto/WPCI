@@ -193,5 +193,18 @@
 
         </div>
 
+<script>
+function copyFunction(id) {
+  var href = $('#'+id).attr('href');
+  var el = document.createElement('textarea');
+  el.value = href;
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  alert('Link copied');
+}
+</script>
+
 
 {% endblock %}

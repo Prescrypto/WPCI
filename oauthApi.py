@@ -465,6 +465,10 @@ def documents(type, render):
                     if data.get("wp_getit_btn") == "":
                         data["wp_getit_btn"] = "To get the complete document please check this box and fill the following fields"
 
+                    if data.get("wp_description") == "":
+                        data["wp_description"] = user.org_name + " Click on the Get it! button and enter your email so we can send you a copy of \
+                        this document to your email."
+
                 if data.get("wp_url") is not None and data.get("wp_url") != "":
                     WP_NOT_EMPTY = True
 
