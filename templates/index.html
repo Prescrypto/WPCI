@@ -141,7 +141,7 @@
                                     <th style="text-align:center">Document ID</th>
                                     <th style="text-align:center">Type</th>
                                     <th style="text-align:center">Date</th>
-                                    <th></th>
+                                    <th style="text-align:center"> Links </th>
 
                                 </tr>
                             </thead>
@@ -171,9 +171,10 @@
 
                                     </td>
                                     <td align="center">
-                                        <span style="color:#3366BB;" class="uk-button" onClick="copyFunction( '{{ item.nda_id }}' )" uk-icon="icon: copy; ratio: 1.5">
+                                        <span style="color:#3366BB;" class="uk-button" onClick="gotoLink( '{{ item.nda_id }}' )" uk-icon="icon: copy; ratio: 1.5">
                                         </span>
                                     </td>
+
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -203,6 +204,11 @@ function copyFunction(id) {
   document.execCommand('copy');
   document.body.removeChild(el);
   alert('Link copied');
+}
+
+function gotoLink(myid){
+    var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
+    window.location.replace(myurl);
 }
 </script>
 

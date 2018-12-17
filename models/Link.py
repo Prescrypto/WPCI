@@ -37,6 +37,7 @@ class Link(object):
         self.status = "unsigned"
         self.view_count = 0
         self.signed_count = 0
+        self.version = "0"
         if self.doc_id is not None:
             document = Document.Document()
             thisdocument = document.find_by_nda_id(self.doc_id)
