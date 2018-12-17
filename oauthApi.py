@@ -771,6 +771,10 @@ def privacypolicy():
 def redir_pdf(id):
     return redirect(url_for('show_pdf', id=id))
 
+@app.route('/', methods=['GET', 'POST'])
+def redir_login():
+    return redirect(url_for('login'))
+
 @app.route(BASE_PATH+'pdf/<id>', methods=['GET', 'POST'])
 def show_pdf(id):
     error = None
