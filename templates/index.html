@@ -2,215 +2,188 @@
 {% block content %}
 
 <h1 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" >Welcome to your WPCI admin panel</h1>
-
-    <div >
-
+  <div>
     {% if myuser %}
+      <ul class="uk-tab" data-uk-tab="{connect:'#myswitcher'}">
+        <li class="uk-width-1-3"><a href="#">Step 1</a></li>
+        {% if step_2 %}
+          <li class="uk-width-1-3 uk-active"><a href="#">Step 2</a></li>
+        {% else%}
+          <li class="uk-width-1-3 uk-disabled"><a href="#">Step 2</a></li>
+        {% endif %}
+        {% if step_3 %}
+          <li class="uk-width-1-3"><a href="#">Step 3</a></li>
+        {% else%}
+          <li class="uk-width-1-3 uk-disabled"><a href="#">Step 3</a></li>
+        {% endif %}
+      </ul>
 
-        <ul class="uk-tab" data-uk-tab="{connect:'#myswitcher'}">
-            <li class="uk-width-1-3"><a href="#">Step 1</a></li>
-            {% if step_2 %}
-              <li class="uk-width-1-3 uk-active"><a href="#">Step 2</a></li>
-            {% else%}
-              <li class="uk-width-1-3 uk-disabled"><a href="#">Step 2</a></li>
-            {% endif %}
-            {% if step_3 %}
-              <li class="uk-width-1-3"><a href="#">Step 3</a></li>
-            {% else%}
-              <li class="uk-width-1-3 uk-disabled"><a href="#">Step 3</a></li>
-            {% endif %}
-        </ul>
+      <ul id="myswitcher" class="uk-switcher uk-margin">
+        <li>
+          <div class="uk-width-medium-1-1 uk-container-center">
+            <form action="{{ url_for('register_org') }}" method="post" enctype="multipart/form-data"  class="uk-grid-medium uk-child-width-expand@s" uk-grid>
+              <div></div>
+              <div >
+              <h3 style="font-weight:900;" >Please Enter all the Organization information</h3>
+              {% if success %}
+                  <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+              {% elif error %}
+                  <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
+              {% endif %}
 
-        <ul id="myswitcher" class="uk-switcher uk-margin">
-            <li >
-                        <div class="uk-width-medium-1-1 uk-container-center">
+               <div class="uk-margin">
+                 <label class="uk-form-label" for="org_name" >Legal Company Name</label>
+                 <div class="uk-form-controls">
+                   <input type="text" class="uk-input" id="org_name" name="org_name" value="{{ myuser.org_name }}" placeholder="Ej: Prescrypto SAPI de CV" >
+                 </div>
+               </div>
 
-                          <form action="{{ url_for('register_org') }}" method="post" enctype="multipart/form-data"  class="uk-grid-medium uk-child-width-expand@s" uk-grid>
-                            <div></div>
-                            <div >
-                            <h3 style="font-weight:900;" >Please Enter all the Organization information</h3>
-                            {% if success %}
-                                <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
-                            {% elif error %}
-                                <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
-                            {% endif %}
-
-                             <div class="uk-margin">
-                               <label class="uk-form-label" for="org_name" >Legal Company Name</label>
-                               <div class="uk-form-controls">
-                                 <input type="text" class="uk-input" id="org_name" name="org_name" value="{{ myuser.org_name }}" placeholder="Ej: Prescrypto SAPI de CV" >
-                               </div>
-                             </div>
-
-                              <div class="uk-margin">
-                                <label class="uk-form-label" for="org_address" >Address</label>
-                                <div class="uk-form-controls">
-                                  <input type="text" class="uk-input" id="org_address" name="org_address" value="{{ myuser.org_address }}" placeholder="Ej: Rio Volga, Cuahutemoc." >
-                                </div>
-                              </div>
-
-                             <div class="uk-margin">
-                               <label class="uk-form-label" for="org_email" >Notification Email</label>
-                               <div class="uk-form-controls">
-                                 <input type="text" class="uk-input"  id="org_email" name="org_email" value="{{ myuser.org_email }}" placeholder="Ej: yourname@yourorganization.com">
-                               </div>
-                             </div>
-
-                             <div class="uk-margin">
-                               <label class="uk-form-label" for="org_type" >Type of Organization</label>
-                               <div class="uk-form-controls">
-                                 <input type="text" class="uk-input" id="org_type" name="org_type" value="{{ myuser.org_type }}" placeholder="Ej: Sociedad Anonima" >
-                               </div>
-                             </div>
-
-                             <div class="uk-margin">
-                               <label class="uk-form-label" for="org_type" >Logo</label>
-                               <div class="uk-form-controls">
-                                <input type="hidden" name="prev_logo" value="{{ myuser.org_logo }}">
-                                <input type="file" class="uk-input"  id="org_logo" name="org_logo" value="" placeholder="Enter the organization Logo" >
-                                 {% if myuser.org_logo %}
-                                  <img style="padding-left:10px" width="96" height="48" src="data:image/jpeg;base64,{{ myuser.org_logo }}" alt="org_logo" />
-                                 {% endif %}
-                               </div>
-                             </div>
-
-                            <div class="uk-margin uk-text-center">
-                              <button type="submit" class="btn btn-info uk-text-center" value="create" >Save!</button>
-                            </div>
-
-
-                            </div>
-                            <div></div>
-
-
-                          </form>
-                        </div>
-
-
-
-            </li>
-            <li>
-                 <div class="uk-child-width-expand@s uk-text-center" style="padding-top:10px;" uk-grid>
-                    <div>
-                        <div class="uk-card uk-card-hover uk-card-default uk-card-large" >
-                             <div class="uk-card-header">
-                                 <div class="uk-card-badge uk-label" title="You can create any type of document in google docs and get it as a pdf">
-                                      Help
-                                  </div>
-                                <h1 class="uk-card-title-sm" > Google Docs </h1>
-
-                            </div>
-                            <div class="uk-card-body">
-                                <h2><a href="{{ url_for('edit_docs', render='google') }}"  >Get your document from google docs.</a></h2>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="uk-card uk-card-hover uk-card-default uk-card-large">
-                             <div class="uk-card-header">
-                                <h1 class="uk-card-title-sm"> Latex </h1>
-                                 <div class="uk-card-badge uk-label" title="Yo can create your document with latex or overleaf and then get it as a pdf">
-                                      Help
-                                  </div>
-                            </div>
-                            <div class="uk-card-body">
-                                <h2><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
-                            </div>
-                        </div>
-                    </div>
-
+                <div class="uk-margin">
+                  <label class="uk-form-label" for="org_address" >Address</label>
+                  <div class="uk-form-controls">
+                    <input type="text" class="uk-input" id="org_address" name="org_address" value="{{ myuser.org_address }}" placeholder="Ej: Rio Volga, Cuahutemoc." >
+                  </div>
                 </div>
-            </li>
-            <li >
-                <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
 
+               <div class="uk-margin">
+                 <label class="uk-form-label" for="org_email" >Notification Email</label>
+                 <div class="uk-form-controls">
+                   <input type="text" class="uk-input"  id="org_email" name="org_email" value="{{ myuser.org_email }}" placeholder="Ej: yourname@yourorganization.com">
+                 </div>
+               </div>
 
-                      {% if error %}
-                        <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
-                        {{ error }}
-                        </h3>
-                      {% endif %}
-                      {% if doc_len > 0 %}
-                       <h3 style="font-weight:900;" >You can create links or check the analytics of each document</h3>
+               <div class="uk-margin">
+                 <label class="uk-form-label" for="org_type" >Type of Organization</label>
+                 <div class="uk-form-controls">
+                   <input type="text" class="uk-input" id="org_type" name="org_type" value="{{ myuser.org_type }}" placeholder="Ej: Sociedad Anonima" >
+                 </div>
+               </div>
 
-                         <table class="uk-table uk-table-responsive" id="document_table" >
-                            <caption></caption>
-                            <thead>
-                                <tr>
-                                    <th style="text-align:center">Name</th>
-                                    <th style="text-align:center">Document ID</th>
-                                    <th style="text-align:center">Type</th>
-                                    <th style="text-align:center">Date</th>
-                                    <th style="text-align:center"> Links </th>
-
-                                </tr>
-                            </thead>
-                            <tbody>
-                                 {% for item in document_list %}
-                                <tr>
-                                    <td align="center">{{ item.wp_name }}</td>
-                                    <td align="center" >
-                                        <a id="{{ item.nda_id }}" href="{{ url_for('analytics', id =item.nda_id) }}" >
-                                            {{ item.nda_id }}
-                                        </a>
-                                    </td>
-                                    <td align="center">
-                                        {% if item.render %}
-                                            {{ item.render }}
-                                        {% else %}
-                                            Unknown
-                                        {% endif %}
-                                    </td>
-                                    <td align="center">
-
-                                       {% if item.date %}
-                                            {{ item.date|strftime }}
-                                        {% else %}
-                                            Unknown
-                                        {% endif %}
-
-                                    </td>
-                                    <td align="center">
-                                        <span style="color:#3366BB;" class="uk-button" onClick="gotoLink( '{{ item.nda_id }}' )" uk-icon="icon: link; ratio: 1.5">
-                                        </span>
-                                    </td>
-
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-
-
-                    {% else %}
-                      <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
+               <div class="uk-margin">
+                 <label class="uk-form-label" for="org_type" >Logo</label>
+                 <div class="uk-form-controls">
+                  <input type="hidden" name="prev_logo" value="{{ myuser.org_logo }}">
+                  <input type="file" class="uk-input"  id="org_logo" name="org_logo" value="" placeholder="Enter the organization Logo" >
+                    {% if myuser.org_logo %}
+                      <img style="padding-left:10px" width="96" height="48" src="data:image/jpeg;base64,{{ myuser.org_logo }}" alt="org_logo" />
                     {% endif %}
+                 </div>
+               </div>
 
-                  </form>
+              <div class="uk-margin uk-text-center">
+                <button type="submit" class="btn btn-info uk-text-center" value="create" >Save!</button>
+              </div>
+              </div>
+              <div></div>
+            </form>
+          </div>
+        </li>
+        <li>
+          <div class="uk-child-width-expand@s uk-text-center" style="padding-top:10px;" uk-grid>
+            <div>
+              <div class="uk-card uk-card-hover uk-card-default uk-card-large" >
+                <div class="uk-card-header">
+                  <div class="uk-card-badge uk-label" title="You can create any type of document in google docs and get it as a pdf">
+                        Help
+                  </div>
+                  <h2 class="uk-card-title-sm"><a href="{{ url_for('edit_docs', render='google') }}"> Get your document from <strong>Google Docs</strong></a></h2>
+                </div>
+                <!-- <div class="uk-card-body">
+                    <h2><a href="{{ url_for('edit_docs', render='google') }}"  >Get your document from google docs.</a></h2>
+                </div> -->
+              </div>
+            </div>
+            <div>
+              <div class="uk-card uk-card-hover uk-card-default uk-card-large">
+                <div class="uk-card-header">
+                  <h2 class="uk-card-title-sm"><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
+                  <div class="uk-card-badge uk-label" title="Yo can create your document with latex or overleaf and then get it as a pdf">
+                        Help
+                  </div>
+                </div>
+                  <!-- <div class="uk-card-body">
+                      <h2><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
+                  </div> -->
+              </div>
+            </div>
+          </div>
+        </li>
+        <li >
+          <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
+            {% if error %}
+              <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">{{ error }}</h3>
+            {% endif %}
 
-            </li>
-        </ul>
-
+            {% if doc_len > 0 %}
+              <h3 style="font-weight:900;" >You can create links or check the analytics of each document</h3>
+              <table class="uk-table uk-table-responsive" id="document_table" >
+                <caption></caption>
+                <thead>
+                  <tr>
+                    <th style="text-align:center">Name</th>
+                    <th style="text-align:center">Document ID</th>
+                    <th style="text-align:center">Type</th>
+                    <th style="text-align:center">Date</th>
+                    <th style="text-align:center"> Links </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in document_list %}
+                    <tr>
+                      <td align="center">{{ item.wp_name }}</td>
+                      <td align="center" >
+                        <a id="{{ item.nda_id }}" href="{{ url_for('analytics', id =item.nda_id) }}" >
+                            {{ item.nda_id }}
+                        </a>
+                      </td>
+                      <td align="center">
+                        {% if item.render %}
+                            {{ item.render }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                      </td>
+                      <td align="center">
+                       {% if item.date %}
+                            {{ item.date|strftime }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                      </td>
+                      <td align="center">
+                        <span style="color:#3366BB;" class="uk-button" onClick="gotoLink( '{{ item.nda_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% else %}
+              <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
+            {% endif %}
+          </form>
+        </li>
+      </ul>
     {% endif %}
+  </div>
 
-        </div>
-
+<!-- Javascript -->
 <script>
-function copyFunction(id) {
-  var href = $('#'+id).attr('href');
-  var el = document.createElement('textarea');
-  el.value = href;
-  document.body.appendChild(el);
-  el.select();
-  document.execCommand('copy');
-  document.body.removeChild(el);
-  alert('Link copied');
-}
+  // Function to copy link to clipboard
+  function copy_to_clipboard(id) {
+    var href = $('#'+id).attr('href');
+    var el = document.createElement('textarea');
+    el.value = href;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    alert('Link copied');
+  }
 
-function gotoLink(myid){
+  function go_to_link(myid){
     var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
     window.location.replace(myurl);
-}
+  }
 </script>
-
 
 {% endblock %}
