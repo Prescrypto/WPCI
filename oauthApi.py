@@ -378,10 +378,12 @@ def edit_docs(render):
         # we get all the user data by the username
         user = user.find_by_attr("username", username)
         google_token = getattr(user, "google_token", False)
-        if render == "google" and google_token is None:
+        if render == "google" and (google_token is None or google_token == ""):
+            logger.info("no google auth")
             error = "google_error"
 
         elif render == "latex" and user.github_token is False:
+            logger.info("no github auth")
             error = "github_error"
 
     else:
