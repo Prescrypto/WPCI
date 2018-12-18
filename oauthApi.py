@@ -99,7 +99,7 @@ def _jinja2_filter_datetime(date, fmt=None):
     format='%b %d, %Y'
     return native.strftime(format)
 
-@app.route(BASE_PATH+'index')
+@app.route(BASE_PATH+'index', methods=['GET', 'POST'])
 def index():
     error = ''
     username = ''
@@ -132,7 +132,51 @@ def index():
             document_list = docs
             doc_len = len(document_list)
 
-        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user, document_list = document_list, doc_len=doc_len, success=success)
+    if request.method == 'POST':
+
+        if request.form['org_name'] and request.form['org_type'] and \
+                request.form['org_email'] and request.form['org_address']:
+            try:
+                data = request.form.to_dict()
+                try:
+                    # check if the post request has the file part
+                    if 'org_logo' not in request.files or request.files['org_logo'].filename == '':
+
+                        if data["prev_logo"] is not None and data["prev_logo"] != "":
+                            data["org_logo"] = data["prev_logo"]
+                        else:
+                            data["org_logo"] = open(DEFAULT_LOGO_PATH, 'r').read()
+                    else:
+                        file = request.files['org_logo']
+                        if file and allowed_file(file.filename):
+                            try:
+                                data["org_logo"] = base64.b64encode(file.read()).decode('utf-8')
+                            except Exception as e:
+                                logger.info("loading b64 file " + str(e))
+                                data["org_logo"] = open(DEFAULT_LOGO_PATH, 'r').read()
+
+
+                except Exception as e:
+                    logger.info("loading logo " + str(e))
+                    error = "error loading the file"
+                    return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user)
+
+                data.pop("prev_logo")
+                data["google_refresh_token"] = ""
+                user.set_attributes(data)
+                user.update()
+
+                return redirect(url_for('index'))
+
+            except Exception as e:
+                logger.info("registering org " + str(e))
+                error = 'Error updating the information'
+
+        else:
+            error = 'Invalid Values. Please try again.'
+            logger.info(error)
+
+    return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user, document_list = document_list, doc_len=doc_len, success=success)
 
 
 @app.route(BASE_PATH+'github_reg')
