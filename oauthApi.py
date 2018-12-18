@@ -91,6 +91,13 @@ github = oauth.remote_app(
     authorize_url= conf.GITHUB_OAUTH_URI +'authorize'
 )
 
+@app.template_filter('strftime')
+def _jinja2_filter_datetime(date, fmt=None):
+    date = datetime.datetime.fromtimestamp(int(date))
+    native = date.replace(tzinfo=None)
+    format='%b %d, %Y'
+    return native.strftime(format)
+
 @app.route(BASE_PATH+'index')
 def index():
     error = ''
@@ -778,6 +785,7 @@ def redir_login():
 @app.route(BASE_PATH+'pdf/<id>', methods=['GET', 'POST'])
 def show_pdf(id):
     error = None
+    doc_id = ""
     message = None
     has_nda = False
     pdffile = ""
@@ -786,16 +794,24 @@ def show_pdf(id):
     FIRST_SESSION = False
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
+    try:
+        doc_id = "_".join(id.split("_")[:-1])
+    except Exception as e:
+        logger.info("Trying to get id" + str(e))
+        error = "No valid Pdf url found"
+        return render_template('pdf_form.html', id=doc_id, error=error)
+
     if request.method == 'GET':
         try:
+
             nda = Document.Document()
-            thisnda = nda.find_by_nda_id(id)
+            thisnda = nda.find_by_nda_id(doc_id)
             if thisnda is not None:
                 if thisnda.nda_url is None or thisnda.nda_url == "":
                     if thisnda.wp_url is None or thisnda.wp_url == "":
                         error = "No valid Pdf url found"
                         logger.info(error)
-                        return render_template('pdf_form.html', id=id, error=error)
+                        return render_template('pdf_form.html', id=doc_id, error=error)
                     else:
                         pdf_url = thisnda.wp_url
                 else:
@@ -823,11 +839,13 @@ def show_pdf(id):
                 if not pdffile:
                     error = "Error rendering the pdf with the nda url"
                     logger.info(error)
-                    return render_template('pdf_form.html', id=id, error=error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
 
-                temp_view_count = thisnda.get_attribute("view_count")
-                thisnda.set_attributes({"view_count": int(temp_view_count) + 1})
-                thisnda.update()
+                thislink = Link.Link()
+                thislink = thislink.find_by_link(id)
+                temp_view_count = thislink.view_count
+                thislink.view_count = int(temp_view_count) + 1
+                thislink.update()
 
                 if thisnda.nda_url != "":
                     has_nda = True
@@ -837,14 +855,14 @@ def show_pdf(id):
                     session['first_session'] = True
 
 
-                return render_template('pdf_form.html', id=id, error=error, has_nda=has_nda,
+                return render_template('pdf_form.html', id=doc_id, error=error, has_nda=has_nda,
                                        pdffile=pdffile, wp_description=thisnda.wp_description,
                                        wp_getit_btn=thisnda.wp_getit_btn, tour_js=FIRST_SESSION)
 
             else:
                 error = 'ID not found'
                 logger.info(error)
-                return render_template('pdf_form.html', id=id, error=error)
+                return render_template('pdf_form.html', id=doc_id, error=error)
 
         except Exception as e:
             logger.info("rendering pdf nda "+str(e))
@@ -863,15 +881,15 @@ def show_pdf(id):
             if signer_email is None or signer_email == "":
                 error = "Error, you must enter a valid email"
                 logger.info(error)
-                return render_template('pdf_form.html', id=id, error=error)
+                return render_template('pdf_form.html', id=doc_id, error=error)
             if signer_name is None or signer_name == "":
                 error = "Error, you must enter a valid Name"
                 logger.info(error)
-                return render_template('pdf_form.html', id=id, error=error)
+                return render_template('pdf_form.html', id=doc_id, error=error)
 
             nda_file_base64 = str(request.form.get("nda_file"))
             nda = Document.Document()
-            thisnda = nda.find_by_nda_id(id)
+            thisnda = nda.find_by_nda_id(doc_id)
 
             if thisnda is not None and thisnda.org_id is not None:
                 if thisnda.nda_url is None or thisnda.nda_url == "" :
@@ -914,7 +932,7 @@ def show_pdf(id):
                             if wpci_result is False:
                                 error = "Error rendering the white paper"
                                 logger.info(error)
-                                return render_template('pdf_form.html', id=id, error=error)
+                                return render_template('pdf_form.html', id=doc_id, error=error)
 
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
@@ -957,7 +975,7 @@ def show_pdf(id):
                             else:
                                 error = "failed loading nda"
                                 logger.info(error)
-                                return render_template('pdf_form.html', id=id, error=error)
+                                return render_template('pdf_form.html', id=doc_id, error=error)
 
 
                             #this is the payload for the nda file
@@ -986,27 +1004,30 @@ def show_pdf(id):
 
                         message = "successfully sent your files "
 
-                        temp_down_count = thisnda.get_attribute("down_count")
-                        thisnda.set_attributes({"down_count": int(temp_down_count) + 1})
-                        thisnda.update()
+                        thislink = Link.Link()
+                        thislink = thislink.find_by_link(id)
+                        temp_signed_count = thislink.signed_count
+                        thislink.signed_count = int(temp_signed_count) + 1
+                        thislink.status = "signed"
+                        thislink.update()
 
                     except Exception as e: #except from temp directory
                         logger.info("sending the email with the documents "+ str(e))
                         error = "Error sending the email"
-                        return render_template('pdf_form.html', id=id, error=error)
+                        return render_template('pdf_form.html', id=doc_id, error=error)
 
             else:
                 error = 'ID not found'
                 logger.info(error)
-                return render_template('pdf_form.html', id=id, error=error)
+                return render_template('pdf_form.html', id=doc_id, error=error)
 
         except Exception as e: #function except
             logger.info("error loading the files "+str(e))
             error = "there was an error on your files"
-            return render_template('pdf_form.html', id=id, error=error)
+            return render_template('pdf_form.html', id=doc_id, error=error)
 
 
-    return render_template('pdf_form.html', id=id, error=error, message=message)
+    return render_template('pdf_form.html', id=doc_id, error=error, message=message)
 
 
 

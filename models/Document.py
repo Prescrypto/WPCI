@@ -43,7 +43,7 @@ class Document(object):
             self.link_count = 0
             self.view_count = 0
             self.down_count = 0
-            self.date = str(int(time.time() * 1000))
+            self.date = int(time.time())
 
 
             if self.nda_url is None:

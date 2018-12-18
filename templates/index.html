@@ -164,7 +164,7 @@
                                     <td align="center">
 
                                        {% if item.date %}
-                                            {{ item.date }}
+                                            {{ item.date|strftime }}
                                         {% else %}
                                             Unknown
                                         {% endif %}
