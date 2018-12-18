@@ -42,7 +42,7 @@ SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
-SENDER_NAME = "Andrea from Wpci"
+SENDER_NAME = "Andrea WPCI"
 
 UPLOAD_FOLDER = os.path.join("/static/images")
 LANGUAGE = "en"
@@ -197,7 +197,7 @@ def register():
 
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
-                    mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
+                    mymail.send(subject="Just one more step", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[username], html_message=html_text)
                     return redirect(url_for('register_success'))
 
@@ -221,7 +221,7 @@ def register():
 
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
-                    mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
+                    mymail.send(subject="Just one more step", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[email], html_message=html_text)
                     return redirect(url_for('register_success'))
 
