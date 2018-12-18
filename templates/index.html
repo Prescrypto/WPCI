@@ -140,7 +140,7 @@
                         {% endif %}
                       </td>
                       <td align="center">
-                        <span style="color:#3366BB;" class="uk-button" onClick="gotoLink( '{{ item.nda_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
+                        <span style="color:#3366BB;" class="uk-button" onClick="go_to_link( '{{ item.nda_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
                       </td>
                     </tr>
                   {% endfor %}
@@ -158,17 +158,6 @@
 
 <!-- Javascript -->
 <script>
-  // Function to copy link to clipboard
-  function copy_to_clipboard(id) {
-    var href = $('#'+id).attr('href');
-    var el = document.createElement('textarea');
-    el.value = href;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert('Link copied');
-  }
 
   function go_to_link(myid){
     var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
