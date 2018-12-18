@@ -19,6 +19,7 @@
       </ul>
 
       <ul id="myswitcher" class="uk-switcher uk-margin">
+        <!-- STEP 1 -->
         <li>
           <div class="uk-width-medium-1-1 uk-container-center">
             <form action="{{ url_for('register_org') }}" method="post" enctype="multipart/form-data"  class="uk-grid-medium uk-child-width-expand@s" uk-grid>
@@ -72,6 +73,9 @@
             </form>
           </div>
         </li>
+        <!-- /STEP 1 -->
+        
+        <!-- STEP 2 -->
         <li>
           <div class="uk-child-width-expand@s uk-text-center" style="padding-top:10px;" uk-grid>
             <div>
@@ -90,6 +94,9 @@
             </div>
           </div>
         </li>
+        <!-- /STEP 2 -->
+        
+        <!-- STEP 3 -->
         <li >
           <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
             {% if error %}
@@ -144,6 +151,7 @@
             {% endif %}
           </form>
         </li>
+        <!-- /STEP 3 -->
       </ul>
     {% endif %}
   </div>
