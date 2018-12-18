@@ -2,6 +2,9 @@
 from passlib.context import CryptContext
 import time
 import logging
+import subprocess
+import tempfile
+import os
 
 #mongo db
 import pymongo
@@ -46,6 +49,18 @@ class Link(object):
             self.link = self.doc_id + "_" + str( new_link_count )
             thisdocument.link_count = new_link_count
             thisdocument.update()
+            if thisdocument.wp_url is not None and thisdocument.wp_url != "" and thisdocument.render == "latex":
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    clone = 'git clone ' + thisdocument.wp_url
+                    subprocess.check_output(clone, shell=True, cwd=tmpdir)
+                    repo_name = os.listdir(tmpdir)[0]
+                    print("filesdir")
+                    filesdir = os.path.join(tmpdir, repo_name)
+                    myoutput = subprocess.check_output("git rev-parse HEAD", shell=True, cwd=filesdir)
+                    self.version = myoutput.decode(encoding="ascii", errors="ignore")
+                    self.version = self.version.rstrip()
+
+
             result = self.create()
         else:
             return False

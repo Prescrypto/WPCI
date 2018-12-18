@@ -3,6 +3,7 @@ import logging
 import base64
 import tempfile
 import subprocess
+import os
 
 #web app
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
@@ -538,12 +539,14 @@ def documents(type, render):
                             if NDA_NOT_EMPTY:
                                 clone = 'git clone ' + data["nda_url"]
                                 subprocess.check_output(clone, shell=True, cwd=tmpdir)
+
                             if WP_NOT_EMPTY:
                                 clone = 'git clone ' + data["wp_url"]
                                 subprocess.check_output(clone, shell=True, cwd=tmpdir)
-                    except:
+
+                    except Exception as e:
                         error= "You don't have permissions to clone the repository provided"
-                        logger.info(error)
+                        logger.info(str(e) + error)
                         return render_template('documents.html', type=type, render=render, error=error, url_error = "git_error")
 
                 elif render == "google":
