@@ -506,6 +506,7 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
                                                  mimeType='application/pdf')
             metadata = drive.files().get(fileId=pdf_id).execute()
             file_tittle = metadata.get("title").strip(" ") + ".pdf"
+            modified_date = metadata.get("modifiedDate")
             mime_type = metadata.get("mimeType")
 
             fh = io.BytesIO()

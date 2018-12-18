@@ -43,7 +43,7 @@
           <li><a href="{{ url_for('index') }}">Home</a></li>
           {% if session.user %}
             <li><a href="{{ url_for('google_latex_docs') }}">Create</a></li>
-            <li><a href="{{ url_for('view_docs') }}">Documents</a></li>
+            <li><a href="{{ url_for('index') }}">Documents</a></li>
             <li><a href="{{ url_for('logout') }}">Log out [{{ session.user.username}}]</a></li>
           {% else %}
             <li><a href="{{ url_for('login') }}">Log in</a></li>
