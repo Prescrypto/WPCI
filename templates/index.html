@@ -51,13 +51,7 @@
                    <input type="text" class="uk-input"  id="org_email" name="org_email" value="{{ myuser.org_email }}" placeholder="Ej: yourname@yourorganization.com">
                  </div>
                </div>
-
-               <div class="uk-margin">
-                 <label class="uk-form-label" for="org_type" >Type of Organization</label>
-                 <div class="uk-form-controls">
-                   <input type="text" class="uk-input" id="org_type" name="org_type" value="{{ myuser.org_type }}" placeholder="Ej: Sociedad Anonima" >
-                 </div>
-               </div>
+               <input type="hidden"  class="uk-input" id="org_type" name="org_type" value="{{ myuser.org_type }}" placeholder="Ej: Sociedad Anonima" >
 
                <div class="uk-margin">
                  <label class="uk-form-label" for="org_type" >Logo</label>
@@ -83,27 +77,15 @@
             <div>
               <div class="uk-card uk-card-hover uk-card-default uk-card-large" >
                 <div class="uk-card-header">
-                  <div class="uk-card-badge uk-label" title="You can create any type of document in google docs and get it as a pdf">
-                        Help
-                  </div>
-                  <h2 class="uk-card-title-sm"><a href="{{ url_for('edit_docs', render='google') }}"> Get your document from <strong>Google Docs</strong></a></h2>
+                  <h2 class="uk-card-title-md"><a href="{{ url_for('edit_docs', render='google') }}"> Get your document from <strong>Google Docs</strong></a></h2>
                 </div>
-                <!-- <div class="uk-card-body">
-                    <h2><a href="{{ url_for('edit_docs', render='google') }}"  >Get your document from google docs.</a></h2>
-                </div> -->
               </div>
             </div>
             <div>
               <div class="uk-card uk-card-hover uk-card-default uk-card-large">
                 <div class="uk-card-header">
-                  <h2 class="uk-card-title-sm"><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
-                  <div class="uk-card-badge uk-label" title="Yo can create your document with latex or overleaf and then get it as a pdf">
-                        Help
-                  </div>
+                  <h2 class="uk-card-title-md"><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
                 </div>
-                  <!-- <div class="uk-card-body">
-                      <h2><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
-                  </div> -->
               </div>
             </div>
           </div>

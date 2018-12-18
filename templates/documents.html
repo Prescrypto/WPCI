@@ -42,28 +42,25 @@
               <input type="text" class="form-control" name="wp_name" value="" placeholder="Enter the document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
             </div>
             {% if type == "wp_nda"%}
-            <div class="form-group">
-                <label class="input-group-text" >Document url</label>
-
-              <input type="text" class="form-control" name="wp_url" value="" placeholder="Copy and paste the Doc URL" aria-label="WP url" aria-describedby="basic-addon1">
-            </div>
-              {% if render == "latex"%}
-             <div class="form-group">
-                <label class="input-group-text" >Document main tex name (must be on the root)</label>
-
-              <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex name" aria-label="Main Tex" aria-describedby="basic-addon1">
-            </div>
-              {% endif %}
-              <div class="form-group">
-                <label class="input-group-text" >Nda Url</label>
-
-              <input type="text" class="form-control" name="nda_url" value="" placeholder="Enter the Nda url" aria-label="Nda url" aria-describedby="basic-addon1">
-            </div>
+                <div class="form-group">
+                  <label class="input-group-text" >Document url</label>
+                  <input type="text" class="form-control" name="wp_url" value="" placeholder="Copy and paste the Doc URL" aria-label="WP url" aria-describedby="basic-addon1">
+                </div>
+                {% if render == "latex"%}
+                     <div class="form-group">
+                        <label class="input-group-text" >Document main tex name (must be on the root)</label>
+                        <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex name" aria-label="Main Tex" aria-describedby="basic-addon1">
+                    </div>
+                {% endif %}
+                  <div class="form-group">
+                    <label class="input-group-text" >Contract Url</label>
+                    <input type="text" class="form-control" name="nda_url" value="" placeholder="Enter the Nda url" aria-label="Nda url" aria-describedby="basic-addon1">
+                  </div>
             {% elif type == "nda"%}
                <input type="hidden" name="wp_url" value="">
                <input type="hidden" name="main_tex" value="">
                   <div class="form-group">
-                       <label class="input-group-text" >Nda Url</label>
+                       <label class="input-group-text" >Document Url</label>
 
                      <input type="text" class="form-control" name="nda_url" value="" placeholder="Enter the Nda url" aria-label="Nda url" aria-describedby="basic-addon1">
                   </div>
