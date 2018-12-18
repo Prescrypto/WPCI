@@ -1,7 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h1 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" >Welcome to your WPCI admin panel</h1>
+  <h1 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" >Welcome to your WPCI admin panel</h1>
+  {% if success %}
+    <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+  {% endif %}
   <div>
     {% if myuser %}
       <ul class="uk-tab" data-uk-tab="{connect:'#myswitcher'}">

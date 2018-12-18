@@ -103,6 +103,7 @@ def _jinja2_filter_datetime(date, fmt=None):
 def index():
     error = ''
     username = ''
+    success = ""
     document_list = []
     step_2 = False
     step_3 = False
@@ -131,7 +132,7 @@ def index():
             document_list = docs
             doc_len = len(document_list)
 
-        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user, document_list = document_list, doc_len=doc_len)
+        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user, document_list = document_list, doc_len=doc_len, success=success)
 
 
 @app.route(BASE_PATH+'github_reg')
@@ -619,7 +620,7 @@ def documents(type, render):
                     return render_template('documents.html', type=type, render=render, error=error)
 
                 success= "Succesfully created your document, the Id is: "+ nda_url
-                return redirect(url_for('view_docs', success = success))
+                return redirect(url_for('index', success = success))
 
             except Exception as e:
                 logger.info("documents post " + str(e))
