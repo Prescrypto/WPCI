@@ -60,7 +60,7 @@
                <div class="uk-margin">
                  <label class="uk-form-label" for="org_type" >Logo</label>
                  <div class="uk-form-controls">
-                  <input type="hidden" name="prev_logo" value="{{ myuser.org_logo }}">
+                  <input type="hidden" name="prev_logo" value="_">
                   <input type="file" class="uk-input"  id="org_logo" name="org_logo" value="" placeholder="Enter the organization Logo" >
                     {% if myuser.org_logo %}
                       <img style="padding-left:10px" width="96" height="48" src="data:image/jpeg;base64,{{ myuser.org_logo }}" alt="org_logo" />
