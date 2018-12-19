@@ -534,6 +534,14 @@ def documents(type, render):
                 if data.get("main_tex") is None or data.get("main_tex") == "":
                     data["main_tex"] = "main.tex"
 
+                if type == "nda":
+                    '''This is a contract document without a white paper or other document'''
+                    data["nda_url"] = data.get("wp_url")
+                    data["wp_url"] = ""
+                elif type == "wp":
+                    '''this is a document protected'''
+                    data["nda_url"] = ""
+
                 if data.get("nda_url") is not None and data.get("nda_url") != "":
                     NDA_NOT_EMPTY = True
                     if data.get("wp_description") == "":

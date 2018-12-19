@@ -1,79 +1,58 @@
 {% extends "layout.html" %}
 {% block content %}
-<section >
-
+  <section>
     <div style="padding-top: 20px;">
-     <div class="row remove-padding" >
-      <div id="login-card" class="col-lg-6 col-md-12 col-sm-12" style="margin: 0 !important;">
-        <div class="login-form">
-
-          <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
-
+      <div class="row remove-padding" >
+        <div id="login-card" class="col-lg-6 col-md-12 col-sm-12" style="margin: 0 !important;">
+          <div class="login-form">
+            <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
               {% if success %}
                 <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
               {% elif error %}
                 <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
-                {{ error }}
-                {% if git_error %}
-                   , please click <a href="{{ url_for('github_reg') }}"> HERE </a>
-                    to reload your github token.
-                {% endif %}
-
+                  {{ error }} {% if git_error %} , please click <a href="{{ url_for('github_reg') }}"> HERE </a>to reload your github token. {% endif %}
                 </h3>
               {% endif %}
               {% if doc_len > 0 %}
-               <h2 style="font-weight:900;" class="login-h1">You can share your documents or check the analytics.</h2>
-
-                 <table class="uk-table uk-table-responsive" id="document_table" >
-                    <caption></caption>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Link</th>
-                            <th></th>
-                            <th>Analytics</th>
-
-                        </tr>
-                    </thead>
-                    <tbody>
-                         {% for item in document_list %}
-                        <tr>
-                            <td align="center">{{ item.wp_name }}</td>
-                            <td align="center" > <a id="{{ item.nda_id }}" href="{{ base_url + item.nda_id }}" >
-                                {{ item.nda_id }}
-                            </a>
-
-                            </td>
-                            <td align="center">
-                                <span style="color:#3366BB;" class="uk-button" onClick="copyFunction( '{{ item.nda_id }}' )" uk-icon="icon: copy; ratio: 1.5">
-                                </span>
-                            </td>
-                            <td align="center">
-                                <a href="{{ url_for('analytics', id =item.nda_id) }}" >
-                                <span uk-icon="icon: search; ratio: 1.5"></span>
-                               </a>
-
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+                <h2 style="font-weight:900;" class="login-h1">You can share your documents or check the analytics.</h2>
+                <table class="uk-table uk-table-responsive" id="document_table" >
+                  <caption></caption>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Link</th>
+                      <th></th>
+                      <th>Analytics</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in document_list %}
+                      <tr>
+                        <td align="center">{{ item.wp_name }}</td>
+                        <td align="center" > <a id="{{ item.nda_id }}" href="{{ base_url + item.nda_id }}" >{{ item.nda_id }}</a></td>
+                        <td align="center">
+                          <span style="color:#3366BB;" class="uk-button" onClick="copyFunction( '{{ item.nda_id }}' )" uk-icon="icon: copy; ratio: 1.5">
+                          </span>
+                        </td>
+                        <td align="center">
+                          <a href="{{ url_for('analytics', id =item.nda_id) }}" >
+                            <span uk-icon="icon: search; ratio: 1.5"></span>
+                          </a>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
                 </table>
-
-
-            {% else %}
-              <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
-            {% endif %}
-            <button  onClick="history.go(-1)" class="btn btn-info" value="back">Go back</button>
-          </form>
-
+              {% else %}
+                <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
+              {% endif %}
+              <button  onClick="history.go(-1)" class="btn btn-info" value="back">Go back</button>
+            </form>
+          </div>
         </div>
-
-
-
       </div>
-      </div>
-  </div>
-</section>
+    </div>
+  </section>
 
 <script>
 function copyFunction(id) {

@@ -27,51 +27,51 @@
           <div class="uk-width-medium-1-1 uk-container-center">
             <form action="{{ url_for('index') }}" method="post" enctype="multipart/form-data"  class="uk-grid-medium uk-child-width-expand@s" uk-grid>
               <div></div>
-              <div >
-              <h3 style="font-weight:900;" >Please Enter all the Organization information</h3>
-              {% if success %}
-                  <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
-              {% elif error %}
-                  <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
-              {% endif %}
+              <div> <!-- Form container -->
+                <h3 style="font-weight:900;" >Please Enter all the Organization information</h3>
+                {% if success %}
+                    <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+                {% elif error %}
+                    <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
+                {% endif %}
 
-               <div class="uk-margin">
-                 <label class="uk-form-label" for="org_name" >Legal Company Name</label>
-                 <div class="uk-form-controls">
-                   <input type="text" class="uk-input" id="org_name" name="org_name" value="{{ myuser.org_name }}" placeholder="Ej: Prescrypto SAPI de CV" >
+                 <div class="uk-margin">
+                   <label class="uk-form-label" for="org_name" >Legal Company Name</label>
+                   <div class="uk-form-controls">
+                     <input type="text" class="uk-input" id="org_name" name="org_name" value="{{ myuser.org_name }}" placeholder="Ej: Prescrypto SAPI de CV" >
+                   </div>
                  </div>
-               </div>
 
-                <div class="uk-margin">
-                  <label class="uk-form-label" for="org_address" >Address</label>
-                  <div class="uk-form-controls">
-                    <input type="text" class="uk-input" id="org_address" name="org_address" value="{{ myuser.org_address }}" placeholder="Ej: Rio Volga, Cuahutemoc." >
+                  <div class="uk-margin">
+                    <label class="uk-form-label" for="org_address" >Address</label>
+                    <div class="uk-form-controls">
+                      <input type="text" class="uk-input" id="org_address" name="org_address" value="{{ myuser.org_address }}" placeholder="Ej: Rio Volga, Cuahutemoc." >
+                    </div>
                   </div>
+
+                 <div class="uk-margin">
+                   <label class="uk-form-label" for="org_email" >Notification Email</label>
+                   <div class="uk-form-controls">
+                     <input type="text" class="uk-input"  id="org_email" name="org_email" value="{{ myuser.org_email }}" placeholder="Ej: yourname@yourorganization.com">
+                   </div>
+                 </div>
+                 <input type="hidden"  class="uk-input" id="org_type" name="org_type" value="_" placeholder="Ej: Sociedad Anonima" >
+
+                 <div class="uk-margin">
+                   <label class="uk-form-label" for="org_type" >Logo</label>
+                   <div class="uk-form-controls">
+                    <input type="hidden" name="prev_logo" value="_">
+                    <input type="file" class="uk-input"  id="org_logo" name="org_logo" value="" placeholder="Enter the organization Logo" >
+                      {% if myuser.org_logo %}
+                        <img style="padding-left:10px" width="96" height="48" src="data:image/jpeg;base64,{{ myuser.org_logo }}" alt="org_logo" />
+                      {% endif %}
+                   </div>
+                 </div>
+
+                <div class="uk-margin uk-text-center">
+                  <button type="submit" class="btn btn-info uk-text-center" value="create" >Save!</button>
                 </div>
-
-               <div class="uk-margin">
-                 <label class="uk-form-label" for="org_email" >Notification Email</label>
-                 <div class="uk-form-controls">
-                   <input type="text" class="uk-input"  id="org_email" name="org_email" value="{{ myuser.org_email }}" placeholder="Ej: yourname@yourorganization.com">
-                 </div>
-               </div>
-               <input type="hidden"  class="uk-input" id="org_type" name="org_type" value="_" placeholder="Ej: Sociedad Anonima" >
-
-               <div class="uk-margin">
-                 <label class="uk-form-label" for="org_type" >Logo</label>
-                 <div class="uk-form-controls">
-                  <input type="hidden" name="prev_logo" value="_">
-                  <input type="file" class="uk-input"  id="org_logo" name="org_logo" value="" placeholder="Enter the organization Logo" >
-                    {% if myuser.org_logo %}
-                      <img style="padding-left:10px" width="96" height="48" src="data:image/jpeg;base64,{{ myuser.org_logo }}" alt="org_logo" />
-                    {% endif %}
-                 </div>
-               </div>
-
-              <div class="uk-margin uk-text-center">
-                <button type="submit" class="btn btn-info uk-text-center" value="create" >Save!</button>
-              </div>
-              </div>
+              </div><!-- /Form container -->
               <div></div>
             </form>
           </div>

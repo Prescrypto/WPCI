@@ -1,66 +1,57 @@
 {% extends "layout.html" %}
 {% block content %}
+  <form action="{{ url_for('index') }}" method="get" style="padding-left:2em;">
+    {% if error %}
+      <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
+        {{ error }}
+      </h3>
+    {% endif %}
+    {% if link_len > 0 %}
+      <h2 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" class="login-h1">You can share your links or check the analytics.</h2>
+      <table class="uk-table uk-table-responsive" id="document_table" >
+        <caption></caption>
+        <thead>
+          <tr>
+            <th style="text-align:center">Link</th>
+            <th style="text-align:center">Signed Status</th>
+            <th style="text-align:center">Version</th>
+            <th style="text-align:center">Viewed count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in link_list %}
+            <tr>
+              <td align="center">{{ base_url + item.link }}</td>
+              <td align="center">{{ item.status }}</td>
+              <td align="center">{{ item.version }}</td>
+              <td align="center">{{ item.view_count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
 
+    {% else %}
+      <h1 style="font-weight:900;" class="login-h1">There are no links created yet</a></h1>
+    {% endif %}
+      <div class="uk-margin uk-text-center">
+        <button  onClick="history.go(-1)" class="btn btn-info uk-text-center" value="back">Go back</button>
+      </div>
 
-     <form action="{{ url_for('index') }}" method="get" style="padding-left:2em;">
+  </form>
 
-
-              {% if error %}
-                <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
-                {{ error }}
-
-                </h3>
-              {% endif %}
-              {% if link_len > 0 %}
-               <h2 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" class="login-h1">You can share your links or check the analytics.</h2>
-
-                 <table class="uk-table uk-table-responsive" id="document_table" >
-                    <caption></caption>
-                    <thead>
-                        <tr>
-                            <th style="text-align:center">Link</th>
-                            <th style="text-align:center">Signed Status</th>
-                            <th style="text-align:center">Version</th>
-                            <th style="text-align:center">Viewed count</th>
-
-                        </tr>
-                    </thead>
-                    <tbody>
-                         {% for item in link_list %}
-                        <tr>
-                            <td align="center">{{ base_url + item.link }}</td>
-                            <td align="center">{{ item.status }}</td>
-                            <td align="center">{{ item.version }}</td>
-                            <td align="center">{{ item.view_count }}</td>
-
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
-
-            {% else %}
-              <h1 style="font-weight:900;" class="login-h1">There are no links created yet</a></h1>
-            {% endif %}
-            <div class="uk-margin uk-text-center">
-            <button  onClick="history.go(-1)" class="btn btn-info uk-text-center" value="back">Go back</button>
-            </div>
-
-         </form>
-
-    <!-- Javascript -->
-    <script>
-        // Function to copy link to clipboard
-        function copy_to_clipboard(id) {
-          var href = $('#'+id).attr('href');
-          var el = document.createElement('textarea');
-          el.value = href;
-          document.body.appendChild(el);
-          el.select();
-          document.execCommand('copy');
-          document.body.removeChild(el);
-          alert('Link copied');
-        }
-    </script>
+  <!-- Javascript -->
+  <script>
+      // Function to copy link to clipboard
+      function copy_to_clipboard(id) {
+        var href = $('#'+id).attr('href');
+        var el = document.createElement('textarea');
+        el.value = href;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        alert('Link copied');
+      }
+  </script>
 
 {% endblock %}
