@@ -771,7 +771,10 @@ def google_authorize():
       include_granted_scopes='false')
 
     # Store the state so the callback can verify the auth server response.
-    session['state'] = state
+    try:
+        session['state'] = state
+    except:
+        logger.info("no state session")
 
     return redirect(authorization_url)
 
@@ -788,7 +791,11 @@ def oauth2callback():
 
     # Specify the state when creating the flow in the callback so that it can
     # verified in the authorization server response.
-    state = session['state']
+    try:
+        state = session['state']
+    except:
+        logger.info("no state session")
+        state = ""
 
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
       conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES, state=state)
