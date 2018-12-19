@@ -1,49 +1,47 @@
 {% extends "layout.html" %}
 {% block cssblock %}
-  <style>
+	<style>
     html{
       background: #333333 !important;
     }
-  </style>
+	</style>
 {% endblock cssblock %}
 
 {% block content %}
-{% if username %}
-<section class="login-section">
-  <div>
-    <div class="row remove-padding">
-      <div id="login-card" class="col-lg-8 col-md-8 col-sm-8" >
-        <div class="login-form">
-          <form action="{{ url_for('validate_email') }}" method="post">
-            <h1 style="font-weight:900;" class="login-h1">Email successfully validated</h1>
+	{% if username %}
+		<section class="login-section">
+			<div>
+				<div class="row remove-padding">
+					<div id="login-card" class="col-lg-8 col-md-8 col-sm-8" >
+						<div class="login-form">
 
-            <h2 style="font-weight:500;" class="login-h1">Username: {{ username }}</h2>
-              <input type="hidden" id="username" name="username" value="{{ username }}">
+							<form action="{{ url_for('validate_email') }}" method="post">
+								<h1 style="font-weight:900;" class="login-h1">Email successfully validated</h1>
+								<h2 style="font-weight:500;" class="login-h1">Username: {{ username }}</h2>
+								<input type="hidden" id="username" name="username" value="{{ username }}">
 
-            <div class="row">
-              <div class=" col-md-6 col-md-offset-3" >
-                <div class="form-group">
-                <label class="input-group-text" >Please enter your password</label>
+								<div class="row">
+									<div class=" col-md-6 col-md-offset-3" >
+										<div class="form-group">
+											<label class="input-group-text" >Please enter your password</label>
+											<input type="password" class="form-control" name="pass" value="{{ request.form.pass }}" placeholder="Enter your Password" aria-label="Password" aria-describedby="basic-addon1">
+										</div>
+										<div class="form-group">
+											<label class="input-group-text" id="basic-addon2">Please re-enter your password</label>
+											<input type="password" class="form-control" name="password" value="{{ request.form.password }}" placeholder="Enter your Password" aria-label="Password" aria-describedby="basic-addon1">
+										</div>
+										<button type="submit" class="btn btn-info" value="Register">Register!</button>
+									</div>
+								</div>
 
-              <input type="password" class="form-control" name="pass" value="{{ request.form.pass }}" placeholder="Enter your Password" aria-label="Password" aria-describedby="basic-addon1">
-            </div>
-
-            <div class="form-group">
-                <label class="input-group-text" id="basic-addon2">Please re-enter your password</label>
-
-              <input type="password" class="form-control" name="password" value="{{ request.form.password }}" placeholder="Enter your Password" aria-label="Password" aria-describedby="basic-addon1">
-            </div>
-            <button type="submit" class="btn btn-info" value="Register">Register!</button>
-           </div>
-          </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-{% endif %}
-      {% if error %}
-        <p class="error"><strong>Error:</strong> {{ error }}</p>
-      {% endif %}
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	{% endif %}
+	{% if error %}
+	<p class="error"><strong>Error:</strong> {{ error }}</p>
+	{% endif %}
 {% endblock %}

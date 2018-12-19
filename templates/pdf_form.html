@@ -1,264 +1,246 @@
 {% extends "pdflayout.html" %}
 {% block content %}
- <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+	<!-- Mozilla library for rendering pdfs-->
+	<script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+
+	<div class="row">
+		{% if error %}
+			<form class="message-form" method="GET">
+				<center class="message" >
+					<img style="width: 200px;margin-left: 40px;margin-bottom:20px;" src="/static/images/error.svg" alt="">
+					<h3>
+						<strong> {{ error }} </strong>
+					</h3>
+					<button id="backbutton" value="backbutton" name="backbutton" type="submit" class="btn btn-info btn-lg" style="padding:10px;">Go back</button></center>
+			</form>
+		{% elif pdffile %}
+			<div class="leftcolumn col-lg-3 col-md-12" style="margin-bottom:-10px;padding-bottom:10px;">
+				<!--Jumbo box organization name-->
+				<div class="jumbo" id="org_title">
+					<strong><p style="font-size:2em;" >{{ wp_description }}</p></strong>
+				</div>
+			</div>
+
+			<!-- This is the modal -->
+			<div id="modal-sign" uk-modal>
+				<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-bottom" >
+					<h2 class="uk-modal-title">Almost done! <b>We will send the document to your email.</b> </h2>
+					<form class="nda-form" id="nda-form" method="POST">
+						<div class="form-group">
+							<label>Give us your full name:</label>
+							<input type="text" class="form-control" id="signer_name" name="signer_name" placeholder="Enter name" required>
+						</div>
+						<div class="form-group">
+							<label>Give us your best email address: </label>
+							<label style="font-size: 11px">(we won't save it or use it for anything else, we promise.)</label>
+							<input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
+						</div>
+						<input type="hidden" id="nda_file" name="nda_file" value="">
+						<div class="uk-text-center">
+							<p id="spinner"></p>
+							<button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg" onClick="click_button()" >Send!</button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!--Closing Form-->
+			<div class="col-lg-9 col-md-12" style="margin-bottom:-10px;padding-bottom: 10px;">
+				<!--Pdf Container-->
+				<div id="pdf_container" style="height: 800px;overflow: scroll;">
+					<!-- This dynamic container renders the Pdf inside it-->
+					<div id="dynamic_container" >
+					</div>
+					<div id="checkdiv" style="align-items:bottom;padding-left:2%">
+						<h2> <input  onclick="thisClick()" id="getit_input" name="getit_input" value="" >
+							<label for="getit_input" id="lagetit_input" name="lagetit_input">{{ wp_getit_btn }}</label></h2>
+					</div>
+				</div>
+				<div id="lastdiv"></div>
+			</div>
+			<!-- closing Pdf Container-->
+
+			<script type="text/javascript">
+	      {% if has_nda %}
+	        //if the document needs first to sign a contract the it will render a checkbox
+	        var myinput = document.getElementById("getit_input");
+	        myinput.type = 'checkbox';
+	        myinput.style = "transform: scale(2);margin-top: 4px;margin-right: 0.5em;";
+	        document.getElementById("lagetit_input").style = "font-weight:bold;align:center;";
+	      {% else %}
+	        //if the document doesn't needs a contract then it will render a button (get it! button)
+		       var myinput = document.getElementById("getit_input");
+		       myinput.style = "margin-bottom: 10px;align:center;";
+		       myinput.type = 'submit';
+		       myinput.classList.add("btn-green-square");
+		       myinput.value = "Get it!";
+		       document.getElementById("lagetit_input").style = "font-weight:bold;";
+	      {% endif %}
+
+				//Initializing the Tour JS configuration
+				var tour = new Tour({
+				  steps: [
+				{
+				  element: "#org_title",
+				  title: "First",
+				  content: "Please read this NDA before you sign it"
+				},
+				{
+				  element: "#lagetit_input",
+				  title: "Sign!",
+				  content: "Check this if you agree with the NDA then enter your name and email so we can send you the documentation"
+				}
+				],
+				storage: false,
+				backdrop :true,
+				template: '<div class="popover" role="tooltip"> <div class="arrow"></div> <h3 class="popover-title"></h3> <div class="popover-content"></div> <div class="popover-navigation"> <div class="btn-group"> <button class="btn btn-sm btn-default" data-role="prev">&laquo; Ant</button> <button class="btn btn-sm btn-default" data-role="next">Sig &raquo;</button> <button class="btn btn-sm btn-default" data-role="pause-resume" data-pause-text="Pause" data-resume-text="Resume">Pause</button> </div> <button class="btn btn-sm btn-default" data-role="end">Finish Tour</button> </div> </div>'
+				});
+
+				//Get the pdf in base64 and render it page by page
+				var winheight= $( window ).height() - 60;
+				$('#pdf_container').attr('style','height:'+ winheight +'px;overflow: scroll;');
+				var pdfData = atob('{{ pdffile }}');
+				$('#nda_file').val('{{ pdffile }}');
+				// Get div#container and cache it for later use
+				var wholecontainer = document.getElementById("pdf_container");
+				var container = document.getElementById("dynamic_container");
+
+				var pdfjsLib = window['pdfjs-dist/build/pdf'];
+
+				// The workerSrc property shall be specified.
+				pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+
+				var loadingTask = pdfjsLib.getDocument({data: pdfData});
+				loadingTask.promise.then(function(pdf) {
+					var pdf_pages = pdf.numPages;
+
+	        {% if not has_nda %}
+	            pdf_pages = 1;
+	        {% endif %}
+
+	        // Loop from 1 to total_number_of_pages in PDF document
+	        for (var i = 1; i <= pdf_pages; i++) {
+	          // Get desired page
+	          pdf.getPage(i).then(function(page) {
+	            var scale = 2.5;
+	            var viewport = page.getViewport(scale);
+	            var div = document.createElement("div");
+
+	            // Set id attribute with page-#{pdf_page_number} format
+	            div.setAttribute("id", "page-" + (page.pageIndex + 1));
+
+	            // This will keep positions of child elements as per our needs
+	            div.setAttribute("style", "position: relative");
+
+	            // Append div within div#container
+	            container.appendChild(div);
+
+	            // Create a new Canvas element
+	            var canvas = document.createElement("canvas");
+
+	            // Append Canvas within div#page-#{pdf_page_number}
+	            div.appendChild(canvas);
+
+	            var context = canvas.getContext('2d');
+	            canvas.height = viewport.height;
+	            canvas.width = viewport.width;
+
+	            var renderContext = {
+	              canvasContext: context,
+	              viewport: viewport
+	            };
+
+	            // Render PDF page
+	            page.render(renderContext);
+
+	          });
+	        }
+	      }, function (reason) {
+	        // PDF loading error
+	        console.error(reason);
+	      });
+
+	      function click_button() {
+	          document.getElementById("signbtn").hidden = true;
+	          $('#spinner').html('<p id="spinner"><div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div></p>');
+	      }
+
+	      $('#modal-sign').on('hide.uk.modal', function(){
+	       document.getElementById("signbtn").hidden = false;
+	        $('#spinner').html('<p id="spinner"></p>');
+	      });
+
+	      function thisClick() {
+	        var myinput = document.getElementById("getit_input");
+	        if(myinput.type == "checkbox" ){
+	          // If the checkbox is checked, show the sign modal
+	          if (myinput.checked == true){
+	            UIkit.modal($('#modal-sign')).show();
+	          } else {
+	            UIkit.modal($('#modal-sign')).hide();
+	          }
+	        }
+	        else{
+	            UIkit.modal($('#modal-sign')).show();
+	        }
+	       }
+
+	    </script>
+
+			{% if tour_js %}
+				<script type="text/javascript">
+
+		     $(document).ready(function() {
+		      //Check if the first time that a medic see the view
+
+	        // TourJS script here
+	        function show_tour(){
+	          // Initialize the tour
+	          tour.init();
+
+	          //scroll to the bottom
+	          $('#pdf_container').scrollTop($('#pdf_container')[0].scrollHeight);
+
+	          // Start the tour
+	          tour.start();
+	       };
+	       window.setTimeout( show_tour, 1000 );
+
+	        });
+
+			  </script>
+			{% endif %}
 
 
-    <div class="row">
-      {% if error %}
-         <form class="message-form" method="GET">
-          <center class="message" >
-            <img style="width: 200px;margin-left: 40px;margin-bottom:20px;" src="/static/images/error.svg" alt="">
-            <h3>
-              <strong> {{ error }} </strong>
-            </h3>
-
-          <button id="backbutton" value="backbutton" name="backbutton" type="submit" class="btn btn-info btn-lg" style="padding:10px;">Go back</button></center>
-        </form>
-      {% elif pdffile %}
-          <div class="leftcolumn col-lg-3 col-md-12" style="margin-bottom:-10px;padding-bottom:10px;">
-              <!--Jumbo box organization name-->
-            <div class="jumbo" id="org_title">
-              <strong><p style="font-size:2em;" >{{ wp_description }}</p></strong>
-
-            </div>
-          </div>
-
-
-                 <!-- This is the modal -->
-        <div id="modal-sign" uk-modal>
-            <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-bottom" >
-                <h2 class="uk-modal-title">Almost done! <b>We will send the document to your email.</b> </h2>
-               <form class="nda-form" id="nda-form" method="POST">
-
-                <div class="form-group">
-                  <label>Give us your full name:</label>
-                  <input type="text" class="form-control" id="signer_name" name="signer_name" placeholder="Enter name" required>
-                </div>
-                <div class="form-group">
-                    <label>Give us your best email address: </label>
-                    <label style="font-size: 11px">(we won't save it or use it for anything else, we promise.)</label>
-                    <input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
-
-                </div>
-                <input type="hidden" id="nda_file" name="nda_file" value="">
-
-                <div class="uk-text-center">
-                    <p id="spinner"></p>
-                    <button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg" onClick="click_button()" >Send!</button>
-                </div>
-                   </form>
-
-            </div>
-        </div>
-
-
-        <!--Closing Form-->
-        <div class="col-lg-9 col-md-12" style="margin-bottom:-10px;padding-bottom: 10px;">
-           <!--Pdf Container-->
-            <div id="pdf_container" style="height: 800px;overflow: scroll;">
-              <div id="dynamic_container" >
-              </div>
-                <div id="checkdiv" style="align-items:bottom;padding-left:2%">
-                   <h2> <input  onclick="thisClick()" id="getit_input" name="getit_input" value="" >
-                       <label for="getit_input" id="lagetit_input" name="lagetit_input">{{ wp_getit_btn }}</label></h2>
-
-                 </div>
-
-            </div>
-            <div id="lastdiv"></div>
-        </div>
-           <!-- closing Pdf Container-->
-
-
-      <script type="text/javascript">
-      {% if has_nda %}
-        var myinput = document.getElementById("getit_input");
-        myinput.type = 'checkbox';
-        myinput.style = "transform: scale(2);margin-top: 4px;margin-right: 0.5em;";
-        document.getElementById("lagetit_input").style = "font-weight:bold;align:center;";
-
-      {% else %}
-       var myinput = document.getElementById("getit_input");
-       myinput.style = "margin-bottom: 10px;align:center;";
-       myinput.type = 'submit';
-       myinput.classList.add("btn-green-square");
-       myinput.value = "Get it!";
-       document.getElementById("lagetit_input").style = "font-weight:bold;";
-
-      {% endif %}
-
-         var tour = new Tour({
-            steps: [
-          {
-            element: "#org_title",
-            title: "First",
-            content: "Please read this NDA before you sign it"
-          },
-          {
-            element: "#lagetit_input",
-            title: "Sign!",
-            content: "Check this if you agree with the NDA then enter your name and email so we can send you the documentation"
-          }
-        ],
-        storage: false,
-        backdrop :true,
-        template: '<div class="popover" role="tooltip"> <div class="arrow"></div> <h3 class="popover-title"></h3> <div class="popover-content"></div> <div class="popover-navigation"> <div class="btn-group"> <button class="btn btn-sm btn-default" data-role="prev">&laquo; Ant</button> <button class="btn btn-sm btn-default" data-role="next">Sig &raquo;</button> <button class="btn btn-sm btn-default" data-role="pause-resume" data-pause-text="Pause" data-resume-text="Resume">Pause</button> </div> <button class="btn btn-sm btn-default" data-role="end">Finish Tour</button> </div> </div>'
-        });
-
-        var winheight= $( window ).height() - 60;
-        $('#pdf_container').attr('style','height:'+ winheight +'px;overflow: scroll;');
-        var pdfData = atob('{{ pdffile }}');
-        $('#nda_file').val('{{ pdffile }}');
-        // Get div#container and cache it for later use
-        var wholecontainer = document.getElementById("pdf_container");
-        var container = document.getElementById("dynamic_container");
-
-        var pdfjsLib = window['pdfjs-dist/build/pdf'];
-
-        // The workerSrc property shall be specified.
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
-
-         var loadingTask = pdfjsLib.getDocument({data: pdfData});
-        loadingTask.promise.then(function(pdf) {
-
-        var pdf_pages = pdf.numPages;
-
-        {% if not has_nda %}
-            pdf_pages = 1;
-
-        {% endif %}
-
-            // Loop from 1 to total_number_of_pages in PDF document
-            for (var i = 1; i <= pdf_pages; i++) {
-
-                // Get desired page
-                pdf.getPage(i).then(function(page) {
-
-                  var scale = 2.5;
-                  var viewport = page.getViewport(scale);
-                  var div = document.createElement("div");
-
-                  // Set id attribute with page-#{pdf_page_number} format
-                  div.setAttribute("id", "page-" + (page.pageIndex + 1));
-
-                  // This will keep positions of child elements as per our needs
-                  div.setAttribute("style", "position: relative");
-
-                  // Append div within div#container
-                  container.appendChild(div);
-
-                  // Create a new Canvas element
-                  var canvas = document.createElement("canvas");
-
-                  // Append Canvas within div#page-#{pdf_page_number}
-                  div.appendChild(canvas);
-
-                  var context = canvas.getContext('2d');
-                  canvas.height = viewport.height;
-                  canvas.width = viewport.width;
-
-                  var renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                  };
-
-                  // Render PDF page
-                  page.render(renderContext);
-
-
-                });
-
-            }
-
-        }, function (reason) {
-          // PDF loading error
-          console.error(reason);
-        });
-
-        function click_button() {
-            document.getElementById("signbtn").hidden = true;
-            $('#spinner').html('<p id="spinner"><div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div></p>');
-        }
-
-        $('#modal-sign').on('hide.uk.modal', function(){
-         document.getElementById("signbtn").hidden = false;
-          $('#spinner').html('<p id="spinner"></p>');
-        });
-
-        function thisClick() {
-            var myinput = document.getElementById("getit_input");
-            if(myinput.type == "checkbox" ){
-                // If the checkbox is checked, show the sign modal
-              if (myinput.checked == true){
-                UIkit.modal($('#modal-sign')).show();
-              } else {
-                UIkit.modal($('#modal-sign')).hide();
-              }
-            }
-            else{
-                UIkit.modal($('#modal-sign')).show();
-            }
-
-         }
-
-         </script>
-
-{% if tour_js %}
-<script type="text/javascript">
-
-     $(document).ready(function() {
-        //Check if the first time that a medic see the view
-        // TourJS script here
-        function show_tour(){
-
-              // Initialize the tour
-                tour.init();
-              //scroll to the bottom
-                $('#pdf_container').scrollTop($('#pdf_container')[0].scrollHeight);
-
-                // Start the tour
-                tour.start();
-           };
-           window.setTimeout( show_tour, 1000 );
-
-        });
-
-         </script>
-{% endif %}
-
-
-    {% elif message %}
-
-    <!-- Success message-->
-    <section class="container" style="padding-top:4em;">
-      <article class="row justify-content-md-center">
-        <div class="col-sm-12 col-md-8">
-          <div class="card text-center border-0">
-            <div class="card-body">
-              <img style="width:100px;margin-bottom:20px;" src="/static/images/send.svg" alt="">
-              <h2 class="card-title message"><strong>{% if message %}{{message}}{% else %}Succesfully sent files!{% endif %}</strong></h2>
-            </div>
-          </div>
-          <div class="card text-center bg-light border-0">
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('register') }}">
-              <h5>Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</h5>
-              <div class="row justify-content-md-center">
-                <div class="col-sm-12 col-md-10">
-                  <input id="username" name="username" type="email" class="form-control" placeholder="your@email.com" style="margin-bottom: 1em;" required>
-                </div>
-              </div>
-              <span style="margin-bottom:.5em;"></span>
-              <button type="submit" id="try-wpci-nda" class="btn btn-warning try-nda" title="TRY WPCI" style="padding:1em;">TRY WPCI WITH NDA</button>
-                </form>
-            </div>
-          </div>
-        </div>
-      </article>
-    </section>
-
-    {% endif %}
-
-    </div>
+		{% elif message %}
+			<!-- Success message-->
+			<section class="container" style="padding-top:4em;">
+				<article class="row justify-content-md-center">
+					<div class="col-sm-12 col-md-8">
+						<div class="card text-center border-0">
+							<div class="card-body">
+								<img style="width:100px;margin-bottom:20px;" src="/static/images/send.svg" alt="">
+								<h2 class="card-title message"><strong>{% if message %}{{message}}{% else %}Succesfully sent files!{% endif %}</strong></h2>
+							</div>
+						</div>
+						<div class="card text-center bg-light border-0">
+							<div class="card-body">
+								<form method="POST" action="{{ url_for('register') }}">
+									<h5>Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</h5>
+									<div class="row justify-content-md-center">
+										<div class="col-sm-12 col-md-10">
+											<input id="username" name="username" type="email" class="form-control" placeholder="your@email.com" style="margin-bottom: 1em;" required>
+										</div>
+									</div>
+									<span style="margin-bottom:.5em;"></span>
+									<button type="submit" id="try-wpci-nda" class="btn btn-warning try-nda" title="TRY WPCI" style="padding:1em;">TRY WPCI WITH NDA</button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</article>
+			</section>
+		{% endif %}
+	</div>
 
 {% endblock %}

@@ -101,14 +101,14 @@
         
         <!-- STEP 3 -->
         <li >
-          <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
+          <form action="{{ url_for('view_docs') }}" method="post">
             {% if error %}
               <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">{{ error }}</h3>
             {% endif %}
 
             {% if doc_len > 0 %}
               <h3 style="font-weight:900;" >You can create links or check the analytics of each document</h3>
-              <table class="uk-table uk-table-responsive" id="document_table" >
+              <table class="uk-table uk-table-responsive uk-table-striped uk-table-small" id="document_table" >
                 <caption></caption>
                 <thead>
                   <tr>

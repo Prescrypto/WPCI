@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
-  <form action="{{ url_for('index') }}" method="get" style="padding-left:2em;">
+  <form action="{{ url_for('index') }}" method="get" >
     {% if error %}
       <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
         {{ error }}
@@ -8,7 +8,7 @@
     {% endif %}
     {% if link_len > 0 %}
       <h2 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" class="login-h1">You can share your links or check the analytics.</h2>
-      <table class="uk-table uk-table-responsive" id="document_table" >
+      <table class="uk-table uk-table-responsive uk-table-striped uk-table-small" id="document_table" >
         <caption></caption>
         <thead>
           <tr>
