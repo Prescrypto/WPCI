@@ -134,8 +134,7 @@ def index():
 
     if request.method == 'POST':
 
-        if request.form['org_name'] and request.form['org_type'] and \
-                request.form['org_email'] and request.form['org_address']:
+        if request.form['org_name'] and request.form['org_email'] and request.form['org_address']:
             try:
                 data = request.form.to_dict()
                 try:
@@ -297,7 +296,7 @@ def register_org():
 
     if request.method == 'POST':
 
-        if request.form['org_name'] and request.form['org_type'] and \
+        if request.form['org_name'] and \
                 request.form['org_email'] and request.form['org_address']:
             try:
                 data = request.form.to_dict()
@@ -884,7 +883,9 @@ def show_pdf(id):
 
                 user = User.User()
                 user = user.find_by_attr("org_id", thisnda.org_id)
-                render_options = {"companyname": user.org_name, "companytype": user.org_type,
+                org_type = getattr(user, "org_type", "N/A")
+
+                render_options = {"companyname": user.org_name, "companytype": org_type,
                                   "companyaddress": user.org_address}
 
                 doc_type = getattr(thisnda, "render", False)
