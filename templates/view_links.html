@@ -33,25 +33,25 @@
     {% else %}
       <h1 style="font-weight:900;" class="login-h1">There are no links created yet</a></h1>
     {% endif %}
-      <div class="uk-margin uk-text-center">
-        <button  onClick="history.go(-1)" class="btn btn-info uk-text-center" value="back">Go back</button>
-      </div>
+    <div class="uk-margin uk-text-center">
+      <button  onClick="history.go(-1)" class="btn btn-info uk-text-center" value="back">Go back</button>
+    </div>
 
   </form>
 
   <!-- Javascript -->
   <script>
-      // Function to copy link to clipboard
-      function copy_to_clipboard(id) {
-        var href = $('#'+id).attr('href');
-        var el = document.createElement('textarea');
-        el.value = href;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        alert('Link copied');
-      }
+    // Function to copy link to clipboard
+    function copy_to_clipboard(id) {
+      var href = $('#'+id).attr('href');
+      var el = document.createElement('textarea');
+      el.value = href;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      alert('Link copied');
+    }
   </script>
 
 {% endblock %}

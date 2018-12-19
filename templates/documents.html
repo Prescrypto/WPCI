@@ -1,6 +1,9 @@
 {% extends "layout.html" %}
 
 {% block content %}
+	<div class="uk-margin uk-text-left" style="padding-top:30px;padding-left:30px;">
+		<button  onClick="history.go(-1)" class=" uk-text-center uk-button uk-button-default" value="back">Go back</button>
+	</div>
 	<div class="uk-width-medium-1-1 uk-container-center">
 		<form action="{{ url_for('documents', type=type, render=render) }}" method="post" class="uk-grid-medium uk-child-width-expand@s" uk-grid>
 			<div></div>
