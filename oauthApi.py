@@ -249,8 +249,8 @@ def register():
                     logger.info("sending email: " + str(e))
                     error= "Couldn't send verification code, please try again."
             else:
-                error= "This user already exists, please login."
-                logger.info(error)
+                error= "This user already exists, please reset your password or use a different email."
+                logger.info(error) # TODO @val: change these to logger.error
 
     if request.method == 'GET':
         email = request.args.get('email', False)
@@ -273,8 +273,8 @@ def register():
                     logger.info("sending email: " + str(e))
                     error = "Couldn't send verification code, please try again."
             else:
-                error = "This user already exists, please login."
-                logger.info(error)
+                error = "This user already exists, please reset your password or use a different email. GET"
+                logger.info(error) # TODO @val: change these to logger.error
 
     return render_template('register.html', error=error)
 
