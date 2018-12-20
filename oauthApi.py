@@ -51,21 +51,24 @@ BASE_PATH = "/docs/"
 PDF_URL = conf.BASE_URL + BASE_PATH +"pdf/"
 ADMIN_URL = conf.BASE_URL + BASE_PATH + "validate_email?code="
 
-DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
-        <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
-        <p>Best regards,</p>"
+DEFAULT_HTML_TEXT = \
+            "<h3>Hello,</h3>\
+            <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
+            <p>Best regards,</p>"
 
-VERIFICATION_HTML = "<h1>Hey,</h1>\
-                <p>Thanks for your interest on WPCI, you're almost done. </p>\
-               <p>Click HERE <a href='{}'>{}</a> to verify your email.</p>\
-                <p>Best!</p>\
-               <p>Andrea</p>"
+VERIFICATION_HTML = \
+            "<h3>Hey,</h3>\
+            <p>Thanks for your interest on WPCI, you're almost done. </p>\
+            <p>Click HERE <a href='{}'>{}</a> to verify your email.</p>\
+            <p>Best!</p>\
+            <p>Andrea</p>"
 
-NOTIFICATION_HTML = "<h3>Hi!</h3>\
-               <p> {} has just downloaded the following document {}!</p>\
-               <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
-                <p>Keep crushing it!</p>\
-                <p>WPCI Admin</p>"
+NOTIFICATION_HTML = \
+            "<h3>Hi!</h3>\
+            <p> {} has just downloaded the following document {}!</p>\
+            <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
+            <p>Keep crushing it!</p>\
+            <p>WPCI Admin</p>"
 
 
 app = Flask(__name__)
