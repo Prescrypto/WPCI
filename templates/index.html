@@ -124,7 +124,7 @@
                     <tr>
                       <td align="center">{{ item.wp_name }}</td>
                       <td align="center" >
-                        <span id="{{ item.nda_id }}" onClick="go_to_link( '{{ item.nda_id }}' )">{{ item.nda_id }}</span>
+                        <a href="#"><span id="{{ item.nda_id }}" onClick="go_to_link( '{{ item.nda_id }}' )">{{ item.nda_id }}</span></a>
                       </td>
                       <td align="center">
                         {% if item.render %}
