@@ -716,7 +716,7 @@ def validate_email():
             user = User.User(username)
             user.validate_email(password)
             user = user.find_by_attr("username", username)
-            session["user"] = user.__dict__
+            session["user"] = user
             return redirect(url_for('index'))
 
     return render_template('validate_email.html', error=error, username=username)
