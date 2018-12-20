@@ -273,7 +273,7 @@ def register():
                     logger.info("sending email: " + str(e))
                     error = "Couldn't send verification code, please try again."
             else:
-                error = "This user already exists, please reset your password or use a different email. GET"
+                error = "This user already exists, please reset your password or use a different email."
                 logger.info(error) # TODO @val: change these to logger.error
 
     return render_template('register.html', error=error)
@@ -608,9 +608,9 @@ def documents(type, render):
                         google_token = getattr(user, "google_token", False)
                         if google_token is not False:
                             user_credentials = {'token': user.google_token,
-                              'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
-                              'client_id': conf.GOOGLE_CLIENT_ID,
-                               'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
+                                'client_id': conf.GOOGLE_CLIENT_ID,
+                                'client_secret': conf.GOOGLE_CLIENT_SECRET,
                                 'scopes': conf.SCOPES}
 
                             credentials = google.oauth2.credentials.Credentials(
@@ -771,12 +771,12 @@ def google_authorize():
     flow.redirect_uri = conf.BASE_URL + BASE_PATH + "oauth2callback"
 
     authorization_url, state = flow.authorization_url(
-      # Enable offline access so that you can refresh an access token without
-      # re-prompting the user for permission. Recommended for web server apps.
-      access_type='offline',
+        # Enable offline access so that you can refresh an access token without
+        # re-prompting the user for permission. Recommended for web server apps.
+        access_type='offline',
         approval_prompt='force',
-      # Enable incremental authorization. Recommended as a best practice.
-      include_granted_scopes='false')
+        # Enable incremental authorization. Recommended as a best practice.
+        include_granted_scopes='false')
 
     # Store the state so the callback can verify the auth server response.
     try:
@@ -806,7 +806,7 @@ def oauth2callback():
         state = ""
 
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-      conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES, state=state)
+        conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES, state=state)
     flow.redirect_uri = conf.BASE_URL + BASE_PATH + "oauth2callback"
 
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
@@ -987,12 +987,12 @@ def show_pdf(id):
                                 if google_token is not False:
                                     wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(thisnda.wp_url,
                                             {'token': user.google_token,
-                                             'refresh_token': user.google_refresh_token,
-                                             'token_uri': conf.GOOGLE_TOKEN_URI,
-                                             'client_id': conf.GOOGLE_CLIENT_ID,
-                                             'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                                             'scopes': conf.SCOPES},
-                                             signer_email)
+                                                'refresh_token': user.google_refresh_token,
+                                                'token_uri': conf.GOOGLE_TOKEN_URI,
+                                                'client_id': conf.GOOGLE_CLIENT_ID,
+                                                'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                                'scopes': conf.SCOPES},
+                                                signer_email)
                             else:
                                 wpci_result, complete_hash, WPCI_FILE_NAME  = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
@@ -1095,7 +1095,3 @@ def show_pdf(id):
 
 
     return render_template('pdf_form.html', id=doc_id, error=error, message=message)
-
-
-
-
