@@ -23,7 +23,7 @@
         <tbody>
           {% for item in link_list %}
             <tr>
-              <td align="center">{{ base_url + item.link }}</td>
+              <td align="center"><a href="{{ base_url + item.link }}">{{ base_url + item.link }}</a></td>
               <td align="center">{{ item.status }}</td>
               <td align="center">{{ item.version }}</td>
               <td align="center">{{ item.view_count }}</td>
