@@ -2,9 +2,11 @@
 {% block content %}
   <form action="{{ url_for('index') }}" method="get" >
     {% if error %}
-      <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
-        {{ error }}
-      </h3>
+      <div class="uk-margin uk-text-center">
+        <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
+          {{ error }}
+        </h3>
+      </div>
     {% endif %}
     {% if link_len > 0 %}
       <h2 style="font-weight:900;padding: 20px;margin:40px;margin-top:60px;text-align:center;" class="login-h1">You can share your links or check the analytics.</h2>
@@ -31,7 +33,9 @@
       </table>
 
     {% else %}
-      <h1 style="font-weight:900;" class="login-h1">There are no links created yet</a></h1>
+      <div class="uk-margin uk-text-center">
+        <h1 style="font-weight:900;" class="login-h1">There are no links created yet</h1>
+      </div>
     {% endif %}
     <div class="uk-margin uk-text-center">
       <button  onClick="history.go(-1)" class="btn btn-info uk-text-center" value="back">Go back</button>
