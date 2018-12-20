@@ -116,7 +116,7 @@
                     <th style="text-align:center">Document ID</th>
                     <th style="text-align:center">Type</th>
                     <th style="text-align:center">Date</th>
-                    <th style="text-align:center"> Links </th>
+                    <th style="text-align:center">Links</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -124,9 +124,7 @@
                     <tr>
                       <td align="center">{{ item.wp_name }}</td>
                       <td align="center" >
-                        <a id="{{ item.nda_id }}" href="{{ url_for('analytics', id =item.nda_id) }}" >
-                            {{ item.nda_id }}
-                        </a>
+                        <span id="{{ item.nda_id }}" onClick="go_to_link( '{{ item.nda_id }}' )">{{ item.nda_id }}</span>
                       </td>
                       <td align="center">
                         {% if item.render %}
