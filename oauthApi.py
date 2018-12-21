@@ -676,7 +676,7 @@ def documents(type, render):
                     return render_template('documents.html', type=type, render=render, error=error)
 
                 success= "Succesfully created your document, the Id is: "+ nda_url
-                return redirect(url_for('index', success = success))
+                return redirect(url_for('view_docs', success = success))
 
             except Exception as e:
                 logger.info("documents post " + str(e))

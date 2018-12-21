@@ -25,30 +25,30 @@
 					<div>
 						<div class="uk-card uk-card-hover uk-card-default uk-card-large" >
 							<div class="uk-card-header">
-								<h3 class="uk-card-title-sm" > Create a protected document</h3>
+								<h1 class="uk-card-title-md" ><a href="{{ url_for('documents', type='wp', render= render ) }}"  > Protect my document</a></h1>
 							</div>
 							<div class="uk-card-body">
-								<h2><a href="{{ url_for('documents', type='wp', render= render ) }}"  > Create a protected document</a></h2>
+								<h4>Require a name and email address for users to access your document.</h4>
 							</div>
 						</div>
 					</div>
 					<div>
 						<div class="uk-card uk-card-hover uk-card-default uk-card-large">
 							<div class="uk-card-header">
-								<h3 class="uk-card-title-sm"> Create a document contract</h3>
+								<h1 class="uk-card-title-md"><a href="{{ url_for('documents', type='nda', render=render ) }}">Make a contract</a></h1>
 							</div>
 							<div class="uk-card-body">
-								<h2><a href="{{ url_for('documents', type='nda', render=render ) }}"  >Create a document contract</a></h2>
+								<h4>Make a secure contract that can be safely signed online by all parties.</h4>
 							</div>
 						</div>
 					</div>
 					<div>
 						<div class="uk-card uk-card-hover uk-card-default uk-card-large">
 							<div class="uk-card-header">
-								<h3 class="uk-card-title-sm"> Create a document with a NDA</h3>
+								<h1 class="uk-card-title-md"><a href="{{ url_for('documents', type='wp_nda', render=render ) }}">Create an NDA</a></h1>
 							</div>
 							<div class="uk-card-body">
-								<h3><a href="{{ url_for('documents', type='wp_nda', render=render ) }}"  >Create a protected document with a Non Disclosure Agreement</a></h3>
+								<h4>Make users sign an NDA before accessing your document.</h4>
 							</div>
 						</div>
 					</div>
