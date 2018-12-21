@@ -1018,22 +1018,26 @@ def show_pdf(id):
                         if render_nda_only or render_wp_only is False:
                             nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
 
-                            crypto_sign_payload = {
-                                "timezone": TIMEZONE,
-                                "pdf": nda_file_base64,
-                                "signatures": [
-                                    {
-                                        "hash": client_hash,
-                                        "email": signer_email,
-                                        "name": signer_name
-                                    }],
-                                "params": {
-                                    "locale": LANGUAGE,
-                                    "title": user.org_name + " contract",
-                                    "file_name": NDA_FILE_NAME,
-                                    "logo": org_logo
+                            try:
+                                crypto_sign_payload = {
+                                    "timezone": TIMEZONE,
+                                    "pdf": nda_file_base64,
+                                    "signatures": [
+                                        {
+                                            "hash": client_hash,
+                                            "email": signer_email,
+                                            "name": signer_name
+                                        }],
+                                    "params": {
+                                        "locale": LANGUAGE,
+                                        "title": user.org_name + " contract",
+                                        "file_name": NDA_FILE_NAME,
+                                        "logo": org_logo
+                                    }
                                 }
-                            }
+                            except Exception as e:
+                                print(e)
+
 
                             nda_result = get_nda(crypto_sign_payload)
 
