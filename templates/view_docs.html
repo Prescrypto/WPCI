@@ -53,4 +53,14 @@
       <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
     {% endif %}
   </form>
+
+<!-- Javascript -->
+<script>
+
+  function go_to_link(myid){
+    var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
+    window.location.replace(myurl);
+  }
+</script>
+
 {% endblock %}
