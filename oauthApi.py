@@ -1015,7 +1015,7 @@ def show_pdf(id):
                                                    filename=WPCI_FILE_NAME)
                             attachments_list.append(wpci_attachment)
 
-                        if render_nda_only or render_wp_only is False:
+                        if nda_file_base64 is not None:
                             nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
 
                             try:
