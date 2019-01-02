@@ -1,7 +1,7 @@
 import os
 TIMEZONE = "America/Mexico_City"
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
-headers = {"Content-Type" :  "application/json" } #get the content in json format
+headers = {'Content-Type' :  'application/json' } #get the content in json format
 GITHUB_API_URL = "https://api.github.com/"
 SECRET = os.environ.get('SECRET', '')
 MONGO_URI= os.environ.get('MONGODB_URI', '')

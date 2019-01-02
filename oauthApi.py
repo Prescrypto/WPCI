@@ -1020,19 +1020,19 @@ def show_pdf(id):
 
                             try:
                                 crypto_sign_payload = {
-                                    "timezone": TIMEZONE,
-                                    "pdf": nda_file_base64,
-                                    "signatures": [
+                                    'timezone': TIMEZONE,
+                                    'pdf': nda_file_base64,
+                                    'signatures': [
                                         {
-                                            "hash": client_hash,
-                                            "email": signer_email,
-                                            "name": signer_name
+                                            'hash': client_hash,
+                                            'email': signer_email,
+                                            'name': signer_name
                                         }],
-                                    "params": {
-                                        "locale": LANGUAGE,
-                                        "title": user.org_name + " contract",
-                                        "file_name": NDA_FILE_NAME,
-                                        "logo": org_logo
+                                    'params': {
+                                        'locale': LANGUAGE,
+                                        'title': user.org_name + ' contract',
+                                        'file_name': NDA_FILE_NAME,
+                                        'logo': org_logo
                                     }
                                 }
                             except Exception as e:
