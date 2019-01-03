@@ -162,7 +162,7 @@
 
 	      function click_button() {
 	          document.getElementById("signbtn").hidden = true;
-	          $('#spinner').html('<p id="spinner"><div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div></p>');
+	          document.getElementById("spinner").innerHTML = '<div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div>';
 	          document.getElementById("nda-form").submit();
 	      }
 
