@@ -45,7 +45,7 @@ def get_nda(payload):
             #if there is a token in the payload then request the pdf
             #headers["Accept"] = "text/plain"
             headers["Authorization"] = "Bearer " + token_json_result.get("access_token")
-            sign_result = requests.post(url=URL + SIGN_URL, data=payload, headers=headers)
+            sign_result = requests.post(url=URL + SIGN_URL, json=payload, headers=headers)
             print(sign_result.content)
 
             return sign_result.content
