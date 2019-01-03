@@ -1015,29 +1015,26 @@ def show_pdf(id):
                                                    filename=WPCI_FILE_NAME)
                             attachments_list.append(wpci_attachment)
 
-                        if nda_file_base64 is not None:
+                        if render_wp_only is False:
                             nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
 
-                            try:
-                                crypto_sign_payload = {
-                                    'timezone': TIMEZONE,
-                                    'pdf': nda_file_base64,
-                                    'signatures': [
-                                        {
-                                            'hash': client_hash,
-                                            'email': signer_email,
-                                            'name': signer_name
-                                        }],
-                                    'params': {
-                                        'locale': LANGUAGE,
-                                        'title': user.org_name + ' contract',
-                                        'file_name': NDA_FILE_NAME,
-                                        'logo': org_logo
-                                    }
+                            crypto_sign_payload = {
+                                "pdf": nda_file_base64,
+                                "timezone": TIMEZONE,
+                                "signatures": [
+                                    {
+                                        "hash": client_hash,
+                                        "email": signer_email,
+                                        "name": signer_name
+                                    }],
+                                "params": {
+                                    "locale": LANGUAGE,
+                                    "title": user.org_name + " contract",
+                                    "file_name": NDA_FILE_NAME,
+                                    "logo": org_logo
                                 }
-                            except Exception as e:
-                                print(e)
-
+                            }
+                            
 
                             nda_result = get_nda(crypto_sign_payload)
 
