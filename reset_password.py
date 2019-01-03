@@ -13,14 +13,14 @@ logger = logging.getLogger('tornado-info')
 @click.option('--username', default="", help='The user name to login')
 @click.option('--password', default="", help='The password of your user')
 
-def reset_password():
+def reset_password(username, password):
     try:
         user = User.User(username)
         if user.find() is False:
-            print("there is no such a user")
+            logger.info("there is no such a user")
         user.validate_email(password)
     except Exception as e:
-        print(e)
+        logger.info(str(e))
 
 if __name__ == "__main__":
     reset_password()
