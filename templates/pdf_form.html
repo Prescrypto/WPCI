@@ -37,7 +37,7 @@
 						</div>
 						<input type="hidden" id="nda_file" name="nda_file" value="">
 						<div class="uk-text-center">
-							<p id="spinner" ></p>
+							<div id="spinner" ></div>
 							<button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg"  >Send!</button>
 						</div>
 					</form>
@@ -168,7 +168,7 @@
 
 	      $('#modal-sign').on('hide.uk.modal', function(){
 	       document.getElementById("signbtn").hidden = false;
-	        $('#spinner').html('<p id="spinner"></p>');
+	       document.getElementById("spinner").innerHTML = '';
 	      });
 
 	      function thisClick() {
