@@ -1085,8 +1085,10 @@ def show_pdf(id):
                         thislink.status = "signed"
                         thislink.update()
 
-                        if thisnda.redirect_url is not None and thisnda.redirect_url != "" :
-                            return redirect(thisnda.redirect_url)
+                        doc_redirect_url = getattr(thisnda, "redirect_url", False)
+
+                        if doc_redirect_url and doc_redirect_url != "":
+                            return redirect(doc_redirect_url)
 
                     except Exception as e: #except from temp directory
                         logger.info("sending the email with the documents "+ str(e))
