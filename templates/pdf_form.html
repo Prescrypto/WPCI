@@ -25,7 +25,7 @@
 			<div id="modal-sign" uk-modal>
 				<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-bottom" >
 					<h2 class="uk-modal-title">Almost done! <b>We will send the document to your email.</b> </h2>
-					<form class="nda-form" id="nda-form" method="POST">
+					<form class="nda-form" id="nda-form" method="POST" onSubmit="click_button()">
 						<div class="form-group">
 							<label>Give us your full name:</label>
 							<input type="text" class="form-control" id="signer_name" name="signer_name" placeholder="Enter name" required>
@@ -37,8 +37,8 @@
 						</div>
 						<input type="hidden" id="nda_file" name="nda_file" value="">
 						<div class="uk-text-center">
-							<p id="spinner"></p>
-							<button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg" onClick="click_button()" >Send!</button>
+							<p id="spinner" ></p>
+							<button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg"  >Send!</button>
 						</div>
 					</form>
 				</div>
@@ -163,6 +163,7 @@
 	      function click_button() {
 	          document.getElementById("signbtn").hidden = true;
 	          $('#spinner').html('<p id="spinner"><div style="color:#000;margin-left:10px;margin-right:10px;" uk-spinner="ratio: 2"></div></p>');
+	          document.getElementById("nda-form").submit();
 	      }
 
 	      $('#modal-sign').on('hide.uk.modal', function(){

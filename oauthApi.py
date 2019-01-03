@@ -1035,7 +1035,6 @@ def show_pdf(id):
                                 }
                             }
                             
-                            print(crypto_sign_payload)
 
                             nda_result = get_nda(crypto_sign_payload)
 
