@@ -10,15 +10,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tornado-info')
 
 @click.command()
-@click.option('--username', default="", help='The user name to login')
-@click.option('--password', default="", help='The password of your user')
+@click.option('--username', default="", help='The user name you want to change the password')
+@click.option('--password', default="", help='The new password of the user')
 
 def reset_password(username, password):
     try:
-        user = User.User(username)
+        user = User.User(username, password)
         if user.find() is False:
             logger.info("there is no such a user")
         user.validate_email(password)
+        logger.info("password successfully changed")
     except Exception as e:
         logger.info(str(e))
 
