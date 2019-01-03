@@ -941,7 +941,7 @@ def show_pdf(id):
 
     if request.method == 'POST':
         attachments_list = []
-        NDA_FILE_NAME = "ndacontract.pdf"
+        NDA_FILE_NAME = "contract.pdf"
         WPCI_FILE_NAME = "whitepaper.pdf"
         render_nda_only = render_wp_only = False
 
@@ -975,13 +975,13 @@ def show_pdf(id):
                 with tempfile.TemporaryDirectory() as tmpdir:
 
                     client_hash = get_hash([signer_email])
-                    if user.org_logo is None:
+                    if user.org_logo is None or user.org_logo == "_":
                         org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
                     else:
                         org_logo = user.org_logo
 
                     try:
-                        if render_wp_only or render_nda_only is False:
+                        if render_nda_only is False:
                             wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
 
                             doc_type = getattr(thisnda, "render", False)
