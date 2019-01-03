@@ -1,5 +1,5 @@
 import logging
-
+import click
 #internal
 import config as conf
 from models import User
@@ -9,19 +9,17 @@ from models import User
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tornado-info')
 
-
-
+@click.command()
+@click.option('--username', default="", help='The user name to login')
+@click.option('--password', default="", help='The password of your user')
 
 
 if __name__ == "__main__":
-    print("Replace the password of an User:")
-    print("please enter the username followed by the new password no spaces as following:")
-    admininput =input("myuser@organization,MyNewPassword")
+
     try:
-        inputarray = admininput.split(",")
-        user = User.User(inputarray[0])
+        user = User.User(username)
         if user.find() is False:
             print("there is no such a user")
-        user.validate_email(inputarray[1])
+        user.validate_email(password)
     except Exception as e:
         print(e)
