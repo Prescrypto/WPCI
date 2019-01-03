@@ -536,6 +536,9 @@ def documents(type, render):
                 if data.get("main_tex") is None or data.get("main_tex") == "":
                     data["main_tex"] = "main.tex"
 
+                if data.get("redirect_url") is None or data.get("redirect_url") == "":
+                    data["redirect_url"] = ""
+
                 if type == "nda":
                     '''This is a contract document without a white paper or other document'''
                     data["nda_url"] = data.get("wp_url")
@@ -1081,6 +1084,9 @@ def show_pdf(id):
                         thislink.signed_count = int(temp_signed_count) + 1
                         thislink.status = "signed"
                         thislink.update()
+
+                        if thisnda.redirect_url is not None and thisnda.redirect_url != "" :
+                            return redirect(thisnda.redirect_url)
 
                     except Exception as e: #except from temp directory
                         logger.info("sending the email with the documents "+ str(e))
