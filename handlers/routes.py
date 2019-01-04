@@ -797,15 +797,14 @@ def create_dynamic_endpoint(document_dict, userjson):
 
 @gen.coroutine
 def get_test_async(seconds):
+    print("somenthing here")
     yield gen.Task(IOLoop.instance().add_timeout, time.time() + seconds)
 
 
 class TestHandler(BaseHandler):
     @gen.coroutine
     def get(self):
-        for i in range(100):
-            print(i)
-            yield get_test_async(5)
+        yield get_test_async(10)
         print("outside the function")
         self.write("ending for now")
         self.finish()
