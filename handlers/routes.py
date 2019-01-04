@@ -17,6 +17,7 @@ import io
 from tornado.web import  os
 import tornado
 from tornado import gen, ioloop
+from tornado.ioloop import IOLoop
 import jinja2
 
 #google oauth
@@ -793,6 +794,20 @@ def create_dynamic_endpoint(document_dict, userjson):
     logger.info("Information not valid creating nda")
     return False
 
+
+@gen.coroutine
+def get_test_async():
+    yield gen.Task(IOLoop.instance().add_timeout, time.time() + 20)
+
+
+class TestHandler(BaseHandler):
+    @gen.coroutine
+    def get(self):
+        for i in range(100):
+            print(i)
+            yield get_test_async(1)
+        self.write(str(i))
+        self.finish()
 
 @jwtauth
 class APINotFoundHandler(BaseHandler):

@@ -36,6 +36,7 @@ if __name__ == '__main__':
     Initializing the application with routes'''
     web_app = Application([
         (r"/"+API_BASE_PATH+"doc_edit", routes.DocEdit),
+        (r"/" + API_BASE_PATH + "testhandler", routes.TestHandler),
         (r"/"+API_BASE_PATH+"doc_status", routes.DocStatus),
         (r"/"+API_BASE_PATH+"doc_get", routes.DocRenderPDF),
         (r"/"+API_BASE_PATH+"renderrepohash", routes.PostRepoHash),
