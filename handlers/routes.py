@@ -796,8 +796,8 @@ def create_dynamic_endpoint(document_dict, userjson):
 
 
 @gen.coroutine
-def get_test_async():
-    yield gen.Task(IOLoop.instance().add_timeout, time.time() + 20)
+def get_test_async(seconds):
+    yield gen.Task(IOLoop.instance().add_timeout, time.time() + seconds)
 
 
 class TestHandler(BaseHandler):
@@ -805,7 +805,7 @@ class TestHandler(BaseHandler):
     def get(self):
         for i in range(100):
             print(i)
-            yield get_test_async(1)
+            yield get_test_async(5)
         self.write(str(i))
         self.finish()
 
