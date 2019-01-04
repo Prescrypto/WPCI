@@ -806,7 +806,8 @@ class TestHandler(BaseHandler):
         for i in range(100):
             print(i)
             yield get_test_async(5)
-        self.write(str(i))
+        print("outside the function")
+        self.write("ending for now")
         self.finish()
 
 @jwtauth
