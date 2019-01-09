@@ -16,7 +16,7 @@ import io
 #web app
 from tornado.web import  os, asynchronous
 import tornado
-from tornado import gen, ioloop
+from tornado import gen
 from tornado.ioloop import IOLoop
 import jinja2
 

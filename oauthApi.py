@@ -944,9 +944,6 @@ def show_pdf(id):
             return render_template('pdf_form.html', id=id, error=error)
 
     if request.method == 'POST':
-        attachments_list = []
-        NDA_FILE_NAME = "contract.pdf"
-        WPCI_FILE_NAME = "whitepaper.pdf"
         render_nda_only = render_wp_only = False
 
         try:
@@ -975,126 +972,31 @@ def show_pdf(id):
 
                 user = User.User()
                 user = user.find_by_attr("org_id", thisnda.org_id)
-                '''here we create a temporary directory to store the files while the function sends it by email'''
-                with tempfile.TemporaryDirectory() as tmpdir:
 
-                    client_hash = get_hash([signer_email])
-                    if user.org_logo is None or user.org_logo == "_":
-                        org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
-                    else:
-                        org_logo = user.org_logo
+                google_credentials_info = {'token': user.google_token,
+                 'refresh_token': user.google_refresh_token,
+                 'token_uri': conf.GOOGLE_TOKEN_URI,
+                 'client_id': conf.GOOGLE_CLIENT_ID,
+                 'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                 'scopes': conf.SCOPES}
 
-                    try:
-                        if render_nda_only is False:
-                            wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
+                render_and_send_docs(user, signer_email, signer_name, thisnda, nda_file_base64, google_credentials_info, render_wp_only, render_nda_only)
 
-                            doc_type = getattr(thisnda, "render", False)
-                            if doc_type is not False and doc_type == "google":
-                                google_token = getattr(user, "google_token", False)
-                                if google_token is not False:
-                                    wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(thisnda.wp_url,
-                                            {'token': user.google_token,
-                                                'refresh_token': user.google_refresh_token,
-                                                'token_uri': conf.GOOGLE_TOKEN_URI,
-                                                'client_id': conf.GOOGLE_CLIENT_ID,
-                                                'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                                                'scopes': conf.SCOPES},
-                                                signer_email)
-                            else:
-                                wpci_result, complete_hash, WPCI_FILE_NAME  = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
+                message = "successfully sent your files "
 
-                            if wpci_result is False:
-                                error = "Error rendering the white paper"
-                                logger.info(error)
-                                return render_template('pdf_form.html', id=doc_id, error=error)
+                thislink = Link.Link()
+                thislink = thislink.find_by_link(id)
+                temp_signed_count = thislink.signed_count
+                thislink.signed_count = int(temp_signed_count) + 1
+                thislink.status = "signed"
+                thislink.update()
 
-                            with open(wpci_file_path, 'wb') as ftemp:
-                                ftemp.write(wpci_result)
+                doc_redirect_url = getattr(thisnda, "redirect_url", False)
 
-                            client_hash = complete_hash
-
-                            # this is the payload for the white paper file
-                            wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
-                                                   file_path=wpci_file_path,
-                                                   filename=WPCI_FILE_NAME)
-                            attachments_list.append(wpci_attachment)
-
-                        if render_wp_only is False:
-                            nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
-
-                            crypto_sign_payload = {
-                                "pdf": nda_file_base64,
-                                "timezone": TIMEZONE,
-                                "signatures": [
-                                    {
-                                        "hash": client_hash,
-                                        "email": signer_email,
-                                        "name": signer_name
-                                    }],
-                                "params": {
-                                    "locale": LANGUAGE,
-                                    "title": user.org_name + " contract",
-                                    "file_name": NDA_FILE_NAME,
-                                    "logo": org_logo
-                                }
-                            }
-                            
-
-                            nda_result = get_nda(crypto_sign_payload)
-
-                            if nda_result is not False:
-                                # if the request returned a nda pdf file correctly then store it as pdf
-                                with open(nda_file_path, 'wb') as ftemp:
-                                    ftemp.write(nda_result)
-
-                            else:
-                                error = "failed loading nda"
-                                logger.info(error)
-                                return render_template('pdf_form.html', id=doc_id, error=error)
+                if doc_redirect_url and doc_redirect_url != "":
+                    return redirect(doc_redirect_url)
 
 
-                            #this is the payload for the nda file
-                            nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
-                                                   file_path=nda_file_path,
-                                                   filename=NDA_FILE_NAME)
-                            attachments_list.append(nda_attachment)
-
-                        #send the email with the result attachments
-                        sender_format = "{} <{}>"
-                        loader = Loader("templates/email")
-                        button = loader.load("cta_button.html")
-                        notification_subject = "Your Document {} has been downloaded".format(thisnda.nda_id)
-                        analytics_link = "{}{}analytics/{}".format(conf.BASE_URL,BASE_PATH,thisnda.nda_id )
-
-                        mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
-                                    emails_to=[signer_email],
-                                    attachments_list=attachments_list,
-                                    html_message=DEFAULT_HTML_TEXT+ button.generate().decode("utf-8"))
-
-                        html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id,analytics_link,analytics_link)
-                        mymail.send(subject=notification_subject,
-                                    attachments_list=attachments_list,
-                                    email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
-                                    emails_to=[user.org_email],html_message=html_text)
-
-                        message = "successfully sent your files "
-
-                        thislink = Link.Link()
-                        thislink = thislink.find_by_link(id)
-                        temp_signed_count = thislink.signed_count
-                        thislink.signed_count = int(temp_signed_count) + 1
-                        thislink.status = "signed"
-                        thislink.update()
-
-                        doc_redirect_url = getattr(thisnda, "redirect_url", False)
-
-                        if doc_redirect_url and doc_redirect_url != "":
-                            return redirect(doc_redirect_url)
-
-                    except Exception as e: #except from temp directory
-                        logger.info("sending the email with the documents "+ str(e))
-                        error = "Error sending the email"
-                        return render_template('pdf_form.html', id=doc_id, error=error)
 
             else:
                 error = 'ID not found'
