@@ -12,7 +12,9 @@ from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
 from flask_sslify import SSLify
 from tornado.template import Loader
+from tornado.web import  os, asynchronous
 from tornado import gen
+from tornado.ioloop import IOLoop
 
 #google oauth
 import google.oauth2.credentials
@@ -980,7 +982,11 @@ def show_pdf(id):
                  'client_secret': conf.GOOGLE_CLIENT_SECRET,
                  'scopes': conf.SCOPES}
 
-                render_and_send_docs(user, signer_email, signer_name, thisnda, nda_file_base64, google_credentials_info, render_wp_only, render_nda_only)
+                IOLoop.instance().add_callback(callback = lambda:render_and_send_docs(
+                    user, signer_email, signer_name, thisnda, nda_file_base64,
+                    google_credentials_info, render_wp_only, render_nda_only)
+                )
+
 
                 message = "successfully sent your files "
 
