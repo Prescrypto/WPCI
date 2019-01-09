@@ -19,8 +19,8 @@ from tornado import gen
 #internal
 import config as conf
 from models import User
-from handlers.routes import *
-from handlers.WSHandler import *
+from handlers.routes import create_download_pdf_google, create_download_pdf
+from handlers.WSHandler import get_nda
 from handlers.emailHandler import Mailer
 
 # Load Logging definition
@@ -159,7 +159,7 @@ def render_and_send_docs(user, signer_email, signer_name, thisnda, nda_file_base
                             google_credentials_info,signer_email)
                 else:
                     wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf(thisnda.wp_url,
-                        signer_email,thisnda.main_tex)
+                    signer_email,thisnda.main_tex)
 
                 if wpci_result is False:
                     error = "Error rendering the white paper"
