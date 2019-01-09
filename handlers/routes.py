@@ -14,7 +14,7 @@ import base64
 import io
 
 #web app
-from tornado.web import  os
+from tornado.web import  os, asynchronous
 import tornado
 from tornado import gen, ioloop
 from tornado.ioloop import IOLoop
@@ -795,16 +795,17 @@ def create_dynamic_endpoint(document_dict, userjson):
     return False
 
 
-@gen.coroutine
-def get_test_async(seconds):
-    print("somenthing here")
-    yield gen.Task(IOLoop.instance().add_timeout, time.time() + seconds)
+@gen.engine
+def get_test_async():
+    print("sleeping")
+    yield gen.Task(IOLoop.instance().add_timeout, time.time() + 20)
+    print("awake!")
+
 
 
 class TestHandler(BaseHandler):
-    @gen.coroutine
     def get(self):
-        yield get_test_async(10)
+        IOLoop.instance().add_callback(get_test_async)
         print("outside the function")
         self.write("ending for now")
         self.finish()
