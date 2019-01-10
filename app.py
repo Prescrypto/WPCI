@@ -21,6 +21,7 @@ cwd = os.getcwd() # used by static file server
 
 '''Initializing the application with routes'''
 web_app = Application([
+    #TODO: add verbose urls
     (r"/"+API_BASE_PATH+"doc_edit", routes.DocEdit),
     (r"/"+API_BASE_PATH+"doc_status", routes.DocStatus),
     (r"/"+API_BASE_PATH+"doc_get", routes.DocRenderPDF),

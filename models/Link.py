@@ -23,6 +23,7 @@ LINK = "Link"
 
 
 class Link(object):
+    '''This class is a Link so the user can sign a Document and also the company can get statistics'''
 
     def __init__(self, doc_id = None):
         self.doc_id = doc_id
@@ -33,7 +34,7 @@ class Link(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-    def set_attributes(self, dictattr ):
+    def set_attributes(self, dictattr):
         self.__dict__.update(dictattr)
 
     def create_link(self):
@@ -49,24 +50,22 @@ class Link(object):
             self.link = self.doc_id + "_" + str( new_link_count )
             thisdocument.link_count = new_link_count
             thisdocument.update()
-            if thisdocument.wp_url is not None and thisdocument.wp_url != "" and thisdocument.render == "latex":
+            if thisdocument.render == "latex":
+                '''If the document has a repo then we can name the version after the last commit'''
                 with tempfile.TemporaryDirectory() as tmpdir:
                     clone = 'git clone ' + thisdocument.wp_url
                     subprocess.check_output(clone, shell=True, cwd=tmpdir)
                     repo_name = os.listdir(tmpdir)[0]
-                    print("filesdir")
                     filesdir = os.path.join(tmpdir, repo_name)
                     myoutput = subprocess.check_output("git rev-parse HEAD", shell=True, cwd=filesdir)
                     self.version = myoutput.decode(encoding="ascii", errors="ignore")
                     self.version = self.version.rstrip()
-
 
             result = self.create()
         else:
             return False
 
         return self.link
-
 
     def delete_link(self):
         if self.doc_id is not None:
@@ -126,10 +125,10 @@ class Link(object):
         return result
 
     def find_by_link(self, link):
-        '''finds a link'''
+        '''finds a link by the id'''
         result = None
-        if link is None or link == "":
-            return None
+        if not link:
+            return result
         try:
             mylink = self.find_by_attr("link", link)
             if len(mylink) > 0:

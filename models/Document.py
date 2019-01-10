@@ -25,6 +25,7 @@ pwd_context = CryptContext(
 
 
 class Document(object):
+    '''The Document class include all the information needed to render a new pdf file '''
 
     def __init__(self, org_id = None):
         self.org_id = org_id

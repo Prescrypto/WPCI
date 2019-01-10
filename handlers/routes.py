@@ -123,6 +123,7 @@ def decode_auth_token(auth_token):
 
 
 def authenticate(password, username):
+    '''this verifies a user and returns a token'''
     if not (username and password):
         return False
 
@@ -221,7 +222,7 @@ def jwtauth(handler_class):
 
 
 def authenticate_json(json_data):
-    '''gets the information from the payload and verificates if it is registered'''
+    '''Gets the information from the payload and verifies if it is registered'''
     try:
         username = json_data.get("username")
         password = json_data.get("password")
@@ -243,6 +244,7 @@ def authenticate_json(json_data):
 
 
 def store_petition(remote_url, petition_type, username='anonymous'):
+    '''This saves a model with the rendering information of the signer and the document'''
     result = False
     mydb = None
     try:
@@ -260,7 +262,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
     return result
 
 def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text="", options ={}):
-    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    '''Clones a repo and renders the file received as main_tex and then signs it'''
     repo_name = ''
     file_full_path = ''
     attachments_list = []
@@ -332,7 +334,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
 
 
 def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_tex="main.tex", email_body_text ="", options={}):
-    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    '''Clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
     repo_name = ''
     file_full_path = ''
     attachments_list = []
@@ -409,7 +411,7 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
 
 
 def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", options={}):
-    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    '''Clones a repo and renders the file received as main_tex with authentication'''
     repo_name = ''
     file_full_path = ''
     new_main_tex = "main2.tex"
@@ -479,6 +481,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
 
 
 def create_download_pdf_google(pdf_url, user_credentials, email):
+    '''Download and render and then sign a document from google'''
     file_full_path = file_full_path64 = ""
     file_tittle = "document.pdf"
     MORPH = None
@@ -553,7 +556,7 @@ def create_download_pdf_google(pdf_url, user_credentials, email):
 
 
 def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
-    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    '''Clones a repo and renders the file received as main_tex '''
     repo_name = ''
     file_tittle = "document.pdf"
     file_full_path = ''
@@ -617,7 +620,7 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
 
 
 def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):
-    '''clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
+    '''Clones a repo and renders the file received as main_tex '''
     repo_name = ''
     file_full_path = ''
     new_main_tex = "main.tex"
@@ -668,6 +671,7 @@ def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):
 
 
 def render_pdf_base64_google(pdf_url, user_credentials):
+    '''Download and render a pdf file from google'''
     file_full_path= file_full_path64 = ""
 
     pdf_id = get_id_from_url(pdf_url)
@@ -704,6 +708,7 @@ def render_pdf_base64_google(pdf_url, user_credentials):
 
 
 def create_link(doc_id):
+    '''Create a new link for the document'''
     result = False
     try:
         mylink = Link.Link(doc_id)
@@ -716,6 +721,7 @@ def create_link(doc_id):
 
 
 def delete_link(doc_id):
+    '''Delete a previously created link'''
     result = False
     try:
         mylink = Link.Link(doc_id)
@@ -727,6 +733,7 @@ def delete_link(doc_id):
         return False
 
 def get_link_status(doc_id):
+    ''' Retrieves the status of a Document link (signed or unsigned)'''
     result = False
     try:
         mylink = Link.Link()
@@ -739,6 +746,7 @@ def get_link_status(doc_id):
 
 
 def get_b64_pdf(doc_id, userjson):
+    '''Call the render function and retrive a base 64 pdf'''
     result = False
     try:
         user = User.User()
@@ -773,6 +781,7 @@ def get_b64_pdf(doc_id, userjson):
 
 
 def create_dynamic_endpoint(document_dict, userjson):
+    '''This function retrives an URL formed by document ID and the Base url for the server'''
     base_url= conf.BASE_URL
     PDF_VIEW_URL = '/api/v1/pdf/'
     try:
@@ -796,13 +805,13 @@ def create_dynamic_endpoint(document_dict, userjson):
 
 @jwtauth
 class APINotFoundHandler(BaseHandler):
-    '''if the endpoint doesn't exists then it will response with this code'''
+    '''If the endpoint doesn't exists then it will response with this code'''
     def options(self, *args, **kwargs):
         self.set_status(200)
         self.finish()
 
 class AuthLoginHandler(BaseHandler):
-    '''receives the username and password to retrive a token'''
+    '''Receives the username and password to retrive a token'''
     def post(self):
         json_data = json.loads(self.request.body.decode('utf-8'))
         token_auth = authenticate_json(json_data)
@@ -822,7 +831,7 @@ class AuthLoginHandler(BaseHandler):
             self.clear_cookie("user")
 
 class RegisterUserByEmail(BaseHandler):
-    '''receives a payload with the user data and stores it on the bd'''
+    '''Receives a payload with the user data and stores it on the bd'''
 
 
     def post(self):
@@ -874,7 +883,7 @@ class RegisterUser(BaseHandler):
             self.write(json.dumps({"response": "error registering user"}))
 
 class WebhookConfirm(BaseHandler):
-    '''receives a payload with the user data and stores it on the bd'''
+    '''Receives a payload with the user data and stores it on the bd'''
     def post(self):
         try:
             user = User.User()
@@ -897,7 +906,7 @@ class WebhookConfirm(BaseHandler):
 
 @jwtauth
 class PostRepoHash(BaseHandler):
-    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
 
     def get(self, userid):
         self.write(json.dumps({"response": "GET not found"}))
@@ -944,7 +953,7 @@ class PostRepoHash(BaseHandler):
 
 
 class RenderUrl(BaseHandler):
-    '''recives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
+    '''Receives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
 
     def get(self):
         try:
@@ -968,10 +977,10 @@ class RenderUrl(BaseHandler):
 
 @jwtauth
 class PostWpNda(BaseHandler):
-    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
 
     def post(self, userid):
-        new_dict = {}
+        new_dict = dict()
 
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
@@ -1002,10 +1011,9 @@ class PostWpNda(BaseHandler):
 
 @jwtauth
 class DocEdit(BaseHandler):
-    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
 
     def post(self, userid):
-        new_dict = {}
         json_data = json.loads(self.request.body.decode('utf-8'))
         if json_data.get("action") is not None and json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
             doc_id = json_data.get("doc_id")
@@ -1025,10 +1033,9 @@ class DocEdit(BaseHandler):
 
 @jwtauth
 class DocStatus(BaseHandler):
-    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
 
     def post(self, userid):
-        new_dict = {}
         json_data = json.loads(self.request.body.decode('utf-8'))
         if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
             doc_id = json_data.get("doc_id")
@@ -1045,10 +1052,9 @@ class DocStatus(BaseHandler):
 
 @jwtauth
 class DocRenderPDF(BaseHandler):
-    '''recives a post with the github repository url and renders it to PDF with clone_repo'''
+    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
 
     def post(self, userid):
-        new_dict = {}
         json_data = json.loads(self.request.body.decode('utf-8'))
         if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
             doc_id = json_data.get("doc_id")
