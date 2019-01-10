@@ -54,6 +54,7 @@ uritemplate==3.0.0
 
 #external apps
 jira==2.0.0
+click==6.7
 
 #github oauth
 oauth2client==4.1.3

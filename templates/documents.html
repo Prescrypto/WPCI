@@ -1,110 +1,71 @@
 {% extends "layout.html" %}
-{% block cssblock %}
-  <style>
-    html{
-      background: #333333 !important;
-    }
-  </style>
-{% endblock cssblock %}
+
 {% block content %}
-<section class="login-section">
+	<div class="uk-margin uk-text-left" style="padding-top:30px;padding-left:30px;">
+		<button  onClick="history.go(-1)" class=" uk-text-center uk-button uk-button-default" value="back">Go back</button>
+	</div>
+	<div class="uk-width-medium-1-1 uk-container-center">
+		<form action="{{ url_for('documents', type=type, render=render) }}" method="post" class="uk-grid-medium uk-child-width-expand@s" uk-grid>
+			<div></div>
+			<div> <!-- Form container -->
+				<h1 style="font-weight:900;padding-top:20px;" class="login-h1">Please Enter all the Document information</h1>
+				{% if success %}
+					<h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+				{% elif error %}
+					<h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
+						{{ error }}
+						{% if org_name %}
+							, Click <a href="{{ url_for('register_org') }}"> HERE to register an organization</a>
+						{% else %}
+							{% if url_error == "google_error" %}
+								, please click <a href="{{ url_for('google_authorize') }}"> HERE </a>
+								to reload your google permissions.
+							{% else %}
+								, please click <a href="{{ url_for('github_reg') }}"> HERE </a>
+								to reload your github token.
+							{% endif %}
+						{% endif %}
+					</h3>
+				{% endif %}
+					<div class="form-group">
+						<label class="input-group-text" >Document Name</label>
+						<input type="text" class="form-control" name="wp_name" value="" placeholder="Enter the document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
+					</div>
+					<div class="form-group">
+						<label class="input-group-text" >Document Url</label>
+						<input type="text" class="form-control" name="wp_url" value="" placeholder="copy and paste your document url" aria-label="wp url" aria-describedby="basic-addon1">
+					</div>
+				  <div class="form-group">
+						<label class="input-group-text" >Redirect Url</label>
+						<input type="text" class="form-control" name="redirect_url" value="" placeholder="Enter the Url to redirect after the user sign" aria-label="redirect_url" aria-describedby="basic-addon1">
+					</div>
+					{% if render == "latex"%}
+						<div class="form-group">
+							<label class="input-group-text" >Document main tex name, it must be on the root (optional)</label>
+							<input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex name" aria-label="Main Tex" aria-describedby="basic-addon1">
+						</div>
+					{% endif %}
+					{% if type == "wp_nda"%}
+						<div class="form-group">
+							<label class="input-group-text" >Contract Url</label>
+							<input type="text" class="form-control" name="nda_url" value="" placeholder="Copy and paste the contract Url" aria-label="Nda url" aria-describedby="basic-addon1">
+						</div>
+					{% endif %}
+					<div class="form-group">
+						<label class="input-group-text" >Sidebar Description (optional)</label>
+						<input type="text" class="form-control" name="wp_description" value="" placeholder="Description" aria-label="Description" aria-describedby="basic-addon1">
+					</div>
+					<div class="form-group">
+						<label class="input-group-text" >Get the document button description (optional)</label>
+						<input type="text" class="form-control" name="wp_getit_btn" value="" placeholder="button description" aria-label="wp_getit_btn" aria-describedby="basic-addon1">
+					</div>
+			    <div class="uk-margin uk-text-center">
+						<button type="submit" class="btn btn-info" value="create">Save!</button>
+			    </div>
+			</div><!-- /Form container -->
+			<div></div>
+		</form>
+	</div>
 
-     <div class="row remove-padding" >
-
-      <div id="login-card" class="col-lg-8 col-md-8 col-sm-8" >
-        <div class="login-form">
-          <form action="{{ url_for('documents', type=type, render=render) }}" method="post">
-            <h1 style="font-weight:900;" class="login-h1">Please Enter all the Document information</h1>
-              {% if success %}
-                <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
-              {% elif error %}
-                <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
-                {{ error }}
-                {% if org_name %}
-                   , Click <a href="{{ url_for('register_org') }}"> HERE to register an organization</a>
-                {% else %}
-                    {% if url_error == "google_error" %}
-                       , please click <a href="{{ url_for('google_authorize') }}"> HERE </a>
-                        to reload your google permissions.
-                    {% else %}
-                       , please click <a href="{{ url_for('github_reg') }}"> HERE </a>
-                        to reload your github token.
-                    {% endif %}
-                {% endif %}
-
-                </h3>
-              {% endif %}
-          <div class="row">
-              <div class=" col-md-6 col-md-offset-3" >
-                <div class="form-group">
-                <label class="input-group-text" >Document Name</label>
-
-              <input type="text" class="form-control" name="wp_name" value="" placeholder="Enter the Document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
-            </div>
-            {% if type == "wp_nda"%}
-            <div class="form-group">
-                <label class="input-group-text" >White Paper url</label>
-
-              <input type="text" class="form-control" name="wp_url" value="" placeholder="Enter the white paper url" aria-label="WP url" aria-describedby="basic-addon1">
-            </div>
-              {% if render == "latex"%}
-             <div class="form-group">
-                <label class="input-group-text" >White paper main tex name (must be on the root)</label>
-
-              <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
-            </div>
-              {% endif %}
-              <div class="form-group">
-                <label class="input-group-text" >Nda Url</label>
-
-              <input type="text" class="form-control" name="nda_url" value="" placeholder="Enter the Nda url" aria-label="Nda url" aria-describedby="basic-addon1">
-            </div>
-            {% elif type == "nda"%}
-               <input type="hidden" name="wp_url" value="">
-               <input type="hidden" name="main_tex" value="">
-                  <div class="form-group">
-                       <label class="input-group-text" >Nda Url</label>
-
-                     <input type="text" class="form-control" name="nda_url" value="" placeholder="Enter the Nda url" aria-label="Nda url" aria-describedby="basic-addon1">
-                  </div>
-           {% elif type == "wp"%}
-              <input type="hidden" name="nda_url" value="">
-               <div class="form-group">
-                <label class="input-group-text" >White Paper url</label>
-
-              <input type="text" class="form-control" name="wp_url" value="" placeholder="Enter the white paper url" aria-label="WP url" aria-describedby="basic-addon1">
-            </div>
-              {% if render == "latex"%}
-             <div class="form-group">
-                <label class="input-group-text" >White paper main tex name (must be on the root)</label>
-
-              <input type="text" class="form-control" name="main_tex" value="" placeholder="Enter the Main tex Name" aria-label="Main Tex" aria-describedby="basic-addon1">
-            </div>
-              {% endif %}
-             {% endif %}
-
-            <div class="form-group">
-                <label class="input-group-text" >Sidebar Description</label>
-
-              <input type="text" class="form-control" name="wp_description" value="" placeholder="Description" aria-label="Description" aria-describedby="basic-addon1">
-            </div>
-
-            <div class="form-group">
-                <label class="input-group-text" >Get the document button description</label>
-
-              <input type="text" class="form-control" name="wp_getit_btn" value="" placeholder="button description" aria-label="wp_getit_btn" aria-describedby="basic-addon1">
-            </div>
-
-
-            <button type="submit" class="btn btn-info" value="create">Save!</button>
-                  </div>
-          </div>
-          </form>
-        </div>
-      </div>
-
-    </div>
-
-</section>
 
 {% endblock %}

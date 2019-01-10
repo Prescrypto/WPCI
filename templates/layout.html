@@ -1,76 +1,67 @@
 <!DOCTYPE html>
-<head>
-<title>WPCI</title>
-<link rel="stylesheet" href="/static/style.css" type="text/css">
-<script src="https://code.jquery.com/jquery-3.3.1.min.js" ></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/css/uikit.min.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/css/uikit.min.css" type="text/css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
-      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <meta name="google-site-verification" content="geVMngW7FulMUYyjeVN33gl2LYbVha4mo8TAW-wg3yY" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<head>
+		<title>WPCI</title>
+		<link rel="stylesheet" href="/static/style.css" type="text/css">
+		<script src="https://code.jquery.com/jquery-3.3.1.min.js" ></script>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/css/uikit.min.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/css/uikit.min.css" type="text/css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<meta name="google-site-verification" content="geVMngW7FulMUYyjeVN33gl2LYbVha4mo8TAW-wg3yY" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    {% block cssblock %}
-    {% endblock cssblock %}
+		{% block cssblock %}
+		{% endblock cssblock %}
 
-</head>
-<body>
- <header>
-  	<div class="container" style="background-color: #071323;width: 100%;">
-         <h1 class="logo"><a href=""><img style="width:150px; margin:0;" src="/static/images/wpci.svg" alt=""></a></h1>
-  	  <strong>
+	</head>
+	<body>
+		<header>
+			<div class="container" style="background-color: #071323;width: 100%;">
+				<h1 class="logo"><a href=""><img style="width:150px; margin:0;" src="/static/images/wpci.svg" alt=""></a></h1>
+				<strong>
+					<nav class="navbar navbar-default">
+						<div class="container-fluid" style="padding-right: 22px;">
+							<!-- Brand and toggle get grouped for better mobile display -->
+							<div class="navbar-header" >
+								<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#my-navbar-collapse">
+									<span class="sr-only">Toggle navigation</span>
+									<span class="icon-bar" ></span>
+									<span class="icon-bar"></span>
+									<span class="icon-bar"></span>
+								</button>
+							</div>
+							<!-- Collect the nav links, forms, and other content for toggling -->
+							<div class="collapse navbar-collapse" id="my-navbar-collapse">
 
+								<ul class="nav navbar-nav navbar-right" >
+									<li><a href="{{ url_for('index') }}">Home</a></li>
+									{% if session.user %}
+									<li><a href="{{ url_for('google_latex_docs') }}">Create</a></li>
+									<li><a href="{{ url_for('view_docs') }}">Documents</a></li>
+									<li><a href="{{ url_for('logout') }}">Log out [{{ session.user.username}}]</a></li>
+									{% else %}
+									<li><a href="{{ url_for('login') }}">Log in</a></li>
+									{% endif %}
+								</ul>
+							</div><!-- /.navbar-collapse -->
+						</div><!-- /.container-fluid -->
+					</nav>
+				</strong>
+			</div>
+		</header>
 
-        <nav class="navbar navbar-default">
-            <div class="container-fluid" style="padding-right: 22px;">
-            <!-- Brand and toggle get grouped for better mobile display -->
-              <div class="navbar-header" >
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#my-navbar-collapse">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar" ></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                </button>
+		<div class="container-fluid" style="padding-right:0px !important;padding-left: 0px !important;" >
+			{% block content %}
+			{% endblock %}
+		</div>
 
-              </div>
-
-         <!-- Collect the nav links, forms, and other content for toggling -->
-         <div class="collapse navbar-collapse" id="my-navbar-collapse">
-
-           <ul class="nav navbar-nav navbar-right" >
-          <li><a href="{{ url_for('index') }}">Home</a></li>
-          {% if session.user %}
-            <li><a href="{{ url_for('google_latex_docs') }}">Create</a></li>
-            <li><a href="{{ url_for('view_docs') }}">Documents</a></li>
-            <li><a href="{{ url_for('logout') }}">Log out [{{ session.user.username}}]</a></li>
-          {% else %}
-            <li><a href="{{ url_for('login') }}">Log in</a></li>
-
-          {% endif %}
-        </ul>
-
-
-       </div><!-- /.navbar-collapse -->
-     </div><!-- /.container-fluid -->
-    </nav>
-
-    </strong>
-  	</div>
-   </header>
-
-   <div class="container-fluid" style="padding-right:0px !important;padding-left: 0px !important;" >
-
-      {% block content %}
-        {% endblock %}
-
-  </div>
-
-  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
-</body>
+		<!-- javascript dependencies -->
+		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
+	</body>
 </html>
