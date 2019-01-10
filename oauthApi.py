@@ -614,6 +614,7 @@ def documents(type, render):
 
                 elif render == "google":
                     try:
+                        render_error = False
                         google_token = getattr(user, "google_token", False)
                         if google_token is not False:
                             user_credentials = {'token': user.google_token,
@@ -638,26 +639,25 @@ def documents(type, render):
                                 return render_template('documents.html', type=type, render=render, error=error)
 
                             with tempfile.TemporaryDirectory() as tmpdir:
+
                                 drive = googleapiclient.discovery.build(
                                     conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
 
                                 if NDA_NOT_EMPTY:
-                                    req_pdf = drive.files().export_media(fileId=pdf_id_nda,
-                                                                         mimeType='application/pdf')
-                                    fh = io.BytesIO()
-                                    downloader = MediaIoBaseDownload(fh, req_pdf, chunksize=conf.CHUNKSIZE)
-                                    done = False
-                                    while done is False:
-                                        status, done = downloader.next_chunk()
+                                    metadata = drive.files().get(fileId=pdf_id_nda).execute()
+                                    if metadata.get("title") is None:
+                                        render_error= True
 
                                 if WP_NOT_EMPTY:
-                                    req_pdf2 = drive.files().export_media(fileId=pdf_id_wp,
-                                                                         mimeType='application/pdf')
-                                    fh = io.BytesIO()
-                                    downloader = MediaIoBaseDownload(fh, req_pdf2, chunksize=conf.CHUNKSIZE)
-                                    done = False
-                                    while done is False:
-                                        status, done = downloader.next_chunk()
+                                    metadata2 = drive.files().get(fileId=pdf_id_wp).execute()
+                                    if metadata.get("title") is None:
+                                        render_error= True
+
+                            if render_error:
+                                error = "You don't have permissions for google docs"
+                                return render_template('documents.html', type=type, render=render, error=error,
+                                                       url_error="google_error")
+
 
                         else:
                             error = "You don't have permissions for google docs"
