@@ -988,7 +988,8 @@ def show_pdf(id):
                     try:
                         # sign the name and username of the signer
                         crypto_tools = CryptoTools()
-                        client_hash = crypto_tools.sign(signer_user.email + signer_user.name, signer_user.priv_key)
+                        #client_hash = crypto_tools.sign(signer_user.email + signer_user.name, signer_user.priv_key)
+                        client_hash = ""
 
                         if render_nda_only is False:
                             wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
