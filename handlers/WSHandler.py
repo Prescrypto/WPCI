@@ -37,6 +37,7 @@ def get_nda(payload):
     auth = HTTPBasicAuth(conf.CRYPTO_ID, conf.CRYPTO_SECRET)
 
     try:
+        print("almost there")
         token_result = requests.post(url= URL+TOKEN_URL,data=jsondata, headers=tokenheaders, auth=auth)
         print(token_result.content)
         token_json_result = json.loads(token_result.content)
