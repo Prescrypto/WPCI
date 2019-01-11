@@ -29,8 +29,6 @@ class User(object):
         self.username = username
         self.password = password
         self.github_token = None
-        self.priv_key = None
-        self.pub_key = None
 
     def __str__(self):
         return "User(username='%s')" % self.username
