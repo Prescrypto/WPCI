@@ -1025,6 +1025,8 @@ def show_pdf(id):
                         if render_wp_only is False:
                             nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
 
+                            #TODO: create the payload for rexchain and receive the response
+
                             crypto_sign_payload = {
                                 "pdf": nda_file_base64,
                                 "timezone": TIMEZONE,
@@ -1070,11 +1072,11 @@ def show_pdf(id):
                         analytics_link = "{}{}analytics/{}".format(conf.BASE_URL,BASE_PATH,thisnda.nda_id )
 
                         mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
-                                    emails_to=[signer_email],
+                                    emails_to=[signer_user.email],
                                     attachments_list=attachments_list,
                                     html_message=DEFAULT_HTML_TEXT+ button.generate().decode("utf-8"))
 
-                        html_text = NOTIFICATION_HTML.format(signer_email,thisnda.nda_id,analytics_link,analytics_link)
+                        html_text = NOTIFICATION_HTML.format(signer_user.email,thisnda.nda_id,analytics_link,analytics_link)
                         mymail.send(subject=notification_subject,
                                     attachments_list=attachments_list,
                                     email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
