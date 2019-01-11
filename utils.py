@@ -138,12 +138,12 @@ class CryptoTools(object):
         #LEGACY METHOD
         return rsa.newkeys(keysize)
 
-    def get_pem_priv_format(self, EncryptionPrivateKey):
-        ''' return priv key on pem format '''
+    def get_pem_format(self, EncryptionKey):
+        ''' return the key on pem string format '''
         if self.has_legacy_keys:
-            return EncryptionPrivateKey.save_pkcs1(format="PEM")
+            return EncryptionKey.save_pkcs1(format="PEM")
         else:
-            return EncryptionPrivateKey.exportKey('PEM')
+            return EncryptionKey.exportKey('PEM')
 
     def savify_key(self, EncryptionKeyObject):
         ''' Give it a key, returns a hex string ready to save '''
