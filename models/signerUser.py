@@ -10,7 +10,7 @@ from passlib.context import CryptContext
 #internal
 from models.mongoManager import ManageDB
 import config as conf
-from utils import get_hash
+from utils import *
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -87,8 +87,10 @@ class SignerUser(object):
             mydb = ManageDB(collection)
 
             if not self.pub_key or not self.priv_key:
-                # call generate public and private key methods
-                print("generate a new keys")
+                # creating RSA keys for the organization
+                crypto_tool = CryptoTools()
+                crypto_tool.entropy(int(str(time.time())[-4:]))
+                self.pub_key, self.priv_key = crypto_tool.create_key_with_entropy()
             else:
                 logger.info("keys already created")
 

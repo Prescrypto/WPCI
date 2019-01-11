@@ -10,7 +10,7 @@ from passlib.context import CryptContext
 #internal
 from models.mongoManager import ManageDB
 import config as conf
-from utils import get_hash
+from utils import *
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +29,8 @@ class User(object):
         self.username = username
         self.password = password
         self.github_token = None
+        self.priv_key = None
+        self.pub_key = None
 
     def __str__(self):
         return "User(username='%s')" % self.username
@@ -137,8 +139,24 @@ class User(object):
                 code = self.code
             else:
                 code = ""
+
+            #creating RSA keys for the organization
+            crypto_tool = CryptoTools()
+            crypto_tool.entropy(int(str(time.time())[-4:]))
+            public_key, private_key = crypto_tool.create_key_with_entropy()
+
             org_id = self.username + str(int(time.time()))
-            result = mydb.insert_json({"username": self.username, "password": password, "org_id": org_id, "code": code})
+
+            result = mydb.insert_json(
+                {
+                    "username": self.username,
+                    "password": password,
+                    "org_id": org_id,
+                    "code": code,
+                    "priv_key": private_key,
+                    "pub_key": public_key
+                }
+            )
 
         except Exception as error:
             logger.info("creating user", error)
