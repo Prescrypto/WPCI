@@ -30,7 +30,6 @@ class User(object):
         self.password = password
         self.github_token = None
 
-
     def __str__(self):
         return "User(username='%s')" % self.username
 
@@ -43,7 +42,7 @@ class User(object):
     def get_validation_code(self):
         self.code = get_hash([self.username])
         if self.find():
-            print("user already exists")
+            logger.info("User already exists")
             return False
         self.create()
         return self.code
@@ -159,7 +158,7 @@ class User(object):
             mydb = ManageDB(collection)
             temp_user= self.__dict__
             if not update_password:
-                print("no password update")
+                logger.info("no password update")
                 temp_user.pop("password")
             result = mydb.update({"username": self.username}, temp_user)
 

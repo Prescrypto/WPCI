@@ -1,72 +1,69 @@
 <!DOCTYPE html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>{% block title %}Welcome{% endblock %} | WPCI NDA</title>
-<link rel="stylesheet" href="/static/style.css" type="text/css">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<title>{% block title %}Welcome{% endblock %} | WPCI NDA</title>
+		<link rel="stylesheet" href="/static/style.css" type="text/css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/css/uikit.min.css" type="text/css">
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+		<link rel="stylesheet" href="/static/bootstrap-tour-standalone.min.css" type="text/css" >
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/css/uikit.min.css" type="text/css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-rc.5/js/uikit-icons.min.js"></script>
+		<script src="https://code.jquery.com/jquery-3.3.1.min.js" ></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+		<script src="/static/js/bootstrap-tour-standalone.min.js" ></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	</head>
+	<body>
+		<header>
+			<div class="container">
 
-<script src="https://code.jquery.com/jquery-3.3.1.min.js" ></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="/static/bootstrap-tour-standalone.min.css" type="text/css" >
-    <script src="/static/js/bootstrap-tour-standalone.min.js" ></script>
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
- <header>
-  	<div class="container">
+				<nav class="navbar navbar-default">
+					<a href="https://www.wpci.io/?reference=wpci_logo" title="Go to WPCI landing page"><img style="width:150px; margin:0;" src="/static/images/wpci.svg" alt=""></a>
 
-  	 <nav class="navbar navbar-default">
-          <a href="https://www.wpci.io/?reference=wpci_logo" title="Go to WPCI landing page"><img style="width:150px; margin:0;" src="/static/images/wpci.svg" alt=""></a>
+					<ul class="menu">
+						<li><a id="try-wpci-button" class="btn btn-green-wpci"  >TRY WPCI</a></li>
+					</ul>
+				</nav>
+			</div>
+		</header>
 
-         <ul class="menu">
-                    <li><a id="try-wpci-button" class="btn btn-green-wpci"  >TRY WPCI</a></li>
-        </ul>
-      </nav>
-  	</div>
-   </header>
+		<div>
+			<div class="container-fluid">
+				{% block content %}
+				{% endblock %}
 
-   <div>
-       <div class="container-fluid">
-      {% block content %}
-        {% endblock %}
+				<!-- This is the try it modal -->
+				<div id="modal-try" uk-modal>
+					<div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-top" >
 
+						<form class="nda-form" id="try-form" method="POST" action="{{ url_for('register') }}">
+							<div class="uk-text-center">
+								<div class="form-group">
+									<h2 class="uk-modal-title"><b>Try it!</b> </h2>
+									<label> Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</label>
+									<input type="text" class="form-control" id="username" name="username" placeholder="Enter your email" required>
+								</div>
 
-        <!-- This is the try it modal -->
-        <div id="modal-try" uk-modal>
-            <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-top" >
+								<button  id="trybtn" name="trybtn" type="submit" class="btn btn-info btn-lg" >Register!</button>
+							</div>
+						</form>
 
-               <form class="nda-form" id="try-form" method="POST" action="{{ url_for('register') }}">
-                  <div class="uk-text-center">
-                <div class="form-group">
-                     <h2 class="uk-modal-title"><b>Try it!</b> </h2>
-                  <label> Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</label>
-                  <input type="text" class="form-control" id="username" name="username" placeholder="Enter your email" required>
-                </div>
+					</div>
+				</div>
 
-                    <button  id="trybtn" name="trybtn" type="submit" class="btn btn-info btn-lg" >Register!</button>
-                </div>
-               </form>
-
-            </div>
-        </div>
-
-       <script>
-      // Take user to try wpci-nda
-      $(document).ready(function() {
-        $('#try-wpci-button').one('click', function(e) {
-          e.preventDefault();
-          UIkit.modal($('#modal-try')).show();
-        });
-      });
-    </script>
-       </div>
-  </div>
-
-  </body>
+				<script>
+		      // Take user to try wpci-nda
+		      $(document).ready(function() {
+		        $('#try-wpci-button').one('click', function(e) {
+		          e.preventDefault();
+		          UIkit.modal($('#modal-try')).show();
+		        });
+		      });
+		    </script>
+			</div>
+		</div>
+	</body>
 </html>

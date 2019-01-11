@@ -25,19 +25,19 @@
              <table class="uk-table" id="document_table"  style="margin-bottom:10px;padding-bottom:10px;">
                 <caption></caption>
                 <thead>
-                    <tr>
-                        <th>Times viewed</th>
-                        <th>Times emailed</th>
+                  <tr>
+                    <th>Times viewed</th>
+                    <th>Times emailed</th>
 
-                    </tr>
+                  </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        {% if has_paid %}
-                        <td> {{ doc.view_count }}</td>
-                        <td> {{ doc.down_count }}</td>
-                        {% endif %}
-                    </tr>
+                  <tr>
+                    {% if has_paid %}
+                      <td> {{ doc.view_count }}</td>
+                      <td> {{ doc.down_count }}</td>
+                    {% endif %}
+                  </tr>
                 </tbody>
             </table>
 

@@ -1,91 +1,69 @@
 {% extends "layout.html" %}
 {% block content %}
-<section >
+	<div class="uk-margin uk-text-left" style="padding-top:30px;padding-left:30px;">
+		<button  onClick="history.go(-1)" class=" uk-text-center uk-button uk-button-default" value="back">Go back</button>
+	</div>
+  <form action="{{ url_for('view_docs') }}" method="post">
+    {% if error %}
+      <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">{{ error }}</h3>
+    {% elif success %}
+      <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
+    {% endif %}
 
-    <div style="padding-top: 20px;">
-     <div class="row remove-padding" >
-      <div id="login-card" class="col-lg-6 col-md-12 col-sm-12" style="margin: 0 !important;">
-        <div class="login-form">
-
-          <form action="{{ url_for('view_docs') }}" method="post" style="padding-left:2em;">
-
-              {% if success %}
-                <h3 style="font-weight:900;background-color:#e0fde0" class="login-h1"> {{ success }}</h3>
-              {% elif error %}
-                <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
-                {{ error }}
-                {% if git_error %}
-                   , please click <a href="{{ url_for('github_reg') }}"> HERE </a>
-                    to reload your github token.
+    {% if doc_len > 0 %}
+      <h3 style="font-weight:900;padding-top:30px;" >Create links or check the analytics of each document</h3>
+      <h3>You can only create links with the API, please visit <a target="blank" href="https://www.wpci.io/docs">our API documentation.</a></h3>
+      <table class="uk-table uk-table-responsive uk-table-striped uk-table-small" id="document_table">
+        <caption></caption>
+        <thead>
+          <tr>
+            <th style="text-align:center">Name</th>
+            <th style="text-align:center">Document ID</th>
+            <th style="text-align:center">Type</th>
+            <th style="text-align:center">Date</th>
+            <th style="text-align:center">Links</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in document_list %}
+            <tr>
+              <td align="center">{{ item.wp_name }}</td>
+              <td align="center" >
+                <a href="#"><span id="{{ item.nda_id }}" onClick="go_to_link( '{{ item.nda_id }}' )">{{ item.nda_id }}</span></a>
+              </td>
+              <td align="center">
+                {% if item.render %}
+                    {{ item.render }}
+                {% else %}
+                    Unknown
                 {% endif %}
+              </td>
+              <td align="center">
+               {% if item.date %}
+                    {{ item.date|strftime }}
+                {% else %}
+                    Unknown
+                {% endif %}
+              </td>
+              <td align="center">
+                <span style="color:#3366BB;" class="uk-button" onClick="go_to_link( '{{ item.nda_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
+    {% endif %}
+  </form>
 
-                </h3>
-              {% endif %}
-              {% if doc_len > 0 %}
-               <h2 style="font-weight:900;" class="login-h1">You can share your documents or check the analytics.</h2>
-
-                 <table class="uk-table uk-table-responsive" id="document_table" >
-                    <caption></caption>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Link</th>
-                            <th></th>
-                            <th>Analytics</th>
-
-                        </tr>
-                    </thead>
-                    <tbody>
-                         {% for item in document_list %}
-                        <tr>
-                            <td align="center">{{ item.wp_name }}</td>
-                            <td align="center" > <a id="{{ item.nda_id }}" href="{{ base_url + item.nda_id }}" >
-                                {{ item.nda_id }}
-                            </a>
-
-                            </td>
-                            <td align="center">
-                                <span style="color:#3366BB;" class="uk-button" onClick="copyFunction( '{{ item.nda_id }}' )" uk-icon="icon: copy; ratio: 1.5">
-                                </span>
-                            </td>
-                            <td align="center">
-                                <a href="{{ url_for('analytics', id =item.nda_id) }}" >
-                                <span uk-icon="icon: search; ratio: 1.5"></span>
-                               </a>
-
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
-
-            {% else %}
-              <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
-            {% endif %}
-            <button  onClick="history.go(-1)" class="btn btn-info" value="back">Go back</button>
-          </form>
-
-        </div>
-
-
-
-      </div>
-      </div>
-  </div>
-</section>
-
+<!-- Javascript -->
 <script>
-function copyFunction(id) {
-  var href = $('#'+id).attr('href');
-  var el = document.createElement('textarea');
-  el.value = href;
-  document.body.appendChild(el);
-  el.select();
-  document.execCommand('copy');
-  document.body.removeChild(el);
-  alert('Link copied');
-}
+
+  function go_to_link(myid){
+    var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
+    window.location.replace(myurl);
+  }
 </script>
 
 {% endblock %}

@@ -3,6 +3,7 @@ import logging
 import base64
 import tempfile
 import subprocess
+import os
 
 #web app
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
@@ -41,7 +42,7 @@ SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
-SENDER_NAME = "Andrea from Wpci"
+SENDER_NAME = "Andrea WPCI"
 
 UPLOAD_FOLDER = os.path.join("/static/images")
 LANGUAGE = "en"
@@ -50,21 +51,24 @@ BASE_PATH = "/docs/"
 PDF_URL = conf.BASE_URL + BASE_PATH +"pdf/"
 ADMIN_URL = conf.BASE_URL + BASE_PATH + "validate_email?code="
 
-DEFAULT_HTML_TEXT = "<h3>Hello,</h3>\
-        <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
-        <p>Best regards,</p>"
+DEFAULT_HTML_TEXT = \
+            "<h3>Hello,</h3>\
+            <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
+            <p>Best regards,</p>"
 
-VERIFICATION_HTML = "<h1>Hey,</h1>\
-                <p>Thanks for your interest on WPCI, you're almost done. </p>\
-               <p>Click HERE <a href='{}'>{}</a> to verify your email.</p>\
-                <p>Best!</p>\
-               <p>Andrea</p>"
+VERIFICATION_HTML = \
+            "<h3>Hey,</h3>\
+            <p>Thanks for your interest on WPCI, you're almost done. </p>\
+            <p>Click HERE <a href='{}'>{}</a> to verify your email.</p>\
+            <p>Best!</p>\
+            <p>Andrea</p>"
 
-NOTIFICATION_HTML = "<h3>Hi!</h3>\
-               <p> {} has just downloaded the following document {}!</p>\
-               <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
-                <p>Keep crushing it!</p>\
-                <p>WPCI Admin</p>"
+NOTIFICATION_HTML = \
+            "<h3>Hi!</h3>\
+            <p> {} has just downloaded the following document {}!</p>\
+            <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
+            <p>Keep crushing it!</p>\
+            <p>WPCI Admin</p>"
 
 
 app = Flask(__name__)
@@ -91,12 +95,22 @@ github = oauth.remote_app(
     authorize_url= conf.GITHUB_OAUTH_URI +'authorize'
 )
 
-@app.route(BASE_PATH+'index')
+@app.template_filter('strftime')
+def _jinja2_filter_datetime(date, fmt=None):
+    date = datetime.datetime.fromtimestamp(int(date))
+    native = date.replace(tzinfo=None)
+    format='%b %d, %Y'
+    return native.strftime(format)
+
+@app.route(BASE_PATH+'index', methods=['GET', 'POST'])
 def index():
     error = ''
     username = ''
+    success = ""
+    document_list = []
     step_2 = False
     step_3 = False
+    doc_len = 0
 
     user = User.User()
     if 'user' in session:
@@ -116,7 +130,55 @@ def index():
             if len(docs) > 0:
                 step_3 = True
 
-        return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3)
+            docs = Document.Document()
+            docs = docs.find_by_attr("org_id", user.org_id)
+            document_list = docs
+            doc_len = len(document_list)
+
+    if request.method == 'POST':
+
+        if request.form['org_name'] and request.form['org_email'] and request.form['org_address']:
+            try:
+                data = request.form.to_dict()
+                try:
+                    # check if the post request has the file part
+                    if 'org_logo' not in request.files or request.files['org_logo'].filename == '':
+
+                        if data["prev_logo"] is not None and data["prev_logo"] != "":
+                            data["org_logo"] = data["prev_logo"]
+                        else:
+                            data["org_logo"] = open(DEFAULT_LOGO_PATH, 'r').read()
+                    else:
+                        file = request.files['org_logo']
+                        if file and allowed_file(file.filename):
+                            try:
+                                data["org_logo"] = base64.b64encode(file.read()).decode('utf-8')
+                            except Exception as e:
+                                logger.info("loading b64 file " + str(e))
+                                data["org_logo"] = open(DEFAULT_LOGO_PATH, 'r').read()
+
+
+                except Exception as e:
+                    logger.info("loading logo " + str(e))
+                    error = "error loading the file"
+                    return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user)
+
+                data.pop("prev_logo")
+                data["google_refresh_token"] = ""
+                user.set_attributes(data)
+                user.update()
+
+                return redirect(url_for('index'))
+
+            except Exception as e:
+                logger.info("registering org " + str(e))
+                error = 'Error updating the information'
+
+        else:
+            error = 'Invalid Values. Please try again.'
+            logger.info(error)
+
+    return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user, document_list = document_list, doc_len=doc_len, success=success)
 
 
 @app.route(BASE_PATH+'github_reg')
@@ -182,7 +244,7 @@ def register():
 
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
-                    mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
+                    mymail.send(subject="Just one more step", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[username], html_message=html_text)
                     return redirect(url_for('register_success'))
 
@@ -190,8 +252,8 @@ def register():
                     logger.info("sending email: " + str(e))
                     error= "Couldn't send verification code, please try again."
             else:
-                error= "This user already exists, please login."
-                logger.info(error)
+                error= "This user already exists, please reset your password or use a different email."
+                logger.info(error) # TODO @val: change these to logger.error
 
     if request.method == 'GET':
         email = request.args.get('email', False)
@@ -206,7 +268,7 @@ def register():
 
                 try:
                     html_text = VERIFICATION_HTML.format(ADMIN_URL + code, ADMIN_URL + code)
-                    mymail.send(subject="Just a few steps more", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
+                    mymail.send(subject="Just one more step", email_from=sender_format.format(SENDER_NAME, conf.SMTP_EMAIL),
                                 emails_to=[email], html_message=html_text)
                     return redirect(url_for('register_success'))
 
@@ -214,8 +276,8 @@ def register():
                     logger.info("sending email: " + str(e))
                     error = "Couldn't send verification code, please try again."
             else:
-                error = "This user already exists, please login."
-                logger.info(error)
+                error = "This user already exists, please reset your password or use a different email."
+                logger.info(error) # TODO @val: change these to logger.error
 
     return render_template('register.html', error=error)
 
@@ -237,7 +299,7 @@ def register_org():
 
     if request.method == 'POST':
 
-        if request.form['org_name'] and request.form['org_type'] and \
+        if request.form['org_name'] and \
                 request.form['org_email'] and request.form['org_address']:
             try:
                 data = request.form.to_dict()
@@ -312,6 +374,32 @@ def view_docs():
 
     return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len, base_url = PDF_URL, success=success)
 
+@app.route(BASE_PATH+'view_links/<doc_id>', methods=['GET', 'POST'])
+def view_links(doc_id):
+    document_list = []
+    error = ''
+    username = ''
+    success = ''
+    doc_len = 0
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
+    if request.method == 'GET' or request.method == 'POST':
+        links = Link.Link(doc_id)
+        links = links.find_by_attr("doc_id", doc_id)
+        link_list = links
+        link_len = len(link_list)
+
+
+    return render_template('view_links.html', error=error, link_list = link_list, link_len=link_len, base_url = PDF_URL, doc_id=doc_id)
+
+
 @app.route(BASE_PATH+'google_latex_docs', methods=['GET', 'POST'])
 def google_latex_docs():
     error=""
@@ -335,6 +423,15 @@ def edit_docs(render):
         username = session['user']['username']
         # we get all the user data by the username
         user = user.find_by_attr("username", username)
+        google_token = getattr(user, "google_token", False)
+        if render == "google" and not google_token:
+            logger.info("no google auth")
+            error = "google_error"
+
+        elif render == "latex" and (user.github_token is None or user.github_token == "" or user.github_token == "null"):
+            logger.info("no github auth")
+            error = "github_error"
+
     else:
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
@@ -439,6 +536,17 @@ def documents(type, render):
                 if data.get("main_tex") is None or data.get("main_tex") == "":
                     data["main_tex"] = "main.tex"
 
+                if data.get("redirect_url") is None or data.get("redirect_url") == "":
+                    data["redirect_url"] = ""
+
+                if type == "nda":
+                    '''This is a contract document without a white paper or other document'''
+                    data["nda_url"] = data.get("wp_url")
+                    data["wp_url"] = ""
+                elif type == "wp":
+                    '''this is a document protected'''
+                    data["nda_url"] = ""
+
                 if data.get("nda_url") is not None and data.get("nda_url") != "":
                     NDA_NOT_EMPTY = True
                     if data.get("wp_description") == "":
@@ -450,6 +558,10 @@ def documents(type, render):
                 else:
                     if data.get("wp_getit_btn") == "":
                         data["wp_getit_btn"] = "To get the complete document please check this box and fill the following fields"
+
+                    if data.get("wp_description") == "":
+                        data["wp_description"] = user.org_name + " Click on the Get it! button and enter your email so we can send you a copy of \
+                        this document to your email."
 
                 if data.get("wp_url") is not None and data.get("wp_url") != "":
                     WP_NOT_EMPTY = True
@@ -487,12 +599,14 @@ def documents(type, render):
                             if NDA_NOT_EMPTY:
                                 clone = 'git clone ' + data["nda_url"]
                                 subprocess.check_output(clone, shell=True, cwd=tmpdir)
+
                             if WP_NOT_EMPTY:
                                 clone = 'git clone ' + data["wp_url"]
                                 subprocess.check_output(clone, shell=True, cwd=tmpdir)
-                    except:
+
+                    except Exception as e:
                         error= "You don't have permissions to clone the repository provided"
-                        logger.info(error)
+                        logger.info(str(e) + error)
                         return render_template('documents.html', type=type, render=render, error=error, url_error = "git_error")
 
                 elif render == "google":
@@ -500,9 +614,9 @@ def documents(type, render):
                         google_token = getattr(user, "google_token", False)
                         if google_token is not False:
                             user_credentials = {'token': user.google_token,
-                              'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
-                              'client_id': conf.GOOGLE_CLIENT_ID,
-                               'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
+                                'client_id': conf.GOOGLE_CLIENT_ID,
+                                'client_secret': conf.GOOGLE_CLIENT_SECRET,
                                 'scopes': conf.SCOPES}
 
                             credentials = google.oauth2.credentials.Credentials(
@@ -608,6 +722,7 @@ def validate_email():
             user = User.User(username)
             user.validate_email(password)
             user = user.find_by_attr("username", username)
+            session["user"] = {"username": user.username, "password": user.password}
             return redirect(url_for('index'))
 
     return render_template('validate_email.html', error=error, username=username)
@@ -662,15 +777,18 @@ def google_authorize():
     flow.redirect_uri = conf.BASE_URL + BASE_PATH + "oauth2callback"
 
     authorization_url, state = flow.authorization_url(
-      # Enable offline access so that you can refresh an access token without
-      # re-prompting the user for permission. Recommended for web server apps.
-      access_type='offline',
+        # Enable offline access so that you can refresh an access token without
+        # re-prompting the user for permission. Recommended for web server apps.
+        access_type='offline',
         approval_prompt='force',
-      # Enable incremental authorization. Recommended as a best practice.
-      include_granted_scopes='false')
+        # Enable incremental authorization. Recommended as a best practice.
+        include_granted_scopes='false')
 
     # Store the state so the callback can verify the auth server response.
-    session['state'] = state
+    try:
+        session['state'] = state
+    except:
+        logger.info("no state session")
 
     return redirect(authorization_url)
 
@@ -687,10 +805,14 @@ def oauth2callback():
 
     # Specify the state when creating the flow in the callback so that it can
     # verified in the authorization server response.
-    state = session['state']
+    try:
+        state = session['state']
+    except:
+        logger.info("no state session")
+        state = ""
 
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-      conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES, state=state)
+        conf.CLIENT_SECRETS_FILE, scopes=conf.SCOPES, state=state)
     flow.redirect_uri = conf.BASE_URL + BASE_PATH + "oauth2callback"
 
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
@@ -727,9 +849,14 @@ def privacypolicy():
 def redir_pdf(id):
     return redirect(url_for('show_pdf', id=id))
 
+@app.route('/', methods=['GET', 'POST'])
+def redir_login():
+    return redirect(url_for('login'))
+
 @app.route(BASE_PATH+'pdf/<id>', methods=['GET', 'POST'])
 def show_pdf(id):
     error = None
+    doc_id = ""
     message = None
     has_nda = False
     pdffile = ""
@@ -738,16 +865,24 @@ def show_pdf(id):
     FIRST_SESSION = False
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
+    try:
+        doc_id = "_".join(id.split("_")[:-1])
+    except Exception as e:
+        logger.info("Trying to get id" + str(e))
+        error = "No valid Pdf url found"
+        return render_template('pdf_form.html', id=doc_id, error=error)
+
     if request.method == 'GET':
         try:
+
             nda = Document.Document()
-            thisnda = nda.find_by_nda_id(id)
+            thisnda = nda.find_by_nda_id(doc_id)
             if thisnda is not None:
                 if thisnda.nda_url is None or thisnda.nda_url == "":
                     if thisnda.wp_url is None or thisnda.wp_url == "":
                         error = "No valid Pdf url found"
                         logger.info(error)
-                        return render_template('pdf_form.html', id=id, error=error)
+                        return render_template('pdf_form.html', id=doc_id, error=error)
                     else:
                         pdf_url = thisnda.wp_url
                 else:
@@ -755,7 +890,9 @@ def show_pdf(id):
 
                 user = User.User()
                 user = user.find_by_attr("org_id", thisnda.org_id)
-                render_options = {"companyname": user.org_name, "companytype": user.org_type,
+                org_type = getattr(user, "org_type", "N/A")
+
+                render_options = {"companyname": user.org_name, "companytype": org_type,
                                   "companyaddress": user.org_address}
 
                 doc_type = getattr(thisnda, "render", False)
@@ -775,11 +912,13 @@ def show_pdf(id):
                 if not pdffile:
                     error = "Error rendering the pdf with the nda url"
                     logger.info(error)
-                    return render_template('pdf_form.html', id=id, error=error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
 
-                temp_view_count = thisnda.get_attribute("view_count")
-                thisnda.set_attributes({"view_count": int(temp_view_count) + 1})
-                thisnda.update()
+                thislink = Link.Link()
+                thislink = thislink.find_by_link(id)
+                temp_view_count = thislink.view_count
+                thislink.view_count = int(temp_view_count) + 1
+                thislink.update()
 
                 if thisnda.nda_url != "":
                     has_nda = True
@@ -789,14 +928,14 @@ def show_pdf(id):
                     session['first_session'] = True
 
 
-                return render_template('pdf_form.html', id=id, error=error, has_nda=has_nda,
+                return render_template('pdf_form.html', id=doc_id, error=error, has_nda=has_nda,
                                        pdffile=pdffile, wp_description=thisnda.wp_description,
                                        wp_getit_btn=thisnda.wp_getit_btn, tour_js=FIRST_SESSION)
 
             else:
                 error = 'ID not found'
                 logger.info(error)
-                return render_template('pdf_form.html', id=id, error=error)
+                return render_template('pdf_form.html', id=doc_id, error=error)
 
         except Exception as e:
             logger.info("rendering pdf nda "+str(e))
@@ -805,7 +944,7 @@ def show_pdf(id):
 
     if request.method == 'POST':
         attachments_list = []
-        NDA_FILE_NAME = "ndacontract.pdf"
+        NDA_FILE_NAME = "contract.pdf"
         WPCI_FILE_NAME = "whitepaper.pdf"
         render_nda_only = render_wp_only = False
 
@@ -815,15 +954,15 @@ def show_pdf(id):
             if signer_email is None or signer_email == "":
                 error = "Error, you must enter a valid email"
                 logger.info(error)
-                return render_template('pdf_form.html', id=id, error=error)
+                return render_template('pdf_form.html', id=doc_id, error=error)
             if signer_name is None or signer_name == "":
                 error = "Error, you must enter a valid Name"
                 logger.info(error)
-                return render_template('pdf_form.html', id=id, error=error)
+                return render_template('pdf_form.html', id=doc_id, error=error)
 
             nda_file_base64 = str(request.form.get("nda_file"))
             nda = Document.Document()
-            thisnda = nda.find_by_nda_id(id)
+            thisnda = nda.find_by_nda_id(doc_id)
 
             if thisnda is not None and thisnda.org_id is not None:
                 if thisnda.nda_url is None or thisnda.nda_url == "" :
@@ -839,13 +978,13 @@ def show_pdf(id):
                 with tempfile.TemporaryDirectory() as tmpdir:
 
                     client_hash = get_hash([signer_email])
-                    if user.org_logo is None:
+                    if user.org_logo is None or user.org_logo == "_":
                         org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
                     else:
                         org_logo = user.org_logo
 
                     try:
-                        if render_wp_only or render_nda_only is False:
+                        if render_nda_only is False:
                             wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
 
                             doc_type = getattr(thisnda, "render", False)
@@ -854,19 +993,19 @@ def show_pdf(id):
                                 if google_token is not False:
                                     wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(thisnda.wp_url,
                                             {'token': user.google_token,
-                                             'refresh_token': user.google_refresh_token,
-                                             'token_uri': conf.GOOGLE_TOKEN_URI,
-                                             'client_id': conf.GOOGLE_CLIENT_ID,
-                                             'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                                             'scopes': conf.SCOPES},
-                                             signer_email)
+                                                'refresh_token': user.google_refresh_token,
+                                                'token_uri': conf.GOOGLE_TOKEN_URI,
+                                                'client_id': conf.GOOGLE_CLIENT_ID,
+                                                'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                                'scopes': conf.SCOPES},
+                                                signer_email)
                             else:
                                 wpci_result, complete_hash, WPCI_FILE_NAME  = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
 
                             if wpci_result is False:
                                 error = "Error rendering the white paper"
                                 logger.info(error)
-                                return render_template('pdf_form.html', id=id, error=error)
+                                return render_template('pdf_form.html', id=doc_id, error=error)
 
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
@@ -879,12 +1018,12 @@ def show_pdf(id):
                                                    filename=WPCI_FILE_NAME)
                             attachments_list.append(wpci_attachment)
 
-                        if render_nda_only or render_wp_only is False:
+                        if render_wp_only is False:
                             nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
 
                             crypto_sign_payload = {
-                                "timezone": TIMEZONE,
                                 "pdf": nda_file_base64,
+                                "timezone": TIMEZONE,
                                 "signatures": [
                                     {
                                         "hash": client_hash,
@@ -898,6 +1037,7 @@ def show_pdf(id):
                                     "logo": org_logo
                                 }
                             }
+                            
 
                             nda_result = get_nda(crypto_sign_payload)
 
@@ -909,7 +1049,7 @@ def show_pdf(id):
                             else:
                                 error = "failed loading nda"
                                 logger.info(error)
-                                return render_template('pdf_form.html', id=id, error=error)
+                                return render_template('pdf_form.html', id=doc_id, error=error)
 
 
                             #this is the payload for the nda file
@@ -938,28 +1078,32 @@ def show_pdf(id):
 
                         message = "successfully sent your files "
 
-                        temp_down_count = thisnda.get_attribute("down_count")
-                        thisnda.set_attributes({"down_count": int(temp_down_count) + 1})
-                        thisnda.update()
+                        thislink = Link.Link()
+                        thislink = thislink.find_by_link(id)
+                        temp_signed_count = thislink.signed_count
+                        thislink.signed_count = int(temp_signed_count) + 1
+                        thislink.status = "signed"
+                        thislink.update()
+
+                        doc_redirect_url = getattr(thisnda, "redirect_url", False)
+
+                        if doc_redirect_url and doc_redirect_url != "":
+                            return redirect(doc_redirect_url)
 
                     except Exception as e: #except from temp directory
                         logger.info("sending the email with the documents "+ str(e))
                         error = "Error sending the email"
-                        return render_template('pdf_form.html', id=id, error=error)
+                        return render_template('pdf_form.html', id=doc_id, error=error)
 
             else:
                 error = 'ID not found'
                 logger.info(error)
-                return render_template('pdf_form.html', id=id, error=error)
+                return render_template('pdf_form.html', id=doc_id, error=error)
 
         except Exception as e: #function except
             logger.info("error loading the files "+str(e))
             error = "there was an error on your files"
-            return render_template('pdf_form.html', id=id, error=error)
+            return render_template('pdf_form.html', id=doc_id, error=error)
 
 
-    return render_template('pdf_form.html', id=id, error=error, message=message)
-
-
-
-
+    return render_template('pdf_form.html', id=doc_id, error=error, message=message)

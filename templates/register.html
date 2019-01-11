@@ -1,42 +1,40 @@
 {% extends "layout.html" %}
 {% block cssblock %}
-  <style>
-    html{
-      background: #333333 !important;
-    }
-  </style>
+	<style>
+	  html{
+	    background: #333333 !important;
+	  }
+	</style>
 {% endblock cssblock %}
 
 {% block content %}
-<section class="login-section">
-  <div>
-    <div class="row remove-padding" >
-      <div id="login-card" class="col-lg-8 col-md-8 col-sm-8">
-        <div class="login-form">
-          <form action="{{ url_for('register') }}" method="post">
-            <h2 style="font-weight:900;" class="login-h1">Please enter your email</h2>
-            <p>Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</p>
-               {% if error %}
-                <h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
-                {% endif %}
 
-           <div class="row">
-              <div class=" col-md-6 col-md-offset-3" >
-                <div class="form-group">
-                  <label for="username">Email</label>
-                  <input type="text" class="form-control" id="username" name="username" value="" placeholder="Enter your Email" aria-label="Username" aria-describedby="basic-addon1">
-                </div>
+	<section class="login-section">
+		<div>
+			<div class="row remove-padding" >
+				<div id="login-card" class="col-lg-8 col-md-8 col-sm-8">
+					<div class="login-form">
+						<form action="{{ url_for('register') }}" method="post">
+							<h2 style="font-weight:900;" class="login-h1">Please enter your email</h2>
+							<p>Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</p>
+							{% if error %}
+								<h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
+							{% endif %}
 
-            </div>
-            </div>
+							<div class="row">
+								<div class=" col-md-6 col-md-offset-3" >
+									<div class="form-group">
+										<label for="username">Email</label>
+										<input type="text" class="form-control" id="username" name="username" value="" placeholder="Enter your Email" aria-label="Username" aria-describedby="basic-addon1">
+									</div>
+								</div>
+							</div>
+							<button type="submit" class="btn btn-info" value="Register">Register!</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
 
-            <button type="submit" class="btn btn-info" value="Register">Register!</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-    </div>
 {% endblock %}

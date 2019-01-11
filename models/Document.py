@@ -25,6 +25,7 @@ pwd_context = CryptContext(
 
 
 class Document(object):
+    '''The Document class include all the information needed to render a new pdf file '''
 
     def __init__(self, org_id = None):
         self.org_id = org_id
@@ -40,8 +41,11 @@ class Document(object):
 
     def create_nda(self):
         try:
+            self.link_count = 0
             self.view_count = 0
             self.down_count = 0
+            self.date = int(time.time())
+
 
             if self.nda_url is None:
                 self.nda_url = ""
@@ -51,7 +55,7 @@ class Document(object):
             if self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
 
-                self.nda_id = '{}_{}'.format(user.org_name.strip().strip("."), str(int(time.time() * 1000)))
+                self.nda_id = '{}_{}'.format(self.wp_name.strip().strip(" "), str(int(time.time() * 1000)))
                 result = self.create()
                 if not result:
                     logger.info("couldn't save the nda to the db")
@@ -129,7 +133,7 @@ class Document(object):
 
 
     def create(self):
-        '''creates a new user on the bd'''
+        '''creates a new document on the bd'''
         result = False
         mydb = None
         if self.org_id is None or self.nda_id is None:
@@ -142,7 +146,7 @@ class Document(object):
             result = mydb.insert_json(temp_nda)
 
         except Exception as error:
-            logger.info("creating user "+ str(error))
+            logger.info("creating document "+ str(error))
 
         finally:
             if mydb is not None:
@@ -166,7 +170,7 @@ class Document(object):
             result = mydb.update({"nda_id": nda_id}, temp_nda)
 
         except Exception as error:
-            logger.info("updating user"+ str(error))
+            logger.info("updating document"+ str(error))
             result = None
 
         finally:
