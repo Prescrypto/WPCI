@@ -155,8 +155,8 @@ class User(object):
                     "password": password,
                     "org_id": org_id,
                     "code": code,
-                    "priv_key": private_key,
-                    "pub_key": public_key
+                    "priv_key": self.priv_key,
+                    "pub_key": self.pub_key
                 }
             )
 
