@@ -144,8 +144,8 @@ class User(object):
             crypto_tool = CryptoTools()
             crypto_tool.entropy(int(str(time.time())[-4:]))
             public_key, private_key = crypto_tool.create_key_with_entropy()
-            self.priv_key = crypto_tool.get_pem_format(private_key)
-            self.pub_key = crypto_tool.get_pem_format(public_key)
+            self.priv_key = crypto_tool.get_pem_format(private_key).decode("utf-8")
+            self.pub_key = crypto_tool.get_pem_format(public_key).decode("utf-8")
 
             org_id = self.username + str(int(time.time()))
 
