@@ -27,7 +27,7 @@ import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import *
 from handlers.emailHandler import Mailer
-from models import User, Document
+from models import User, Document,signerUser,signRecord
 from handlers.WSHandler import *
 from utils import *
 
@@ -949,16 +949,19 @@ def show_pdf(id):
         render_nda_only = render_wp_only = False
 
         try:
-            signer_email = request.form.get("signer_email")
-            signer_name = request.form.get("signer_name")
-            if signer_email is None or signer_email == "":
+            signer_user = signerUser.SignerUser(request.form.get("signer_email"), request.form.get("signer_name"))
+
+            if signer_user.email is None or signer_user.email == "":
                 error = "Error, you must enter a valid email"
                 logger.info(error)
                 return render_template('pdf_form.html', id=doc_id, error=error)
-            if signer_name is None or signer_name == "":
+            if signer_user.name is None or signer_user.name == "":
                 error = "Error, you must enter a valid Name"
                 logger.info(error)
                 return render_template('pdf_form.html', id=doc_id, error=error)
+
+            #create the signer user so it can generate their keys
+            signer_user.create()
 
             nda_file_base64 = str(request.form.get("nda_file"))
             nda = Document.Document()
@@ -977,13 +980,16 @@ def show_pdf(id):
                 '''here we create a temporary directory to store the files while the function sends it by email'''
                 with tempfile.TemporaryDirectory() as tmpdir:
 
-                    client_hash = get_hash([signer_email])
                     if user.org_logo is None or user.org_logo == "_":
                         org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
                     else:
                         org_logo = user.org_logo
 
                     try:
+                        # sign the name and username of the signer
+                        crypto_tools = CryptoTools()
+                        client_hash = crypto_tools.sign(signer_user.email + signer_user.name, signer_user.priv_key)
+
                         if render_nda_only is False:
                             wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
 
@@ -998,9 +1004,9 @@ def show_pdf(id):
                                                 'client_id': conf.GOOGLE_CLIENT_ID,
                                                 'client_secret': conf.GOOGLE_CLIENT_SECRET,
                                                 'scopes': conf.SCOPES},
-                                                signer_email)
+                                                signer_user.email)
                             else:
-                                wpci_result, complete_hash, WPCI_FILE_NAME  = create_download_pdf(thisnda.wp_url, signer_email, thisnda.main_tex)
+                                wpci_result, complete_hash, WPCI_FILE_NAME  = create_download_pdf(thisnda.wp_url, signer_user.email, thisnda.main_tex)
 
                             if wpci_result is False:
                                 error = "Error rendering the white paper"
@@ -1009,8 +1015,6 @@ def show_pdf(id):
 
                             with open(wpci_file_path, 'wb') as ftemp:
                                 ftemp.write(wpci_result)
-
-                            client_hash = complete_hash
 
                             # this is the payload for the white paper file
                             wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
@@ -1027,8 +1031,8 @@ def show_pdf(id):
                                 "signatures": [
                                     {
                                         "hash": client_hash,
-                                        "email": signer_email,
-                                        "name": signer_name
+                                        "email": signer_user.email,
+                                        "name": signer_user.name
                                     }],
                                 "params": {
                                     "locale": LANGUAGE,

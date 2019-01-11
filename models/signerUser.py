@@ -87,7 +87,7 @@ class SignerUser(object):
             mydb = ManageDB(collection)
 
             if not self.pub_key or not self.priv_key:
-                # creating RSA keys for the organization
+                # creating RSA keys for the signer user
                 crypto_tool = CryptoTools()
                 crypto_tool.entropy(int(str(time.time())[-4:]))
                 public_key, private_key = crypto_tool.create_key_with_entropy()
