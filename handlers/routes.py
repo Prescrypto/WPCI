@@ -826,7 +826,9 @@ def create_dynamic_endpoint(document_dict, userjson):
 
 
 def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
-                         render_wp_only, render_nda_only):
+    render_wp_only, render_nda_only):
+    '''Renders the documents and if needed send it to cryptosign and finally send it by email'''
+
     attachments_list = []
     NDA_FILE_NAME = "contract.pdf"
     WPCI_FILE_NAME = "whitepaper.pdf"
