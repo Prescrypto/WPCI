@@ -88,6 +88,7 @@ SENDER_NAME = "Andrea WPCI"
 DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
 TIMEZONE = conf.TIMEZONE
 LANGUAGE = "en"
+AUTH_ERROR = {"error":"incorrect authentication"}
 
 
 # Axis for the pdf header
@@ -754,13 +755,13 @@ def delete_link(doc_id):
         logger.info("error deleting the link" + str(e))
         return False
 
-def get_link_status(doc_id):
+def get_link_details(link_id):
     ''' Retrieves the status of a Document link (signed or unsigned)'''
     result = False
     try:
         mylink = Link.Link()
-        result = mylink.find_by_link(doc_id)
-        return result.status
+        result = mylink.find_by_link(link_id)
+        return result
 
     except Exception as e:
         logger.info("error deleting the link" + str(e))
@@ -773,28 +774,27 @@ def get_b64_pdf(doc_id, userjson):
     try:
         user = User.User()
         user = user.find_by_attr("username", userjson.get("username"))
-        if user is not False:
-            doc = Document.Document()
-            docs = doc.find_by_attr("doc_id", doc_id)
-            if len(docs) > 0:
-                doc = docs[0]
+        doc = Document.Document()
+        docs = doc.find_by_attr("doc_id", doc_id)
+        if len(docs) > 0:
+            doc = docs[0]
+        else:
+            return result
+        doc_type = getattr(doc, "type", False)
+        if doc_type is False:
+            google_token = getattr(user, "google_token", False)
+            if google_token is not False:
+                user_credentials = {'token': user.google_token,
+                          'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
+                          'client_id': conf.GOOGLE_CLIENT_ID,
+                           'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                            'scopes': conf.SCOPES}
+                bytes =  render_pdf_base64_google(doc.get("wp_url"), user_credentials)
             else:
                 return result
-            doc_type = getattr(doc, "type", False)
-            if doc_type is False:
-                google_token = getattr(user, "google_token", False)
-                if google_token is not False:
-                    user_credentials = {'token': user.google_token,
-                              'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
-                              'client_id': conf.GOOGLE_CLIENT_ID,
-                               'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                                'scopes': conf.SCOPES}
-                    bytes =  render_pdf_base64_google(doc.get("wp_url"), user_credentials)
-                else:
-                    return result
-            else:
-                bytes =  render_pdf_base64_latex(doc.get("wp_url"))
-            return bytes
+        else:
+            bytes =  render_pdf_base64_latex(doc.get("wp_url"))
+        return bytes
 
     except Exception as e:
         logger.info("error rendering the document link " + str(e))
@@ -1167,20 +1167,58 @@ class DocEdit(BaseHandler):
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
 
-@jwtauth
-class DocStatus(BaseHandler):
+class Links(BaseHandler):
     '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
 
-    def post(self, userid):
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
-            doc_id = json_data.get("doc_id")
-            result = get_link_status(doc_id)
+    def get(self, link_id):
+        if not validate_token(self.request.headers.get('Authorization')):
+            self.write_json(AUTH_ERROR, 403)
+
+        if link_id:
+            result = get_link_details(link_id)
             if result is not False:
-                self.write(json.dumps({"doc_status": result}))
+                result = result.__dict__
+                result.pop("_id")
+                #Replace the Link id for the full link url
+                result["link"] = conf.BASE_URL +BASE_PATH+"pdf/" + result.pop("link")
+
+                print(result)
+                self.write_json(result, 200)
             else:
                 self.write(json.dumps({"doc_status": "failed"}))
 
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+    def post(self, doc_id):
+        if not validate_token(self.request.headers.get('Authorization')):
+            self.write_json(AUTH_ERROR, 403)
+
+        if doc_id:
+            result = create_link(doc_id)
+            if result is not False:
+                result = result.__dict__
+                result.pop("_id")
+                # Replace the Link id for the full link url
+                result["link"] = conf.BASE_URL + BASE_PATH + "pdf/" + result.pop("link")
+
+                self.write_json(result, 200)
+            else:
+                self.write(json.dumps({"response": "failed link creation"}))
+
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+    def delete(self, link_id):
+        if not validate_token(self.request.headers.get('Authorization')):
+            self.write_json(AUTH_ERROR, 403)
+
+        if link_id:
+            result = delete_link(link_id)
+            if result:
+                self.write(json.dumps({"response": "link deleted"}))
+            else:
+                self.write(json.dumps({"response": "failed link creation"}))
 
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
@@ -1195,7 +1233,7 @@ class DocRenderPDF(BaseHandler):
         if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
             doc_id = json_data.get("doc_id")
             userjson = ast.literal_eval(userid)
-            result = get_b64_pdf(doc_id, userjson)
+            result = get_b64_pdf(doc_id, userid)
             if result is not False:
                 self.write(json.dumps({"document": result}))
             else:
@@ -1205,3 +1243,22 @@ class DocRenderPDF(BaseHandler):
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
 
+
+class Documents(BaseHandler):
+    '''Documents endpoint'''
+
+    def get(self, doc_id):
+        '''Receives a document id and retrieves all its parameters'''
+        userjson = validate_token(self.request.headers.get('Authorization'))
+        if not userjson:
+            self.write_json(AUTH_ERROR, 403)
+
+        if doc_id is not None and doc_id != "":
+            result = get_b64_pdf(doc_id, userjson)
+            if result is not False:
+                self.write(json.dumps({"document": result}))
+            else:
+                self.write(json.dumps({"error": "failed"}))
+
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
