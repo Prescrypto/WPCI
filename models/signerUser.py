@@ -24,6 +24,7 @@ class SignerUser(object):
         self.name = name
         self.pub_key = None
         self.priv_key = None
+        self.sign = None
 
     def __str__(self):
         return "SignerUser(email='%s')" % self.email

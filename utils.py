@@ -209,8 +209,11 @@ class CryptoTools(object):
         if self.has_legacy_keys:
             return self._sign(message, PrivateKey)
         else:
+            print("signing")
             message_hash = SHA256.new(message)
+            print("after hash256")
             signature = pkcs1_15.new(PrivateKey).sign(message_hash)
+            print("signing with pk")
             return base64.b64encode(signature)
 
     def _sign(self, message, PrivateKey):
@@ -277,5 +280,15 @@ class CryptoTools(object):
         with open(directory_file+'.key', 'rb') as file:
             privatekey = RSA.import_key(file.read(), passphrase=password)
         
-        public_key = prk.publickey()   
-        return (publickey, privatekey)
+        public_key = privatekey.publickey()
+        return public_key, privatekey
+
+    def import_RSA_string(self, rsa_key):
+        '''This method create and return a object RSA from RSA private key in
+        format PEM of type string if RSA private key is correct in other case return
+        null '''
+        try:
+            return RSA.import_key(rsa_key)
+        except Exception as e:
+            self.logger.error('{}'.format(e))
+            return None

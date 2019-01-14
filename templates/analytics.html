@@ -16,7 +16,7 @@
           <form action="{{ url_for('analytics', id=id) }}" method="post">
             <h2 style="font-weight:900;" class="login-h1">Document Analytics</h2>
               <h4 class="login-h1"><b>Name:</b> {{ doc.wp_name }}
-                  <p><b> Id:</b> {{ doc.nda_id }} </p></h4>
+                  <p><b> Id:</b> {{ doc.doc_id }} </p></h4>
               {% if error %}
                 <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
                 {{ error }}

@@ -18,6 +18,7 @@ from tornado.web import  os
 import tornado
 from tornado import gen, ioloop
 import jinja2
+from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 
 #google oauth
 import google.oauth2.credentials
@@ -34,6 +35,7 @@ import config as conf
 from models import User, Document, Link
 from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
+from handlers.WSHandler import *
 from utils import *
 
 latex_jinja_env = jinja2.Environment(
@@ -61,12 +63,32 @@ RENDER_NOHASH = "render_and_download"
 RENDER_URL= "render_by_url_parameters"
 BASE_PATH = "/docs/"
 
+#HTML EMAIL TEMPLATES
+DEFAULT_HTML_TEXT = \
+            "<h3>Hello,</h3>\
+            <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
+            <p>Best regards,</p>"
+
+NOTIFICATION_HTML = \
+            "<h3>Hi!</h3>\
+            <p> {} has just downloaded the following document {}!</p>\
+            <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
+            <p>Keep crushing it!</p>\
+            <p>WPCI Admin</p>"
+
 #SMTP VARIABLES
 SMTP_PASS = conf.SMTP_PASS
 SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
+SENDER_NAME = "Andrea WPCI"
+
+#specific app variables
+DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
+TIMEZONE = conf.TIMEZONE
+LANGUAGE = "en"
+
 
 # Axis for the pdf header
 AXIS_X = 15
@@ -753,7 +775,7 @@ def get_b64_pdf(doc_id, userjson):
         user = user.find_by_attr("username", userjson.get("username"))
         if user is not False:
             doc = Document.Document()
-            docs = doc.find_by_attr("nda_id", doc_id)
+            docs = doc.find_by_attr("doc_id", doc_id)
             if len(docs) > 0:
                 doc = docs[0]
             else:
@@ -788,20 +810,132 @@ def create_dynamic_endpoint(document_dict, userjson):
         user = User.User()
         user = user.find_by_attr("username", userjson.get("username"))
         if user is not False:
-            nda = Document.Document()
+            doc = Document.Document()
             document_dict.update({"org_id": user.org_id})
-            nda.set_attributes(document_dict)
-            nda_id = nda.create_nda()
-            if nda_id is not False:
-                return base_url+PDF_VIEW_URL+nda_id
+            doc.set_attributes(document_dict)
+            doc_id = doc.create_document()
+            if doc_id is not False:
+                return base_url+PDF_VIEW_URL+doc_id
 
     except Exception as e:
-        logger.info("error creating nda"+ str(e))
+        logger.info("error creating doc"+ str(e))
         return False
 
-    logger.info("Information not valid creating nda")
+    logger.info("Information not valid creating doc")
     return False
 
+
+def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
+                         render_wp_only, render_nda_only):
+    attachments_list = []
+    NDA_FILE_NAME = "contract.pdf"
+    WPCI_FILE_NAME = "whitepaper.pdf"
+    doc_id = ""
+    org_logo = ""
+    wpci_result = False
+    ATTACH_CONTENT_TYPE = 'octet-stream'
+    mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
+
+    '''here we create a temporary directory to store the files while the function sends it by email'''
+    with tempfile.TemporaryDirectory() as tmpdir:
+
+        client_hash = get_hash([signer_user.email])
+        if user.org_logo is None or user.org_logo == "_":
+            org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
+        else:
+            org_logo = user.org_logo
+
+        try:
+            if render_nda_only is False:
+                wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
+
+                doc_type = getattr(thisdoc, "render", False)
+                if doc_type is not False and doc_type == "google":
+                    google_token = getattr(user, "google_token", False)
+                    if google_token is not False:
+                        wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(
+                            thisdoc.wp_url,
+                            google_credentials_info,signer_user.email)
+                else:
+                    wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf(
+                        thisdoc.wp_url,
+                        signer_user.email,thisdoc.main_tex)
+
+                if wpci_result is False:
+                    error = "Error rendering the white paper"
+                    logger.info(error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
+
+                with open(wpci_file_path, 'wb') as ftemp:
+                    ftemp.write(wpci_result)
+
+                # this is the payload for the white paper file
+                wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                       file_path=wpci_file_path,
+                                       filename=WPCI_FILE_NAME)
+                attachments_list.append(wpci_attachment)
+
+            if render_wp_only is False:
+                nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+
+                crypto_sign_payload = {
+                    "pdf": nda_file_base64,
+                    "timezone": TIMEZONE,
+                    "signatures": [
+                        {
+                            "hash": signer_user.sign,
+                            "email": signer_user.email,
+                            "name": signer_user.name
+                        }],
+                    "params": {
+                        "locale": LANGUAGE,
+                        "title": user.org_name + " contract",
+                        "file_name": NDA_FILE_NAME,
+                        "logo": org_logo
+                    }
+                }
+
+                nda_result = get_nda(crypto_sign_payload)
+
+                if nda_result is not False:
+                    # if the request returned a nda pdf file correctly then store it as pdf
+                    with open(nda_file_path, 'wb') as ftemp:
+                        ftemp.write(nda_result)
+
+                else:
+                    error = "failed loading nda"
+                    logger.info(error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
+
+                # this is the payload for the nda file
+                nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                      file_path=nda_file_path,
+                                      filename=NDA_FILE_NAME)
+                attachments_list.append(nda_attachment)
+
+            # send the email with the result attachments
+            sender_format = "{} <{}>"
+            loader = Loader("templates/email")
+            button = loader.load("cta_button.html")
+            notification_subject = "Your Document {} has been downloaded".format(thisdoc.doc_id)
+            analytics_link = "{}{}analytics/{}".format(conf.BASE_URL, BASE_PATH, thisdoc.doc_id)
+
+            mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
+                        emails_to=[signer_user.email],
+                        attachments_list=attachments_list,
+                        html_message=DEFAULT_HTML_TEXT + button.generate().decode("utf-8"))
+
+            html_text = NOTIFICATION_HTML.format(signer_user.email, thisdoc.doc_id, analytics_link, analytics_link)
+            mymail.send(subject=notification_subject,
+                        attachments_list=attachments_list,
+                        email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
+                        emails_to=[user.org_email], html_message=html_text)
+
+
+        except Exception as e:  # except from temp directory
+            logger.info("sending the email with the documents " + str(e))
+            error = "Error sending the email"
+            return render_template('pdf_form.html', id=doc_id, error=error)
 
 @jwtauth
 class APINotFoundHandler(BaseHandler):
