@@ -14,7 +14,7 @@
 			<div class="row remove-padding" >
 				<div id="login-card" class="col-lg-8 col-md-8 col-sm-8">
 					<div class="login-form">
-						<form action="{{ url_for('register') }}" method="post">
+						<form id="register-form" action="{{ url_for('register') }}" method="post">
 							<h2 style="font-weight:900;" class="login-h1">Please enter your email</h2>
 							<p>Have some important document that you don't want to share freely? Try WPCI to make users sign an NDA</p>
 							{% if error %}
@@ -29,8 +29,10 @@
 									</div>
 								</div>
 							</div>
-							<button type="submit" class="btn btn-info" value="Register">Register!</button>
 						</form>
+						<button type="submit" onClick="document.getElementById('register-form').submit();" class="btn btn-info" value="Register">Register!</button>
+						or
+						<button onClick="location.href='{{ url_for('login') }}'" class="btn btn-info" value="register">Login</button>
 					</div>
 				</div>
 			</div>
