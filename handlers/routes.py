@@ -814,7 +814,7 @@ def get_b64_pdf(doc_id, userjson):
     return result
 
 
-def create_dynamic_endpoint(document_dict, userjson):
+def create_dynamic_endpoint(document, userjson):
     '''This function retrives an URL formed by document ID and the Base url for the server'''
     base_url= conf.BASE_URL
     PDF_VIEW_URL = '/api/v1/pdf/'
@@ -822,12 +822,10 @@ def create_dynamic_endpoint(document_dict, userjson):
         user = User.User()
         user = user.find_by_attr("username", userjson.get("username"))
         if user is not False:
-            doc = Document.Document()
-            document_dict.update({"org_id": user.org_id})
-            doc.set_attributes(document_dict)
-            doc_id = doc.create_document()
+            document.org_id = user.org_id
+            doc_id = document.create_document()
             if doc_id is not False:
-                return base_url+PDF_VIEW_URL+doc_id
+                return doc_id
 
     except Exception as e:
         logger.info("error creating doc"+ str(e))
@@ -1125,62 +1123,38 @@ class RenderUrl(BaseHandler):
 
 @jwtauth
 class PostWpNda(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
+    '''Receives a post with the document url and responses with a document id '''
 
     def post(self, userid):
-        new_dict = dict()
-
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
-            if json_data.get("wp_url") is None or json_data.get("wp_url") == "":
+            doc = Document.Document()
+
+            if not json_data.get("wp_url"):
                 self.write(json.dumps({"response": "Error, White paper url not found"}))
-            else:
-                new_dict["wp_url"]= json_data.get("wp_url")
+            if not json_data.get("wp_name"):
+                self.write(json.dumps({"response": "Error, White paper name not found"}))
+            if not json_data.get("wp_main_tex"):
+                json_data["main_tex"] = "main.tex"
+            if not json_data.get("nda_url"):
+                json_data["nda_url"] = ""
 
-            if json_data.get("wp_main_tex") is not None and json_data.get("wp_main_tex") != "":
-                new_dict["main_tex"] = json_data.get("wp_main_tex")
-            else:
-                new_dict["main_tex"] = "main.tex"
-
-            if json_data.get("pdf_url") is not None and json_data.get("pdf_url") != "":
-                new_dict["nda_url"] = json_data.get("pdf_url")
-
+            doc.__dict__ = json_data
             userjson = ast.literal_eval(userid)
-            result = create_dynamic_endpoint(new_dict, userjson)
+
+            result = create_dynamic_endpoint(doc, userjson)
             if result is not False:
-                self.write(json.dumps({"endpoint": result}))
+                self.write(json.dumps({"doc_id": result}))
             else:
                 self.write(json.dumps({"response": "Error"}))
 
         except Exception as e:
-            logger.info("error creating endpoint"+ str(e))
+            logger.info("error creating endpoint" + str(e))
             self.write(json.dumps({"response": "Error"}))
 
 
-@jwtauth
-class DocEdit(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
-
-    def post(self, userid):
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        if json_data.get("action") is not None and json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
-            doc_id = json_data.get("doc_id")
-            if json_data.get("action") == "create":
-                mylink = create_link(doc_id)
-                self.write(json.dumps({"doc_link": conf.BASE_URL +BASE_PATH+"pdf/" + mylink}))
-            elif json_data.get("action") == "delete":
-                if delete_link(doc_id):
-                    self.write(json.dumps({"doc_status":"deleted"}))
-                else:
-                    self.write(json.dumps({"doc_status": "failed"}))
-
-            else:
-                self.write(json.dumps({"doc_status": "failed"}))
-        else:
-            self.write(json.dumps({"error": "not enough information to perform the action"}))
-
 class Links(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
+    '''Get, create and delete a document link'''
 
     def get(self, link_id):
         if not validate_token(self.request.headers.get('Authorization')):
@@ -1191,6 +1165,7 @@ class Links(BaseHandler):
             if result is not False:
                 result = result.__dict__
                 result.pop("_id")
+
                 #Replace the Link id for the full link url
                 result["link"] = conf.BASE_URL +BASE_PATH+"pdf/" + result.pop("link")
 
@@ -1211,6 +1186,7 @@ class Links(BaseHandler):
             if result is not False:
                 result = result.__dict__
                 result.pop("_id")
+
                 # Replace the Link id for the full link url
                 result["link"] = conf.BASE_URL + BASE_PATH + "pdf/" + result.pop("link")
 
@@ -1275,3 +1251,4 @@ class Documents(BaseHandler):
 
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
+

@@ -27,7 +27,7 @@ web_app = Application([
     (r"/"+API_BASE_PATH+"documents/pdf/([^/]+)", routes.RenderDocToPDF),
     (r"/"+API_BASE_PATH+"renderrepohash", routes.PostRepoHash),
     (r"/"+API_BASE_PATH+"renderurl", routes.RenderUrl),
-    (r"/"+API_BASE_PATH+"wp_nda", routes.PostWpNda),
+    (r"/"+API_BASE_PATH+"documents", routes.PostWpNda),
     (r"/"+API_BASE_PATH+"login", routes.AuthLoginHandler),
     (r"/"+API_BASE_PATH+"signin", routes.RegisterUser),
     (r"/"+API_BASE_PATH+"register", routes.RegisterUserByEmail),
