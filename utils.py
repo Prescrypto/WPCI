@@ -8,6 +8,7 @@ import binascii
 import base64
 import random 
 import _pickle as cPickle
+from collections import OrderedDict
 
 
 #Cryptographic library
@@ -104,6 +105,30 @@ def generate_credentials():
     result = my_cred_file.generate().decode("utf-8") % (conf.GOOGLE_CLIENT_ID, conf.GOOGLE_PROJECT_ID, conf.GOOGLE_CLIENT_SECRET, conf.BASE_URL+"/docs/")
     with open(conf.CLIENT_SECRETS_FILE, "w") as cred_json:
         cred_json.write(result)
+
+
+def ordered_data(data):
+    ''' Orderer data '''
+    if data is None:
+        return data
+
+    if isinstance(data, list):
+        _new_list = []
+        for item in data:
+            _new_list.append(dict(OrderedDict(sorted(item.items(), key=lambda x: x[0]))))
+
+        return _new_list
+
+    else:
+        _new_dict = {}
+        try:
+            _new_dict = OrderedDict(sorted(data.items(), key=lambda x: x[0]))
+        except Exception as e:
+            logger.info(e)
+            return data
+
+        return dict(_new_dict)
+
 
 class CryptoTools(object):
     ''' Object tools for encrypt and decrypt info '''

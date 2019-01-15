@@ -6,9 +6,12 @@ from requests.auth import HTTPBasicAuth
 import requests
 import base64
 import logging
+import datetime
+
 
 #internal
 import config as conf
+from utils import CryptoTools, ordered_data
 
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
@@ -40,9 +43,9 @@ def get_nda(payload):
         token_result = requests.post(url= URL+TOKEN_URL,data=jsondata, headers=tokenheaders, auth=auth)
         token_json_result = json.loads(token_result.content)
 
-
         if token_json_result.get("access_token"):
-            #if there is a token in the payload then request the pdf
+
+            # if there is a token in the payload then request the pdf
             headers["Authorization"] = "Bearer " + token_json_result.get("access_token")
             sign_result = requests.post(url=URL + SIGN_URL, json=payload, headers=headers)
 
@@ -51,4 +54,43 @@ def get_nda(payload):
         logger.info("requesting cryptosign pdf "+ str(e))
 
     return False
+
+
+def post_to_rexchain(rexchain_data, user):
+    rex_endpoint = "api/v1/rx-endpoint/"
+    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    try:
+        crypto_tools = CryptoTools()
+        org_priv_key = crypto_tools.import_RSA_string(user.priv_key)
+        org_pub_key = crypto_tools.import_RSA_string(user.pub_key)
+
+        rexchain_data.update({
+            "public_key": crypto_tools.savify_key(org_pub_key).decode('utf-8'),
+            "timestamp": timestamp
+        })
+
+        rexchain_data["params"] = ordered_data(rexchain_data["params"])
+        rexchain_data["signatures"] = ordered_data(rexchain_data["signatures"])
+        data_sorted = ordered_data(rexchain_data)
+        json_data_sorted = json.dumps(data_sorted, separators=(',', ':'))
+
+        signature = crypto_tools.sign(
+            json_data_sorted.encode('utf-8'),
+            org_priv_key
+        ).decode('utf-8')
+
+        rexchain_payload = {
+            "data": data_sorted,
+            "signature": signature
+        }
+
+        rexchain_result = requests.post(url = conf.REXCHAIN_URL + rex_endpoint, json = rexchain_payload,
+            headers = conf.headers)
+
+        print(rexchain_result.content)
+
+
+    except Exception as e:
+        logger.info("requesting rexchain response "+ str(e))
 

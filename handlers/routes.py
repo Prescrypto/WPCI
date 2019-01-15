@@ -834,7 +834,6 @@ def create_dynamic_endpoint(document, userjson):
     logger.info("Information not valid creating doc")
     return False
 
-
 def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
     render_wp_only, render_nda_only):
     '''Renders the documents and if needed send it to cryptosign and finally send it by email'''
@@ -851,7 +850,6 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
     '''here we create a temporary directory to store the files while the function sends it by email'''
     with tempfile.TemporaryDirectory() as tmpdir:
 
-        client_hash = get_hash([signer_user.email])
         if user.org_logo is None or user.org_logo == "_":
             org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
         else:
@@ -886,6 +884,27 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                                        file_path=wpci_file_path,
                                        filename=WPCI_FILE_NAME)
                 attachments_list.append(wpci_attachment)
+
+                rexchain_data = {
+                    "timezone": TIMEZONE,
+                    "signatures": [
+                        {
+                            "hash": signer_user.sign,
+                            "email": signer_user.email,
+                            "name": signer_user.name
+                        }
+                    ],
+                    "params": {
+                        "locale": LANGUAGE,
+                        "title": user.org_name + " contract",
+                        "file_name": NDA_FILE_NAME
+                    }
+                 }
+
+                # send the payload to rexchain
+                post_to_rexchain(rexchain_data, user)
+
+
 
             if render_wp_only is False:
                 nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
