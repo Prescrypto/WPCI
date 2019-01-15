@@ -767,6 +767,18 @@ def get_link_details(link_id):
         logger.info("error deleting the link" + str(e))
         return False
 
+def get_document_details(doc_id):
+    ''' Retrieves the status of a Document link (signed or unsigned)'''
+    result = False
+    try:
+        doc = Document.Document()
+        result = doc.find_by_doc_id(doc_id)
+        return result
+
+    except Exception as e:
+        logger.info("error deleting the link" + str(e))
+        return False
+
 
 def get_b64_pdf(doc_id, userjson):
     '''Call the render function and retrive a base 64 pdf'''
@@ -1225,20 +1237,21 @@ class Links(BaseHandler):
 
 
 @jwtauth
-class DocRenderPDF(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
+class RenderDocToPDF(BaseHandler):
+    '''Receives a get with the id of the document and renders it to PDF with clone_repo'''
 
-    def post(self, userid):
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
-            doc_id = json_data.get("doc_id")
-            userjson = ast.literal_eval(userid)
-            result = get_b64_pdf(doc_id, userid)
+    def get(self, doc_id):
+        '''Receives a document id and retrieves a json with a b64 pdf'''
+        userjson = validate_token(self.request.headers.get('Authorization'))
+        if not userjson:
+            self.write_json(AUTH_ERROR, 403)
+
+        if doc_id is not None and doc_id != "":
+            result = get_b64_pdf(doc_id, userjson)
             if result is not False:
                 self.write(json.dumps({"document": result}))
             else:
                 self.write(json.dumps({"error": "failed"}))
-
 
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
@@ -1254,9 +1267,9 @@ class Documents(BaseHandler):
             self.write_json(AUTH_ERROR, 403)
 
         if doc_id is not None and doc_id != "":
-            result = get_b64_pdf(doc_id, userjson)
-            if result is not False:
-                self.write(json.dumps({"document": result}))
+            result = get_document_details(doc_id)
+            if result:
+                self.write_json(result, 200)
             else:
                 self.write(json.dumps({"error": "failed"}))
 
