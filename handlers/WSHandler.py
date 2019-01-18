@@ -8,10 +8,9 @@ import base64
 import logging
 import datetime
 
-
 #internal
 import config as conf
-from utils import CryptoTools, ordered_data
+from utils import CryptoTools, ordered_data, iterate_and_order_json
 
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
@@ -70,8 +69,7 @@ def post_to_rexchain(rexchain_data, user):
             "timestamp": timestamp
         })
 
-        rexchain_data["params"] = ordered_data(rexchain_data["params"])
-        rexchain_data["signatures"] = ordered_data(rexchain_data["signatures"])
+        rexchain_data = iterate_and_order_json(rexchain_data)
         data_sorted = ordered_data(rexchain_data)
         json_data_sorted = json.dumps(data_sorted, separators=(',', ':'))
 

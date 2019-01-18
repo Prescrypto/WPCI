@@ -130,6 +130,23 @@ def ordered_data(data):
         return dict(_new_dict)
 
 
+def iterate_and_order_json(json_data):
+    '''iterates over a json to order all the sub jsons and lists'''
+
+    temp_dict = dict()
+
+    if not json_data or not isinstance(json_data, dict):
+        return json_data
+    try:
+        for key, val in json_data.items():
+            temp_dict[key] = ordered_data(val)
+    except Exception as e:
+        logger.error("[iterate_and_order_json ERROR]: {}, type:{}".format(e, type(e)))
+        return json_data
+
+    return temp_dict
+
+
 class CryptoTools(object):
     ''' Object tools for encrypt and decrypt info '''
     
