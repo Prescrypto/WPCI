@@ -772,11 +772,14 @@ def get_document_details(doc_id):
     result = False
     try:
         doc = Document.Document()
-        result = doc.find_by_doc_id(doc_id)
+        doc = doc.find_by_doc_id(doc_id)
+        result = doc.__dict__
+        result.pop("_id")
+        result.pop("type")
         return result
 
     except Exception as e:
-        logger.info("error deleting the link" + str(e))
+        logger.info("error getting document details " + str(e))
         return False
 
 
