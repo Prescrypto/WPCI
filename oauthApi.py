@@ -971,15 +971,6 @@ def show_pdf(id):
                 user = User.User()
                 user = user.find_by_attr("org_id", thisdoc.org_id)
 
-                # use the signer user and save the sign to use it later
-                crypto_tools = CryptoTools()
-                signer_sign = signer_user.email + signer_user.name
-                signer_user.sign = crypto_tools.sign(
-                    signer_sign.encode('utf-8'),
-                    crypto_tools.import_RSA_string(signer_user.priv_key)
-                ).decode('utf-8')
-                signer_user.update()
-
                 google_credentials_info = {'token': user.google_token,
                                            'refresh_token': user.google_refresh_token,
                                            'token_uri': conf.GOOGLE_TOKEN_URI,

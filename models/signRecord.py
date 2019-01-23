@@ -19,8 +19,8 @@ logger = logging.getLogger('tornado-info')
 
 class SignRecord(object):
 
-    def __init__(self):
-        self.tx_id = None
+    def __init__(self, tx_id=None):
+        self.tx_id = tx_id
 
     def __str__(self):
         return "SignRecord(tx_id='%s')" % self.tx_id

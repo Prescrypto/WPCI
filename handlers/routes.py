@@ -32,7 +32,7 @@ import fitz
 #internal
 from handlers.apiBaseHandler import BaseHandler
 import config as conf
-from models import User, Document, Link
+from models import User, Document, Link, signRecord
 from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
 from handlers.WSHandler import *
@@ -902,8 +902,15 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                  }
 
                 # send the payload to rexchain
-                post_to_rexchain(rexchain_data, user)
+                rexchain_result = post_to_rexchain(rexchain_data, user)
 
+                if rexchain_result and rexchain_result.get("hash_id"):
+                    tx_id = rexchain_result.get("hash_id")
+                    tx_record = signRecord.SignRecord(tx_id)
+                    tx_record.rx_audit_url = conf.REXCHAIN_URL + "/hash/" + tx_id
+                    tx_record.rx_is_valid = rexchain_result.get("is_valid")
+                    tx_record.signer_user = signer_user.email
+                    tx_record.create()
 
 
             if render_wp_only is False:

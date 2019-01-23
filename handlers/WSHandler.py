@@ -56,6 +56,7 @@ def get_nda(payload):
 
 
 def post_to_rexchain(rexchain_data, user):
+    print("post to rex")
     rex_endpoint = "api/v1/rx-endpoint/"
     timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -83,12 +84,13 @@ def post_to_rexchain(rexchain_data, user):
             "signature": signature
         }
 
-        rexchain_result = requests.post(url = conf.REXCHAIN_URL + rex_endpoint, json = rexchain_payload,
-            headers = conf.headers)
+        rexchain_result = requests.post(url=conf.REXCHAIN_URL + rex_endpoint, json=rexchain_payload,
+            headers=conf.headers)
 
-        print(rexchain_result.content)
+        return rexchain_result.json()
 
 
     except Exception as e:
         logger.info("requesting rexchain response "+ str(e))
 
+    return False

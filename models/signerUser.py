@@ -86,16 +86,24 @@ class SignerUser(object):
         try:
             collection = "SignerUser"
             mydb = ManageDB(collection)
+            crypto_tool = CryptoTools()
 
             if not self.pub_key or not self.priv_key:
                 # creating RSA keys for the signer user
-                crypto_tool = CryptoTools()
                 crypto_tool.entropy(int(str(time.time())[-4:]))
                 public_key, private_key = crypto_tool.create_key_with_entropy()
                 self.priv_key = crypto_tool.get_pem_format(private_key).decode("utf-8")
                 self.pub_key = crypto_tool.get_pem_format(public_key).decode("utf-8")
+
             else:
                 logger.info("keys already created")
+
+            # Use the signer email and name to create a signature for it
+            signer_signature = self.email + self.name
+            self.sign = crypto_tool.sign(
+                signer_signature.encode('utf-8'),
+                crypto_tool.import_RSA_string(self.priv_key)
+            ).decode('utf-8')
 
             result = mydb.insert_json(self.__dict__)
 
@@ -113,7 +121,7 @@ class SignerUser(object):
         result = None
         mydb = None
         try:
-            collection = "SignRecord"
+            collection = "SignerUser"
             mydb = ManageDB(collection)
             temp_user = self.__dict__
 
@@ -134,7 +142,7 @@ class SignerUser(object):
         result = False
         mydb = None
         try:
-            collection = "SignRecord"
+            collection = "SignerUser"
             mydb = ManageDB(collection)
             docs = mydb.select("email", self.email)
             if len(docs) > 0:

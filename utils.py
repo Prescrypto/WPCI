@@ -124,7 +124,7 @@ def ordered_data(data):
         try:
             _new_dict = OrderedDict(sorted(data.items(), key=lambda x: x[0]))
         except Exception as e:
-            logger.info(e)
+            logger.info("ordering data {}".format(e))
             return data
 
         return dict(_new_dict)
@@ -251,11 +251,8 @@ class CryptoTools(object):
         if self.has_legacy_keys:
             return self._sign(message, PrivateKey)
         else:
-            print("signing")
             message_hash = SHA256.new(message)
-            print("after hash256")
             signature = pkcs1_15.new(PrivateKey).sign(message_hash)
-            print("signing with pk")
             return base64.b64encode(signature)
 
     def _sign(self, message, PrivateKey):
