@@ -47,6 +47,7 @@ def get_nda(payload):
             # if there is a token in the payload then request the pdf
             headers["Authorization"] = "Bearer " + token_json_result.get("access_token")
             sign_result = requests.post(url=URL + SIGN_URL, json=payload, headers=headers)
+            # TODO receive a sign_result.json() and get the document hash and audit url from cryptosign  
 
             return sign_result.content
     except Exception as e:
