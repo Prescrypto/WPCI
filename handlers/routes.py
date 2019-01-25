@@ -846,6 +846,7 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
     WPCI_FILE_NAME = "whitepaper.pdf"
     doc_id = ""
     org_logo = ""
+    tx_record = None
     wpci_result = False
     ATTACH_CONTENT_TYPE = 'octet-stream'
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
@@ -904,6 +905,11 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                     }
                  }
 
+
+
+            if render_wp_only is False:
+                nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+
                 # send the payload to rexchain
                 rexchain_result = post_to_rexchain(rexchain_data, user)
 
@@ -915,16 +921,12 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                     tx_record.signer_user = signer_user.email
                     tx_record.create()
 
-
-            if render_wp_only is False:
-                nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
-
                 crypto_sign_payload = {
                     "pdf": nda_file_base64,
                     "timezone": TIMEZONE,
                     "signatures": [
                         {
-                            "hash": signer_user.sign,
+                            "hash": signer_user.sign[:50],
                             "email": signer_user.email,
                             "name": signer_user.name
                         }],
@@ -936,7 +938,7 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                     }
                 }
 
-                nda_result = get_nda(crypto_sign_payload)
+                nda_result = get_nda(crypto_sign_payload, tx_record)
 
                 if nda_result is not False:
                     # if the request returned a nda pdf file correctly then store it as pdf

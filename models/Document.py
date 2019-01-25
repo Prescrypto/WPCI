@@ -29,6 +29,8 @@ class Document(object):
 
     def __init__(self, org_id = None):
         self.org_id = org_id
+        self.nda_url = ""
+        self.wp_url = ""
 
     def __str__(self):
         return "Document(org_id='%s')" % self.org_id
