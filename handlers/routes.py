@@ -925,7 +925,7 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                     "timezone": TIMEZONE,
                     "signatures": [
                         {
-                            "hash": signer_user.sign[:254],
+                            "hash": signer_user.sign,
                             "email": signer_user.email,
                             "name": signer_user.name
                         }],
