@@ -889,6 +889,10 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                                        filename=WPCI_FILE_NAME)
                 attachments_list.append(wpci_attachment)
 
+            if render_wp_only is False:
+                nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+
+                # send the payload to rexchain
                 rexchain_data = {
                     "timezone": TIMEZONE,
                     "signatures": [
@@ -903,20 +907,14 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                         "title": user.org_name + " contract",
                         "file_name": NDA_FILE_NAME
                     }
-                 }
+                }
 
-
-
-            if render_wp_only is False:
-                nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
-
-                # send the payload to rexchain
                 rexchain_result = post_to_rexchain(rexchain_data, user)
 
                 if rexchain_result and rexchain_result.get("hash_id"):
                     tx_id = rexchain_result.get("hash_id")
                     tx_record = signRecord.SignRecord(tx_id)
-                    tx_record.rx_audit_url = conf.REXCHAIN_URL + "/hash/" + tx_id
+                    tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id
                     tx_record.rx_is_valid = rexchain_result.get("is_valid")
                     tx_record.signer_user = signer_user.email
                     tx_record.create()
