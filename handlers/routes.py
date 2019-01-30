@@ -935,7 +935,7 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                         "file_name": NDA_FILE_NAME,
                         "logo": org_logo,
                         "tx_id": tx_id,
-                        "rexchain": "prod"
+                        "rexchain": conf.REXCHAIN_URL
                     }
                 }
 
