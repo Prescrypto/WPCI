@@ -11,9 +11,9 @@
 					<div class="uk-card uk-card-default uk-card-body">
 						<h3>To continue please authorize WPCI to access your docs clicking
 							{% if error == "google_error" %}
-								<a href="{{ url_for('google_authorize') }}"> HERE </a>
+								<a id="google_modal_alert" > HERE </a>
 							{% else %}
-								<a href="{{ url_for('github_reg') }}"> HERE </a>
+								<a id="github_modal_alert" href="{{ url_for('github_reg') }}" > HERE </a>
 							{% endif %}
 						</h3>
 					</div>
@@ -56,4 +56,31 @@
 			{% endif %}
 		{% endif %}
 	</div>
+
+<!-- Javascript -->
+<script>
+	var alert_template = "<p class='uk-modal-body'>WPCI is currently on a Google apps verification process,\
+		on the 'This app is not verified' page please click on the bottom left link: 'Go to wpci.io(unsafe)'</br>\
+		Don't worry we will only use the permission to render the document</p>"
+
+  function go_to_url(url){
+    window.location.replace(url);
+  }
+
+	//when you click the link then show the alert and then continue to the auth site
+  UIkit.util.on('#google_modal_alert', 'click', function (e) {
+      e.preventDefault();
+      e.target.blur();
+      var auth_url = "{{ url_for('google_authorize') }}";
+
+      UIkit.modal.alert(
+          alert_template
+      ).then(function () {
+          go_to_url(auth_url);
+      });
+  });
+
+</script>
+
+
 {% endblock %}
