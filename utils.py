@@ -285,7 +285,7 @@ class CryptoTools(object):
             self.logger.error("[CryptoTool, verify ERROR ] Signature or message are corrupted")
             return False
 
-    def entropy(self, number):
+    def entropy(self):
         '''This method verify if entropy is enough'''
         if self.ENTROPY_NUMBER > 160:
             return os.urandom(self.ENTROPY_NUMBER)

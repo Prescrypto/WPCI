@@ -912,7 +912,7 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
 
                 rexchain_result = post_to_rexchain(rexchain_data, user)
 
-                if rexchain_result and rexchain_result.get("hash_id"):
+                if rexchain_result and rexchain_result.get("hash_id", False):
                     tx_id = rexchain_result.get("hash_id")
                     tx_record = signRecord.SignRecord(tx_id)
                     tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id

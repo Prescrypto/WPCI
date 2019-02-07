@@ -66,6 +66,7 @@ def get_nda(payload, tx_record):
 
 
 def post_to_rexchain(rexchain_data, user):
+    """This function makes the request (POST) to rexchain to push the payload and gets back the response"""
     rex_endpoint = "api/v1/rx-endpoint/"
     timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -97,7 +98,6 @@ def post_to_rexchain(rexchain_data, user):
             headers=conf.headers)
 
         return rexchain_result.json()
-
 
     except Exception as e:
         logger.info("requesting rexchain response "+ str(e))

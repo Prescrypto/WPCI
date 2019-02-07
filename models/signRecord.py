@@ -18,7 +18,7 @@ logger = logging.getLogger('tornado-info')
 
 
 class SignRecord(object):
-
+    """This model stores the txid and other parameters from rexchain response and cryptosign response"""
     def __init__(self, tx_id=None):
         self.tx_id = tx_id
 
