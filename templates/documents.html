@@ -67,5 +67,30 @@
 		</form>
 	</div>
 
+	<!-- This is the alert modal -->
+  <div id="modal-alert" uk-modal>
+      <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical txt-center uk-position-middle" >
+        <div class="uk-text-center">
+          <div class="form-group">
+
+            <label> To render a Google document you must</label>
+            <label> paste the link of the document with</label>
+	          </br><label>'ANYONE WITH THE LINK CAN VIEW'</label></br>
+	          <label>permissions, so we would be able to access it</label>
+          </div>
+
+        </div>
+      </div>
+  </div>
+
+<!-- Javascript -->
+<script>
+	//If this is a google document then alert the user to use public permissions
+	{% if render == "google"%}
+	  $(document).ready(function(){
+	     UIkit.modal($('#modal-alert')).show();
+	  });
+	{% endif %}
+</script>
 
 {% endblock %}
