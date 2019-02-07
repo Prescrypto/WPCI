@@ -18,6 +18,7 @@ from tornado.web import  os
 import tornado
 from tornado import gen, ioloop
 import jinja2
+from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 
 #google oauth
 import google.oauth2.credentials
@@ -31,9 +32,10 @@ import fitz
 #internal
 from handlers.apiBaseHandler import BaseHandler
 import config as conf
-from models import User, Document, Link
+from models import User, Document, Link, signRecord
 from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
+from handlers.WSHandler import *
 from utils import *
 
 latex_jinja_env = jinja2.Environment(
@@ -61,12 +63,33 @@ RENDER_NOHASH = "render_and_download"
 RENDER_URL= "render_by_url_parameters"
 BASE_PATH = "/docs/"
 
+#HTML EMAIL TEMPLATES
+DEFAULT_HTML_TEXT = \
+            "<h3>Hello,</h3>\
+            <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
+            <p>Best regards,</p>"
+
+NOTIFICATION_HTML = \
+            "<h3>Hi!</h3>\
+            <p> {} has just downloaded the following document {}!</p>\
+            <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
+            <p>Keep crushing it!</p>\
+            <p>WPCI Admin</p>"
+
 #SMTP VARIABLES
 SMTP_PASS = conf.SMTP_PASS
 SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
 SMTP_ADDRESS = conf.SMTP_ADDRESS
 SMTP_PORT = conf.SMTP_PORT
+SENDER_NAME = "Andrea WPCI"
+
+#specific app variables
+DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
+TIMEZONE = conf.TIMEZONE
+LANGUAGE = "en"
+AUTH_ERROR = {"error":"incorrect authentication"}
+
 
 # Axis for the pdf header
 AXIS_X = 15
@@ -732,16 +755,31 @@ def delete_link(doc_id):
         logger.info("error deleting the link" + str(e))
         return False
 
-def get_link_status(doc_id):
+def get_link_details(link_id):
     ''' Retrieves the status of a Document link (signed or unsigned)'''
     result = False
     try:
         mylink = Link.Link()
-        result = mylink.find_by_link(doc_id)
-        return result.status
+        result = mylink.find_by_link(link_id)
+        return result
 
     except Exception as e:
         logger.info("error deleting the link" + str(e))
+        return False
+
+def get_document_details(doc_id):
+    ''' Retrieves the status of a Document link (signed or unsigned)'''
+    result = False
+    try:
+        doc = Document.Document()
+        doc = doc.find_by_doc_id(doc_id)
+        result = doc.__dict__
+        result.pop("_id")
+        result.pop("type")
+        return result
+
+    except Exception as e:
+        logger.info("error getting document details " + str(e))
         return False
 
 
@@ -751,28 +789,27 @@ def get_b64_pdf(doc_id, userjson):
     try:
         user = User.User()
         user = user.find_by_attr("username", userjson.get("username"))
-        if user is not False:
-            doc = Document.Document()
-            docs = doc.find_by_attr("nda_id", doc_id)
-            if len(docs) > 0:
-                doc = docs[0]
+        doc = Document.Document()
+        docs = doc.find_by_attr("doc_id", doc_id)
+        if len(docs) > 0:
+            doc = docs[0]
+        else:
+            return result
+        doc_type = getattr(doc, "type", False)
+        if doc_type is False:
+            google_token = getattr(user, "google_token", False)
+            if google_token is not False:
+                user_credentials = {'token': user.google_token,
+                          'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
+                          'client_id': conf.GOOGLE_CLIENT_ID,
+                           'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                            'scopes': conf.SCOPES}
+                bytes =  render_pdf_base64_google(doc.get("wp_url"), user_credentials)
             else:
                 return result
-            doc_type = getattr(doc, "type", False)
-            if doc_type is False:
-                google_token = getattr(user, "google_token", False)
-                if google_token is not False:
-                    user_credentials = {'token': user.google_token,
-                              'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
-                              'client_id': conf.GOOGLE_CLIENT_ID,
-                               'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                                'scopes': conf.SCOPES}
-                    bytes =  render_pdf_base64_google(doc.get("wp_url"), user_credentials)
-                else:
-                    return result
-            else:
-                bytes =  render_pdf_base64_latex(doc.get("wp_url"))
-            return bytes
+        else:
+            bytes =  render_pdf_base64_latex(doc.get("wp_url"))
+        return bytes
 
     except Exception as e:
         logger.info("error rendering the document link " + str(e))
@@ -780,7 +817,7 @@ def get_b64_pdf(doc_id, userjson):
     return result
 
 
-def create_dynamic_endpoint(document_dict, userjson):
+def create_dynamic_endpoint(document, userjson):
     '''This function retrives an URL formed by document ID and the Base url for the server'''
     base_url= conf.BASE_URL
     PDF_VIEW_URL = '/api/v1/pdf/'
@@ -788,20 +825,160 @@ def create_dynamic_endpoint(document_dict, userjson):
         user = User.User()
         user = user.find_by_attr("username", userjson.get("username"))
         if user is not False:
-            nda = Document.Document()
-            document_dict.update({"org_id": user.org_id})
-            nda.set_attributes(document_dict)
-            nda_id = nda.create_nda()
-            if nda_id is not False:
-                return base_url+PDF_VIEW_URL+nda_id
+            document.org_id = user.org_id
+            doc_id = document.create_document()
+            if doc_id is not False:
+                return doc_id
 
     except Exception as e:
-        logger.info("error creating nda"+ str(e))
+        logger.info("error creating doc"+ str(e))
         return False
 
-    logger.info("Information not valid creating nda")
+    logger.info("Information not valid creating doc")
     return False
 
+def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
+    render_wp_only, render_nda_only):
+    '''Renders the documents and if needed send it to cryptosign and finally send it by email'''
+
+    attachments_list = []
+    NDA_FILE_NAME = "contract.pdf"
+    WPCI_FILE_NAME = "whitepaper.pdf"
+    doc_id = ""
+    org_logo = ""
+    tx_record = None
+    wpci_result = False
+    ATTACH_CONTENT_TYPE = 'octet-stream'
+    mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
+
+    '''here we create a temporary directory to store the files while the function sends it by email'''
+    with tempfile.TemporaryDirectory() as tmpdir:
+
+        if user.org_logo is None or user.org_logo == "_":
+            org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
+        else:
+            org_logo = user.org_logo
+
+        try:
+            if render_nda_only is False:
+                wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
+
+                doc_type = getattr(thisdoc, "render", False)
+                if doc_type is not False and doc_type == "google":
+                    google_token = getattr(user, "google_token", False)
+                    if google_token is not False:
+                        wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(
+                            thisdoc.wp_url,
+                            google_credentials_info,signer_user.email)
+                else:
+                    wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf(
+                        thisdoc.wp_url,
+                        signer_user.email,thisdoc.main_tex)
+
+                if wpci_result is False:
+                    error = "Error rendering the white paper"
+                    logger.info(error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
+
+                with open(wpci_file_path, 'wb') as ftemp:
+                    ftemp.write(wpci_result)
+
+                # this is the payload for the white paper file
+                wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                       file_path=wpci_file_path,
+                                       filename=WPCI_FILE_NAME)
+                attachments_list.append(wpci_attachment)
+
+            if render_wp_only is False:
+                tx_id = ""
+                nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+
+                # send the payload to rexchain
+                rexchain_data = {
+                    "timezone": TIMEZONE,
+                    "signatures": [
+                        {
+                            "hash": signer_user.sign,
+                            "email": signer_user.email,
+                            "name": signer_user.name
+                        }
+                    ],
+                    "params": {
+                        "locale": LANGUAGE,
+                        "title": user.org_name + " contract",
+                        "file_name": NDA_FILE_NAME
+                    }
+                }
+
+                rexchain_result = post_to_rexchain(rexchain_data, user)
+
+                if rexchain_result and rexchain_result.get("hash_id", False):
+                    tx_id = rexchain_result.get("hash_id")
+                    tx_record = signRecord.SignRecord(tx_id)
+                    tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id
+                    tx_record.rx_is_valid = rexchain_result.get("is_valid")
+                    tx_record.signer_user = signer_user.email
+                    tx_record.create()
+
+                crypto_sign_payload = {
+                    "pdf": nda_file_base64,
+                    "timezone": TIMEZONE,
+                    "signatures": [
+                        {
+                            "hash": signer_user.sign,
+                            "email": signer_user.email,
+                            "name": signer_user.name
+                        }],
+                    "params": {
+                        "locale": LANGUAGE,
+                        "title": user.org_name + " contract",
+                        "file_name": NDA_FILE_NAME,
+                        "logo": org_logo,
+                        "rexchain_url": conf.REXCHAIN_URL + "hash/" + tx_id
+                    }
+                }
+
+                nda_result = get_nda(crypto_sign_payload, tx_record)
+
+                if nda_result is not False:
+                    # if the request returned a nda pdf file correctly then store it as pdf
+                    with open(nda_file_path, 'wb') as ftemp:
+                        ftemp.write(nda_result)
+
+                else:
+                    error = "failed loading nda"
+                    logger.info(error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
+
+                # this is the payload for the nda file
+                nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                      file_path=nda_file_path,
+                                      filename=NDA_FILE_NAME)
+                attachments_list.append(nda_attachment)
+
+            # send the email with the result attachments
+            sender_format = "{} <{}>"
+            loader = Loader("templates/email")
+            button = loader.load("cta_button.html")
+            notification_subject = "Your Document {} has been downloaded".format(thisdoc.doc_id)
+            analytics_link = "{}{}analytics/{}".format(conf.BASE_URL, BASE_PATH, thisdoc.doc_id)
+
+            mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
+                        emails_to=[signer_user.email],
+                        attachments_list=attachments_list,
+                        html_message=DEFAULT_HTML_TEXT + button.generate().decode("utf-8"))
+
+            html_text = NOTIFICATION_HTML.format(signer_user.email, thisdoc.doc_id, analytics_link, analytics_link)
+            mymail.send(subject=notification_subject,
+                        attachments_list=attachments_list,
+                        email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
+                        emails_to=[user.org_email], html_message=html_text)
+
+
+        except Exception as e:  # except from temp directory
+            logger.info("sending the email with the documents " + str(e))
+            error = "Error sending the email"
+            return render_template('pdf_form.html', id=doc_id, error=error)
 
 @jwtauth
 class APINotFoundHandler(BaseHandler):
@@ -977,94 +1154,131 @@ class RenderUrl(BaseHandler):
 
 @jwtauth
 class PostWpNda(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
+    '''Receives a post with the document url and responses with a document id '''
 
     def post(self, userid):
-        new_dict = dict()
-
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
-            if json_data.get("wp_url") is None or json_data.get("wp_url") == "":
+            doc = Document.Document()
+
+            if not json_data.get("wp_url"):
                 self.write(json.dumps({"response": "Error, White paper url not found"}))
-            else:
-                new_dict["wp_url"]= json_data.get("wp_url")
+            if not json_data.get("wp_name"):
+                self.write(json.dumps({"response": "Error, White paper name not found"}))
+            if not json_data.get("wp_main_tex"):
+                json_data["main_tex"] = "main.tex"
+            if not json_data.get("nda_url"):
+                json_data["nda_url"] = ""
 
-            if json_data.get("wp_main_tex") is not None and json_data.get("wp_main_tex") != "":
-                new_dict["main_tex"] = json_data.get("wp_main_tex")
-            else:
-                new_dict["main_tex"] = "main.tex"
-
-            if json_data.get("pdf_url") is not None and json_data.get("pdf_url") != "":
-                new_dict["nda_url"] = json_data.get("pdf_url")
-
+            doc.__dict__ = json_data
             userjson = ast.literal_eval(userid)
-            result = create_dynamic_endpoint(new_dict, userjson)
+
+            result = create_dynamic_endpoint(doc, userjson)
             if result is not False:
-                self.write(json.dumps({"endpoint": result}))
+                self.write(json.dumps({"doc_id": result}))
             else:
                 self.write(json.dumps({"response": "Error"}))
 
         except Exception as e:
-            logger.info("error creating endpoint"+ str(e))
+            logger.info("error creating endpoint" + str(e))
             self.write(json.dumps({"response": "Error"}))
 
 
-@jwtauth
-class DocEdit(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
+class Links(BaseHandler):
+    '''Get, create and delete a document link'''
 
-    def post(self, userid):
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        if json_data.get("action") is not None and json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
-            doc_id = json_data.get("doc_id")
-            if json_data.get("action") == "create":
-                mylink = create_link(doc_id)
-                self.write(json.dumps({"doc_link": conf.BASE_URL +BASE_PATH+"pdf/" + mylink}))
-            elif json_data.get("action") == "delete":
-                if delete_link(doc_id):
-                    self.write(json.dumps({"doc_status":"deleted"}))
-                else:
-                    self.write(json.dumps({"doc_status": "failed"}))
+    def get(self, link_id):
+        if not validate_token(self.request.headers.get('Authorization')):
+            self.write_json(AUTH_ERROR, 403)
 
-            else:
-                self.write(json.dumps({"doc_status": "failed"}))
-        else:
-            self.write(json.dumps({"error": "not enough information to perform the action"}))
-
-@jwtauth
-class DocStatus(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
-
-    def post(self, userid):
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
-            doc_id = json_data.get("doc_id")
-            result = get_link_status(doc_id)
+        if link_id:
+            result = get_link_details(link_id)
             if result is not False:
-                self.write(json.dumps({"doc_status": result}))
+                result = result.__dict__
+                result.pop("_id")
+
+                #Replace the Link id for the full link url
+                result["link"] = conf.BASE_URL +BASE_PATH+"pdf/" + result.pop("link")
+
+                print(result)
+                self.write_json(result, 200)
             else:
                 self.write(json.dumps({"doc_status": "failed"}))
 
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+    def post(self, doc_id):
+        if not validate_token(self.request.headers.get('Authorization')):
+            self.write_json(AUTH_ERROR, 403)
+
+        if doc_id:
+            result = create_link(doc_id)
+            if result is not False:
+                result = result.__dict__
+                result.pop("_id")
+
+                # Replace the Link id for the full link url
+                result["link"] = conf.BASE_URL + BASE_PATH + "pdf/" + result.pop("link")
+
+                self.write_json(result, 200)
+            else:
+                self.write(json.dumps({"response": "failed link creation"}))
+
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+    def delete(self, link_id):
+        if not validate_token(self.request.headers.get('Authorization')):
+            self.write_json(AUTH_ERROR, 403)
+
+        if link_id:
+            result = delete_link(link_id)
+            if result:
+                self.write(json.dumps({"response": "link deleted"}))
+            else:
+                self.write(json.dumps({"response": "failed link creation"}))
 
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
 
 
 @jwtauth
-class DocRenderPDF(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
+class RenderDocToPDF(BaseHandler):
+    '''Receives a get with the id of the document and renders it to PDF with clone_repo'''
 
-    def post(self, userid):
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        if json_data.get("doc_id") is not None and json_data.get("doc_id") != "":
-            doc_id = json_data.get("doc_id")
-            userjson = ast.literal_eval(userid)
+    def get(self, doc_id):
+        '''Receives a document id and retrieves a json with a b64 pdf'''
+        userjson = validate_token(self.request.headers.get('Authorization'))
+        if not userjson:
+            self.write_json(AUTH_ERROR, 403)
+
+        if doc_id is not None and doc_id != "":
             result = get_b64_pdf(doc_id, userjson)
             if result is not False:
                 self.write(json.dumps({"document": result}))
             else:
                 self.write(json.dumps({"error": "failed"}))
 
+        else:
+            self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+
+class Documents(BaseHandler):
+    '''Documents endpoint'''
+
+    def get(self, doc_id):
+        '''Receives a document id and retrieves all its parameters'''
+        userjson = validate_token(self.request.headers.get('Authorization'))
+        if not userjson:
+            self.write_json(AUTH_ERROR, 403)
+
+        if doc_id is not None and doc_id != "":
+            result = get_document_details(doc_id)
+            if result:
+                self.write_json(result, 200)
+            else:
+                self.write(json.dumps({"error": "failed"}))
 
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))

@@ -78,6 +78,9 @@
     "GOOGLE_CLIENT_ID": {
 	  "required": true
       },
+    "REXCHAIN_URL": {
+	  "required": true
+      },
     "GOOGLE_PROJECT_ID": {
 	  "required": true
       },

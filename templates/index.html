@@ -124,7 +124,7 @@
                     <tr>
                       <td align="center">{{ item.wp_name }}</td>
                       <td align="center" >
-                        <a href="#"><span id="{{ item.nda_id }}" onClick="go_to_link( '{{ item.nda_id }}' )">{{ item.nda_id }}</span></a>
+                        <a href="#"><span id="{{ item.doc_id }}" onClick="go_to_link( '{{ item.doc_id }}' )">{{ item.doc_id }}</span></a>
                       </td>
                       <td align="center">
                         {% if item.render %}
@@ -141,7 +141,7 @@
                         {% endif %}
                       </td>
                       <td align="center">
-                        <span style="color:#3366BB;" class="uk-button" onClick="go_to_link( '{{ item.nda_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
+                        <span style="color:#3366BB;" class="uk-button" onClick="go_to_link( '{{ item.doc_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
                       </td>
                     </tr>
                   {% endfor %}

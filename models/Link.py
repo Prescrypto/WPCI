@@ -44,7 +44,7 @@ class Link(object):
         self.version = "0"
         if self.doc_id is not None:
             document = Document.Document()
-            thisdocument = document.find_by_nda_id(self.doc_id)
+            thisdocument = document.find_by_doc_id(self.doc_id)
             new_link_count  = getattr(thisdocument, "link_count", 0)
             new_link_count += 1
             self.link = self.doc_id + "_" + str( new_link_count )
@@ -65,7 +65,7 @@ class Link(object):
         else:
             return False
 
-        return self.link
+        return self
 
     def delete_link(self):
         if self.doc_id is not None:

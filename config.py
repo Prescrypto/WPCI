@@ -4,7 +4,7 @@ TOKEN = os.environ.get('GITHUB_TOKEN', '')
 headers = {"Content-Type" :  "application/json" } #get the content in json format
 GITHUB_API_URL = "https://api.github.com/"
 SECRET = os.environ.get('SECRET', '')
-MONGO_URI= os.environ.get('MONGODB_URI', '')
+MONGO_URI= os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/wpci_db')
 SMTP_PASS=os.environ.get('SMTP_PASS', '')
 SMTP_EMAIL= os.environ.get('SMTP_EMAIL', '')
 ADMIN_EMAIL= os.environ.get('ADMIN_EMAIL', '')
@@ -20,6 +20,7 @@ CRYPTO_SECRET = os.environ.get('CRYPTO_SECRET', '')
 CRYPTO_USERNAME = os.environ.get('CRYPTO_USERNAME', '')
 CRYPTO_PASS = os.environ.get('CRYPTO_PASS', '')
 CRYPTO_SIGN_URL = os.environ.get('CRYPTO_SIGN_URL', '')
+REXCHAIN_URL = os.environ['REXCHAIN_URL']
 # Settings JIRA
 JIRA_URL = os.environ['JIRA_URL']
 JIRA_USER = os.environ['JIRA_USER']
