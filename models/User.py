@@ -140,7 +140,6 @@ class User(object):
 
             #creating RSA keys for the organization
             crypto_tool = CryptoTools()
-            crypto_tool.entropy()
             public_key, private_key = crypto_tool.create_key_with_entropy()
             self.priv_key = crypto_tool.get_pem_format(private_key).decode("utf-8")
             self.pub_key = crypto_tool.get_pem_format(public_key).decode("utf-8")
