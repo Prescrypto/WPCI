@@ -253,7 +253,8 @@ class CryptoTools(object):
         else:
             message_hash = SHA256.new(message)
             signature = pkcs1_15.new(PrivateKey).sign(message_hash)
-            return base64.b64encode(signature)
+
+        return base64.b64encode(signature)
 
     def _sign(self, message, PrivateKey):
         ''' Sign a message '''
@@ -285,7 +286,7 @@ class CryptoTools(object):
             self.logger.error("[CryptoTool, verify ERROR ] Signature or message are corrupted")
             return False
 
-    def entropy(self):
+    def entropy(self, number):
         '''This method verify if entropy is enough'''
         if self.ENTROPY_NUMBER > 160:
             return os.urandom(self.ENTROPY_NUMBER)
@@ -302,6 +303,7 @@ class CryptoTools(object):
             privatekey = None
         
         if privatekey is None:
+            logger.info("Keys are null")
             publickey = None
         else: 
             publickey = privatekey.publickey()

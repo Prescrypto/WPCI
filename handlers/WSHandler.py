@@ -58,6 +58,7 @@ def get_nda(payload, tx_record):
             tx_record.update()
             pdfbytes = base64.b64decode(json_result.get("pdf"))
 
+
             return pdfbytes
     except Exception as e:
         logger.info("requesting cryptosign pdf "+ str(e))

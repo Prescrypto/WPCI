@@ -19,7 +19,6 @@ logger = logging.getLogger('tornado-info')
 
 class SignerUser(object):
     """This model stores the signer information (public keys and info)"""
-
     def __init__(self, email=None, name=None):
         self.email = email
         self.name = name
@@ -91,7 +90,6 @@ class SignerUser(object):
 
             if not self.pub_key or not self.priv_key:
                 # creating RSA keys for the signer user
-                crypto_tool.entropy()
                 public_key, private_key = crypto_tool.create_key_with_entropy()
                 self.priv_key = crypto_tool.get_pem_format(private_key).decode("utf-8")
                 self.pub_key = crypto_tool.get_pem_format(public_key).decode("utf-8")
