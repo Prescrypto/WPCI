@@ -37,7 +37,7 @@ logger = logging.getLogger('tornado-info')
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 FOLDER = "signed_files/"
-BUCKET = "wpci_signed_docs"
+BUCKET = "wpci-signed-docs"
 S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/wpci_signed_docs/signed_files/{}.pdf"
 
 def get_hash(strings_list, hashes_list=[]):
@@ -154,9 +154,9 @@ def iterate_and_order_json(json_data):
 def upload_to_s3(file_path, file_name):
     """Upload a file to the default S3 bucket"""
     try:
-        conn = tinys3.Connection(conf.ACCESS_KEY, conf.SECRET_KEY, tls=True)
+        s3_connection = tinys3.Connection(conf.ACCESS_KEY, conf.SECRET_KEY, tls=True, default_bucket=BUCKET)
         with open(file_path, 'rb') as temp_file:
-            conn.upload(file_name, temp_file, BUCKET)
+            s3_connection.upload(FOLDER+file_name, temp_file, public=False)
     except Exception as e:
         logger.info("Error uploading files: {}".format(str(e)))
 

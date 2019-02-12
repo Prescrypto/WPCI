@@ -158,6 +158,7 @@ def authenticate(password, username):
     else:
         return False
 
+
 def validate_token(access_token):
     """Verifies that an access-token is valid and
     meant for this app."""
@@ -173,8 +174,9 @@ def validate_token(access_token):
 
 
 def jwtauth(handler_class):
-    ''' Handle Tornado JWT Auth '''
+    """ Handle Tornado JWT Auth """
     userid = None
+
     def wrap_execute(handler_execute):
         def require_auth(handler, kwargs):
             auth = handler.request.headers.get('Authorization')
@@ -283,6 +285,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
 
     return result
 
+
 def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text="", options ={}):
     '''Clones a repo and renders the file received as main_tex and then signs it'''
     repo_name = ''
@@ -342,7 +345,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
 
             attachment = dict(file_type=ATTACH_CONTENT_TYPE, file_path=file_full_path, filename="documentation.pdf")
             attachments_list.append(attachment)
-            mymail.send(subject="Documentation",email_from=SMTP_EMAIL,emails_to=[user_email],emails_bcc=[conf.ADMIN_EMAIL],
+            mymail.send(subject="Documentation", email_from=SMTP_EMAIL,emails_to=[user_email],emails_bcc=[conf.ADMIN_EMAIL],
                         attachments_list=attachments_list, text_message=email_body_text,
                         html_message=email_body_html)
 
@@ -461,7 +464,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
-            if options != {}: #if there are special conditions to render
+            if options != {}: # if there are special conditions to render
                 # modify the original template:
                 template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
                 renderer_template = template.render(**options)
@@ -849,11 +852,13 @@ def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user,
             if google_token is not False:
                 wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(
                     thisdoc.wp_url,
-                    google_credentials_info, signer_user.email)
+                    google_credentials_info,
+                    signer_user.email)
         else:
             wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf(
                 thisdoc.wp_url,
-                signer_user.email, thisdoc.main_tex)
+                signer_user.email,
+                thisdoc.main_tex)
 
         if not wpci_result:
             error = "Error rendering the document"
@@ -863,7 +868,7 @@ def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user,
         with open(wpci_file_path, 'wb') as temp_file:
             temp_file.write(wpci_result)
 
-        #upload_to_s3(wpci_file_path, "{}_{}_{}".format(signer_user.name, thisdoc.wp_name, thisdoc.doc_id))
+        upload_to_s3(wpci_file_path, "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
         # this is the payload for the white paper file
         wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                                file_path=wpci_file_path,
@@ -943,7 +948,7 @@ def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachm
         # if the request returned a nda pdf file correctly then store it as pdf
         with open(nda_file_path, 'wb') as temp_file:
             temp_file.write(nda_result)
-        #upload_to_s3(nda_file_path, "contract_{}_{}_{}".format(signer_user.email, thisdoc.wp_name, thisdoc.doc_id))
+        upload_to_s3(nda_file_path, "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
 
         # this is the payload for the nda file
         nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
