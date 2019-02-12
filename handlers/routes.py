@@ -32,7 +32,7 @@ import fitz
 #internal
 from handlers.apiBaseHandler import BaseHandler
 import config as conf
-from models import User, Document, Link, signRecord
+from models import User, Document, Link, signRecord, signerUser
 from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
 from handlers.WSHandler import *
@@ -75,6 +75,11 @@ NOTIFICATION_HTML = \
             <p>Keep crushing it!</p>\
             <p>WPCI Admin</p>"
 ATTACH_CONTENT_TYPE = 'octet-stream'
+
+# S3 PATHS
+FOLDER = "signed_files/"
+BUCKET = "wpci-signed-docs"
+S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/"+BUCKET+"/"+FOLDER+"{}"
 
 #SMTP VARIABLES
 SMTP_PASS = conf.SMTP_PASS
@@ -284,6 +289,85 @@ def store_petition(remote_url, petition_type, username='anonymous'):
             mydb.close()
 
     return result
+
+
+def render_send_by_link_id(link_id, email, name):
+    """Download and render and then sign a document from google and send it by email"""
+    b64_pdf_file = None
+    render_nda_only = render_wp_only = False
+    response = dict()
+    try:
+        doc_id = "_".join(link_id.split("_")[:-1])
+    except Exception as e:
+        logger.info("error obtaining link id")
+        return False
+
+    try:
+        doc = Document.Document()
+        thisdoc = doc.find_by_doc_id(doc_id)
+        user = User.User()
+        user = user.find_by_attr("org_id", thisdoc.org_id)
+
+        google_credentials_info = {'token': user.google_token,
+                                   'refresh_token': user.google_refresh_token,
+                                   'token_uri': conf.GOOGLE_TOKEN_URI,
+                                   'client_id': conf.GOOGLE_CLIENT_ID,
+                                   'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                   'scopes': conf.SCOPES}
+
+        signer_user = signerUser.SignerUser(email, name)
+        # create the signer user so it can generate their keys
+        signer_user.create()
+
+        if thisdoc.nda_url is None or thisdoc.nda_url == "":
+            render_wp_only = True
+            if thisdoc.wp_url is None or thisdoc.wp_url == "":
+                error = "No valid Pdf url found"
+                logger.info(error)
+                return False
+            else:
+                file_name = "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id)
+                response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
+                pdf_url = thisdoc.wp_url
+        else:
+            pdf_url = thisdoc.nda_url
+            file_name = "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id)
+            response.update({"s3_contract_url": S3_BASE_URL.format(file_name)})
+            if thisdoc.wp_url is None or thisdoc.wp_url == "":
+                render_nda_only = True
+                file_name = "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id)
+                response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
+
+        doc_type = getattr(thisdoc, "render", False)
+        if doc_type is not False and doc_type == "google":
+            google_token = getattr(user, "google_token", False)
+            if google_token is not False:
+                b64_pdf_file = render_pdf_base64_google(thisdoc.pdf_url, google_credentials_info)
+        else:
+            b64_pdf_file = render_pdf_base64_latex(pdf_url, "main.tex", {})
+
+        if not b64_pdf_file:
+            error = "Error rendering the pdf with the nda url"
+            logger.info(error)
+            return False
+
+        thislink = Link.Link()
+        thislink = thislink.find_by_link(link_id)
+        temp_signed_count = thislink.signed_count
+        thislink.signed_count = int(temp_signed_count) + 1
+        thislink.status = "signed"
+        thislink.update()
+
+        # render and send the documents by email
+        render_and_send_docs(
+            user, signer_user, thisdoc, b64_pdf_file,
+            google_credentials_info, render_wp_only, render_nda_only)
+
+        return response
+
+    except Exception as e:
+        logger.info("Checking document information {}".format(str(e)))
+        return False
 
 
 def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text="", options ={}):
@@ -973,7 +1057,7 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
     doc_id = error = ""
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
-    #here we create a temporary directory to store the files while the function sends it by email
+    # Here we create a temporary directory to store the files while the function sends it by email
     with tempfile.TemporaryDirectory() as tmp_dir:
         try:
             if render_nda_only is False:
@@ -1167,18 +1251,19 @@ class RenderUrl(BaseHandler):
 
     def get(self):
         try:
-            repo_url = self.get_argument('url', "")
-            main_tex = self.get_argument('maintex', "main.tex")
+            link_id = self.get_argument('link_id', "")
             email = self.get_argument('email', "")
+            name = self.get_argument('name', "")
             email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
             email_body_text =self.get_argument('email_body_text', "")
             options = json.loads(self.get_argument('options', "{}"))
 
-            result = create_email_pdf(repo_url, email,email_body_html, main_tex,email_body_text, options)
-            if result:
-                self.write(json.dumps({"response":"done"}))
-            else:
+            result = render_send_by_link_id(link_id, email, name)
+            if not result:
                 self.write(json.dumps({"response": "Error"}))
+            else:
+                self.write(json.dumps(result))
+
 
 
         except Exception as e:
