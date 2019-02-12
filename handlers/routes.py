@@ -868,7 +868,9 @@ def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user,
         with open(wpci_file_path, 'wb') as temp_file:
             temp_file.write(wpci_result)
 
-        upload_to_s3(wpci_file_path, "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
+        uploaded_document_url = upload_to_s3(wpci_file_path, "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
+        signer_user.s3_doc_url = uploaded_document_url
+        signer_user.update()
         # this is the payload for the white paper file
         wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                                file_path=wpci_file_path,
@@ -948,8 +950,9 @@ def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachm
         # if the request returned a nda pdf file correctly then store it as pdf
         with open(nda_file_path, 'wb') as temp_file:
             temp_file.write(nda_result)
-        upload_to_s3(nda_file_path, "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
-
+        uploaded_document_url = upload_to_s3(nda_file_path, "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
+        signer_user.s3_contract_url = uploaded_document_url
+        signer_user.update()
         # this is the payload for the nda file
         nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                               file_path=nda_file_path,

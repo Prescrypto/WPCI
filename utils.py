@@ -36,9 +36,10 @@ logger = logging.getLogger('tornado-info')
 
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+# S3 PATHS
 FOLDER = "signed_files/"
 BUCKET = "wpci-signed-docs"
-S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/wpci_signed_docs/signed_files/{}.pdf"
+S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/"+BUCKET+"/"+FOLDER+"{}"
 
 def get_hash(strings_list, hashes_list=[]):
     payload = ""
@@ -157,8 +158,10 @@ def upload_to_s3(file_path, file_name):
         s3_connection = tinys3.Connection(conf.ACCESS_KEY, conf.SECRET_KEY, tls=True, default_bucket=BUCKET)
         with open(file_path, 'rb') as temp_file:
             s3_connection.upload(FOLDER+file_name, temp_file, public=False)
+        return S3_BASE_URL.format(file_name)
     except Exception as e:
         logger.info("Error uploading files: {}".format(str(e)))
+        return ""
 
 
 class CryptoTools(object):
