@@ -293,7 +293,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
 
 def render_send_by_link_id(link_id, email, name):
     """Download and render and then sign a document from google and send it by email"""
-    b64_pdf_file = None
+    b64_pdf_file = pdf_url = None
     render_nda_only = render_wp_only = False
     response = dict()
     try:
@@ -342,7 +342,7 @@ def render_send_by_link_id(link_id, email, name):
         if doc_type is not False and doc_type == "google":
             google_token = getattr(user, "google_token", False)
             if google_token is not False:
-                b64_pdf_file = render_pdf_base64_google(thisdoc.pdf_url, google_credentials_info)
+                b64_pdf_file = render_pdf_base64_google(pdf_url, google_credentials_info)
         else:
             b64_pdf_file = render_pdf_base64_latex(pdf_url, "main.tex", {})
 
@@ -1264,8 +1264,6 @@ class RenderUrl(BaseHandler):
             else:
                 self.write(json.dumps(result))
 
-
-
         except Exception as e:
             logger.info("error on clone"+ str(e))
             self.write(json.dumps({"response": "Error"}))
@@ -1300,6 +1298,27 @@ class PostWpNda(BaseHandler):
 
         except Exception as e:
             logger.info("error creating endpoint" + str(e))
+            self.write(json.dumps({"response": "Error"}))
+
+    def get(self, userid):
+        try:
+            link_id = self.get_argument('link_id', "")
+            email = self.get_argument('email', "")
+            name = self.get_argument('name', "")
+            email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
+            email_body_text = self.get_argument('email_body_text', "")
+            options = json.loads(self.get_argument('options', "{}"))
+
+            result = render_send_by_link_id(link_id, email, name)
+            if not result:
+                self.write(json.dumps({"response": "Error"}))
+            else:
+                self.write(json.dumps(result))
+
+
+
+        except Exception as e:
+            logger.info("error on clone" + str(e))
             self.write(json.dumps({"response": "Error"}))
 
 
