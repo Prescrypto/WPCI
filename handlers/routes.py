@@ -326,7 +326,8 @@ def render_send_by_link_id(link_id, email, name):
                 logger.info(error)
                 return False
             else:
-                file_name = "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id)
+                # The file name is composed by the email of the user, the document id and the timestamp of the creation
+                file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id, str(int(time.time())))
                 response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
                 pdf_url = thisdoc.wp_url
         else:
