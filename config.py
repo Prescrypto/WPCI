@@ -3,8 +3,8 @@ TIMEZONE = "America/Mexico_City"
 headers = {"Content-Type" :  "application/json" } #get the content in json format
 
 SECRET = os.environ.get('SECRET', '')
-MONGO_URI= os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/wpci_db')
-BASE_URL = os.environ.get('BASE_URL', 'http://localhost:7000')
+MONGO_URI= os.environ['MONGODB_URI']
+BASE_URL = os.environ['BASE_URL']
 REXCHAIN_URL = os.environ['REXCHAIN_URL']
 
 #SMTP VARIABLES
