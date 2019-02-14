@@ -32,7 +32,7 @@ import fitz
 #internal
 from handlers.apiBaseHandler import BaseHandler
 import config as conf
-from models import User, Document, Link, signRecord
+from models import User, Document, Link, signRecord, signerUser
 from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
 from handlers.WSHandler import *
@@ -68,13 +68,18 @@ DEFAULT_HTML_TEXT = \
             "<h3>Hello,</h3>\
             <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
             <p>Best regards,</p>"
-
 NOTIFICATION_HTML = \
             "<h3>Hi!</h3>\
             <p> {} has just downloaded the following document {}!</p>\
             <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
             <p>Keep crushing it!</p>\
             <p>WPCI Admin</p>"
+ATTACH_CONTENT_TYPE = 'octet-stream'
+
+# S3 PATHS
+FOLDER = "signed_files/"
+BUCKET = "wpci-signed-docs"
+S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/"+BUCKET+"/"+FOLDER+"{}"
 
 #SMTP VARIABLES
 SMTP_PASS = conf.SMTP_PASS
@@ -89,7 +94,6 @@ DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
 TIMEZONE = conf.TIMEZONE
 LANGUAGE = "en"
 AUTH_ERROR = {"error":"incorrect authentication"}
-
 
 # Axis for the pdf header
 AXIS_X = 15
@@ -159,6 +163,7 @@ def authenticate(password, username):
     else:
         return False
 
+
 def validate_token(access_token):
     """Verifies that an access-token is valid and
     meant for this app."""
@@ -174,8 +179,9 @@ def validate_token(access_token):
 
 
 def jwtauth(handler_class):
-    ''' Handle Tornado JWT Auth '''
+    """ Handle Tornado JWT Auth """
     userid = None
+
     def wrap_execute(handler_execute):
         def require_auth(handler, kwargs):
             auth = handler.request.headers.get('Authorization')
@@ -284,6 +290,87 @@ def store_petition(remote_url, petition_type, username='anonymous'):
 
     return result
 
+
+def render_send_by_link_id(link_id, email, name):
+    """Download and render and then sign a document from google and send it by email"""
+    b64_pdf_file = pdf_url = None
+    render_nda_only = render_wp_only = False
+    response = dict()
+    try:
+        doc_id = "_".join(link_id.split("_")[:-1])
+    except Exception as e:
+        logger.info("error obtaining link id")
+        return False
+
+    try:
+        doc = Document.Document()
+        thisdoc = doc.find_by_doc_id(doc_id)
+        user = User.User()
+        user = user.find_by_attr("org_id", thisdoc.org_id)
+
+        google_credentials_info = {'token': user.google_token,
+                                   'refresh_token': user.google_refresh_token,
+                                   'token_uri': conf.GOOGLE_TOKEN_URI,
+                                   'client_id': conf.GOOGLE_CLIENT_ID,
+                                   'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                                   'scopes': conf.SCOPES}
+
+        signer_user = signerUser.SignerUser(email, name)
+        # create the signer user so it can generate their keys
+        signer_user.create()
+
+        if thisdoc.nda_url is None or thisdoc.nda_url == "":
+            render_wp_only = True
+            if thisdoc.wp_url is None or thisdoc.wp_url == "":
+                error = "No valid Pdf url found"
+                logger.info(error)
+                return False
+            else:
+                # The file name is composed by the email of the user, the document id and the timestamp of the creation
+                file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id, str(int(time.time())))
+                response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
+                pdf_url = thisdoc.wp_url
+        else:
+            pdf_url = thisdoc.nda_url
+            file_name = "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id)
+            response.update({"s3_contract_url": S3_BASE_URL.format(file_name)})
+            if thisdoc.wp_url is None or thisdoc.wp_url == "":
+                render_nda_only = True
+                file_name = "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id)
+                response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
+
+        doc_type = getattr(thisdoc, "render", False)
+        if doc_type is not False and doc_type == "google":
+            google_token = getattr(user, "google_token", False)
+            if google_token is not False:
+                b64_pdf_file = render_pdf_base64_google(pdf_url, google_credentials_info)
+        else:
+            b64_pdf_file = render_pdf_base64_latex(pdf_url, "main.tex", {})
+
+        if not b64_pdf_file:
+            error = "Error rendering the pdf with the nda url"
+            logger.info(error)
+            return False
+
+        thislink = Link.Link()
+        thislink = thislink.find_by_link(link_id)
+        temp_signed_count = thislink.signed_count
+        thislink.signed_count = int(temp_signed_count) + 1
+        thislink.status = "signed"
+        thislink.update()
+
+        # render and send the documents by email
+        render_and_send_docs(
+            user, signer_user, thisdoc, b64_pdf_file,
+            google_credentials_info, render_wp_only, render_nda_only)
+
+        return response
+
+    except Exception as e:
+        logger.info("Checking document information {}".format(str(e)))
+        return False
+
+
 def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text="", options ={}):
     '''Clones a repo and renders the file received as main_tex and then signs it'''
     repo_name = ''
@@ -343,7 +430,7 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
 
             attachment = dict(file_type=ATTACH_CONTENT_TYPE, file_path=file_full_path, filename="documentation.pdf")
             attachments_list.append(attachment)
-            mymail.send(subject="Documentation",email_from=SMTP_EMAIL,emails_to=[user_email],emails_bcc=[conf.ADMIN_EMAIL],
+            mymail.send(subject="Documentation", email_from=SMTP_EMAIL,emails_to=[user_email],emails_bcc=[conf.ADMIN_EMAIL],
                         attachments_list=attachments_list, text_message=email_body_text,
                         html_message=email_body_html)
 
@@ -462,7 +549,7 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
             run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
             repo_name = os.listdir(tmpdir)[0]
             filesdir = os.path.join(tmpdir, repo_name)
-            if options != {}: #if there are special conditions to render
+            if options != {}: # if there are special conditions to render
                 # modify the original template:
                 template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
                 renderer_template = template.render(**options)
@@ -831,130 +918,158 @@ def create_dynamic_endpoint(document, userjson):
                 return doc_id
 
     except Exception as e:
-        logger.info("error creating doc"+ str(e))
+        logger.info("error creating doc" + str(e))
         return False
 
     logger.info("Information not valid creating doc")
     return False
 
-def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
-    render_wp_only, render_nda_only):
-    '''Renders the documents and if needed send it to cryptosign and finally send it by email'''
 
-    attachments_list = []
-    NDA_FILE_NAME = "contract.pdf"
+def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user, attachments_list):
     WPCI_FILE_NAME = "whitepaper.pdf"
-    doc_id = ""
-    org_logo = ""
-    tx_record = None
+    wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
     wpci_result = False
-    ATTACH_CONTENT_TYPE = 'octet-stream'
-    mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
+    error = ""
+    try:
+        doc_type = getattr(thisdoc, "render", False)
+        if doc_type is not False and doc_type == "google":
+            google_token = getattr(user, "google_token", False)
+            if google_token is not False:
+                wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(
+                    thisdoc.wp_url,
+                    google_credentials_info,
+                    signer_user.email)
+        else:
+            wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf(
+                thisdoc.wp_url,
+                signer_user.email,
+                thisdoc.main_tex)
 
-    '''here we create a temporary directory to store the files while the function sends it by email'''
-    with tempfile.TemporaryDirectory() as tmpdir:
+        if not wpci_result:
+            error = "Error rendering the document"
+            logger.info(error)
+            return attachments_list, error
 
-        if user.org_logo is None or user.org_logo == "_":
+        with open(wpci_file_path, 'wb') as temp_file:
+            temp_file.write(wpci_result)
+
+        uploaded_document_url = upload_to_s3(wpci_file_path, "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
+        signer_user.s3_doc_url = uploaded_document_url
+        signer_user.update()
+        # this is the payload for the white paper file
+        wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                               file_path=wpci_file_path,
+                               filename=WPCI_FILE_NAME)
+        attachments_list.append(wpci_attachment)
+
+    except Exception as e:
+        logger.info("error rendering document: {}".format(str(e)))
+        error = "error rendering document"
+    finally:
+        return attachments_list, error
+
+
+def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachments_list):
+    tx_id = error = ""
+    NDA_FILE_NAME = "contract.pdf"
+    tx_record = None
+    try:
+        if user.org_logo is None or user.org_logo == "":
             org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
         else:
             org_logo = user.org_logo
 
+        nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+
+        # send the payload to rexchain
+        rexchain_data = {
+            "timezone": TIMEZONE,
+            "signatures": [
+                {
+                    "hash": signer_user.sign,
+                    "email": signer_user.email,
+                    "name": signer_user.name
+                }
+            ],
+            "params": {
+                "locale": LANGUAGE,
+                "title": user.org_name + " contract",
+                "file_name": NDA_FILE_NAME
+            }
+        }
+        rexchain_result = post_to_rexchain(rexchain_data, user)
+
+        if rexchain_result and rexchain_result.get("hash_id", False):
+            tx_id = rexchain_result.get("hash_id")
+            tx_record = signRecord.SignRecord(tx_id)
+            tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id
+            tx_record.rx_is_valid = rexchain_result.get("is_valid")
+            tx_record.signer_user = signer_user.email
+            tx_record.create()
+
+        crypto_sign_payload = {
+            "pdf": nda_file_base64,
+            "timezone": TIMEZONE,
+            "signatures": [
+                {
+                    "hash": signer_user.sign,
+                    "email": signer_user.email,
+                    "name": signer_user.name
+                }],
+            "params": {
+                "locale": LANGUAGE,
+                "title": user.org_name + " contract",
+                "file_name": NDA_FILE_NAME,
+                "logo": org_logo,
+                "rexchain_url": conf.REXCHAIN_URL + "hash/" + tx_id
+            }
+        }
+
+        nda_result = get_nda(crypto_sign_payload, tx_record)
+
+        if not nda_result:
+            error = "Failed loading contract"
+            logger.info(error)
+            return attachments_list, error
+
+        # if the request returned a nda pdf file correctly then store it as pdf
+        with open(nda_file_path, 'wb') as temp_file:
+            temp_file.write(nda_result)
+        uploaded_document_url = upload_to_s3(nda_file_path, "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
+        signer_user.s3_contract_url = uploaded_document_url
+        signer_user.update()
+        # this is the payload for the nda file
+        nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                              file_path=nda_file_path,
+                              filename=NDA_FILE_NAME)
+        attachments_list.append(nda_attachment)
+
+    except Exception as e:
+        logger.info("Error rendering contract: {}".format(str(e)))
+    finally:
+        return attachments_list, error
+
+
+def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
+                         render_wp_only, render_nda_only):
+    """Renders the documents and if needed send it to cryptosign and finally send it by email"""
+
+    attachments_list = []
+    doc_id = error = ""
+    mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
+
+    # Here we create a temporary directory to store the files while the function sends it by email
+    with tempfile.TemporaryDirectory() as tmp_dir:
         try:
             if render_nda_only is False:
-                wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
-
-                doc_type = getattr(thisdoc, "render", False)
-                if doc_type is not False and doc_type == "google":
-                    google_token = getattr(user, "google_token", False)
-                    if google_token is not False:
-                        wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(
-                            thisdoc.wp_url,
-                            google_credentials_info,signer_user.email)
-                else:
-                    wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf(
-                        thisdoc.wp_url,
-                        signer_user.email,thisdoc.main_tex)
-
-                if wpci_result is False:
-                    error = "Error rendering the white paper"
-                    logger.info(error)
-                    return render_template('pdf_form.html', id=doc_id, error=error)
-
-                with open(wpci_file_path, 'wb') as ftemp:
-                    ftemp.write(wpci_result)
-
-                # this is the payload for the white paper file
-                wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
-                                       file_path=wpci_file_path,
-                                       filename=WPCI_FILE_NAME)
-                attachments_list.append(wpci_attachment)
-
+                attachments_list, error = render_document(tmp_dir, thisdoc, user, google_credentials_info,
+                                                          signer_user, attachments_list)
             if render_wp_only is False:
-                tx_id = ""
-                nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
+                attachments_list, error = render_contract(tmp_dir, nda_file_base64, thisdoc, user,
+                                                          signer_user, attachments_list)
 
-                # send the payload to rexchain
-                rexchain_data = {
-                    "timezone": TIMEZONE,
-                    "signatures": [
-                        {
-                            "hash": signer_user.sign,
-                            "email": signer_user.email,
-                            "name": signer_user.name
-                        }
-                    ],
-                    "params": {
-                        "locale": LANGUAGE,
-                        "title": user.org_name + " contract",
-                        "file_name": NDA_FILE_NAME
-                    }
-                }
-
-                rexchain_result = post_to_rexchain(rexchain_data, user)
-
-                if rexchain_result and rexchain_result.get("hash_id", False):
-                    tx_id = rexchain_result.get("hash_id")
-                    tx_record = signRecord.SignRecord(tx_id)
-                    tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id
-                    tx_record.rx_is_valid = rexchain_result.get("is_valid")
-                    tx_record.signer_user = signer_user.email
-                    tx_record.create()
-
-                crypto_sign_payload = {
-                    "pdf": nda_file_base64,
-                    "timezone": TIMEZONE,
-                    "signatures": [
-                        {
-                            "hash": signer_user.sign,
-                            "email": signer_user.email,
-                            "name": signer_user.name
-                        }],
-                    "params": {
-                        "locale": LANGUAGE,
-                        "title": user.org_name + " contract",
-                        "file_name": NDA_FILE_NAME,
-                        "logo": org_logo,
-                        "rexchain_url": conf.REXCHAIN_URL + "hash/" + tx_id
-                    }
-                }
-
-                nda_result = get_nda(crypto_sign_payload, tx_record)
-
-                if nda_result is not False:
-                    # if the request returned a nda pdf file correctly then store it as pdf
-                    with open(nda_file_path, 'wb') as ftemp:
-                        ftemp.write(nda_result)
-
-                else:
-                    error = "failed loading nda"
-                    logger.info(error)
-                    return render_template('pdf_form.html', id=doc_id, error=error)
-
-                # this is the payload for the nda file
-                nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
-                                      file_path=nda_file_path,
-                                      filename=NDA_FILE_NAME)
-                attachments_list.append(nda_attachment)
+            if error != "":
+                return render_template('pdf_form.html', id=doc_id, error=error)
 
             # send the email with the result attachments
             sender_format = "{} <{}>"
@@ -974,7 +1089,6 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
                         email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
                         emails_to=[user.org_email], html_message=html_text)
 
-
         except Exception as e:  # except from temp directory
             logger.info("sending the email with the documents " + str(e))
             error = "Error sending the email"
@@ -986,6 +1100,7 @@ class APINotFoundHandler(BaseHandler):
     def options(self, *args, **kwargs):
         self.set_status(200)
         self.finish()
+
 
 class AuthLoginHandler(BaseHandler):
     '''Receives the username and password to retrive a token'''
@@ -1007,9 +1122,9 @@ class AuthLoginHandler(BaseHandler):
         else:
             self.clear_cookie("user")
 
-class RegisterUserByEmail(BaseHandler):
-    '''Receives a payload with the user data and stores it on the bd'''
 
+class RegisterUserByEmail(BaseHandler):
+    """Receives a payload with the user data and stores it on the bd"""
 
     def post(self):
         VERIFICATION_HTML = "<h3>Hello,</h3>\
@@ -1045,6 +1160,7 @@ class RegisterUserByEmail(BaseHandler):
             logger.info("registering user: " + str(e))
             self.write(json.dumps({"error": "email"}))
 
+
 class RegisterUser(BaseHandler):
     '''receives a payload with the user data and stores it on the bd'''
     def post(self):
@@ -1058,6 +1174,7 @@ class RegisterUser(BaseHandler):
                 self.write(json.dumps({"response": "user already exists"}))
         except:
             self.write(json.dumps({"response": "error registering user"}))
+
 
 class WebhookConfirm(BaseHandler):
     '''Receives a payload with the user data and stores it on the bd'''
@@ -1080,6 +1197,7 @@ class WebhookConfirm(BaseHandler):
             error= "error getting response"
             logger.error(error)
             self.write_json({"error": error}, 500)
+
 
 @jwtauth
 class PostRepoHash(BaseHandler):
@@ -1134,23 +1252,23 @@ class RenderUrl(BaseHandler):
 
     def get(self):
         try:
-            repo_url = self.get_argument('url', "")
-            main_tex = self.get_argument('maintex', "main.tex")
+            link_id = self.get_argument('link_id', "")
             email = self.get_argument('email', "")
+            name = self.get_argument('name', "")
             email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
             email_body_text =self.get_argument('email_body_text', "")
             options = json.loads(self.get_argument('options', "{}"))
 
-            result = create_email_pdf(repo_url, email,email_body_html, main_tex,email_body_text, options)
-            if result:
-                self.write(json.dumps({"response":"done"}))
-            else:
+            result = render_send_by_link_id(link_id, email, name)
+            if not result:
                 self.write(json.dumps({"response": "Error"}))
-
+            else:
+                self.write(json.dumps(result))
 
         except Exception as e:
             logger.info("error on clone"+ str(e))
             self.write(json.dumps({"response": "Error"}))
+
 
 @jwtauth
 class PostWpNda(BaseHandler):
@@ -1181,6 +1299,27 @@ class PostWpNda(BaseHandler):
 
         except Exception as e:
             logger.info("error creating endpoint" + str(e))
+            self.write(json.dumps({"response": "Error"}))
+
+    def get(self, userid):
+        try:
+            link_id = self.get_argument('link_id', "")
+            email = self.get_argument('email', "")
+            name = self.get_argument('name', "")
+            email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
+            email_body_text = self.get_argument('email_body_text', "")
+            options = json.loads(self.get_argument('options', "{}"))
+
+            result = render_send_by_link_id(link_id, email, name)
+            if not result:
+                self.write(json.dumps({"response": "Error"}))
+            else:
+                self.write(json.dumps(result))
+
+
+
+        except Exception as e:
+            logger.info("error on clone" + str(e))
             self.write(json.dumps({"response": "Error"}))
 
 

@@ -35,7 +35,6 @@ class SignerUser(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-
     def find(self):
         '''finds a signer user by the email'''
         result = False
@@ -123,8 +122,11 @@ class SignerUser(object):
             collection = "SignerUser"
             mydb = ManageDB(collection)
             temp_user = self.__dict__
-
-            result = mydb.update({"email": self.email}, temp_user)
+            has_record_id = getattr(temp_user, "_id", False)
+            if has_record_id:
+                # Exclude the _id from the object since it's going to be updated
+                temp_user.pop("_id")
+            result = mydb.update({"sign": self.sign}, temp_user)
 
         except Exception as error:
             logger.info("updating email "+ str(error))
