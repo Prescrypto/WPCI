@@ -327,16 +327,16 @@ def render_send_by_link_id(link_id, email, name):
                 return False
             else:
                 # The file name is composed by the email of the user, the document id and the timestamp of the creation
-                file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id, str(int(time.time())))
+                file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
                 response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
                 pdf_url = thisdoc.wp_url
         else:
             pdf_url = thisdoc.nda_url
-            file_name = "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id)
+            file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
             response.update({"s3_contract_url": S3_BASE_URL.format(file_name)})
             if thisdoc.wp_url is None or thisdoc.wp_url == "":
                 render_nda_only = True
-                file_name = "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id)
+                file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
                 response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
 
         doc_type = getattr(thisdoc, "render", False)
