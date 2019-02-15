@@ -294,6 +294,7 @@ def store_petition(remote_url, petition_type, username='anonymous'):
 def render_send_by_link_id(link_id, email, name):
     """Download and render and then sign a document from google and send it by email"""
     b64_pdf_file = pdf_url = None
+    doc_file_name = contract_file_name = ""
     render_nda_only = render_wp_only = False
     response = dict()
     try:
@@ -318,6 +319,7 @@ def render_send_by_link_id(link_id, email, name):
         signer_user = signerUser.SignerUser(email, name)
         # create the signer user so it can generate their keys
         signer_user.create()
+        timestamp_now = str(int(time.time()))
 
         if thisdoc.nda_url is None or thisdoc.nda_url == "":
             render_wp_only = True
@@ -326,18 +328,19 @@ def render_send_by_link_id(link_id, email, name):
                 logger.info(error)
                 return False
             else:
-                # The file name is composed by the email of the user, the document id and the timestamp of the creation
-                file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
-                response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
+                # The file name is composed by the email of the user, the link id and the timestamp of the creation
+                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
+                response.update({"s3_doc_url": S3_BASE_URL.format(doc_file_name)})
                 pdf_url = thisdoc.wp_url
         else:
             pdf_url = thisdoc.nda_url
-            file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
-            response.update({"s3_contract_url": S3_BASE_URL.format(file_name)})
+            contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
+            response.update({"s3_contract_url": S3_BASE_URL.format(contract_file_name)})
             if thisdoc.wp_url is None or thisdoc.wp_url == "":
                 render_nda_only = True
-                file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
-                response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
+            else:
+                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
+                response.update({"s3_doc_url": S3_BASE_URL.format(doc_file_name)})
 
         doc_type = getattr(thisdoc, "render", False)
         if doc_type is not False and doc_type == "google":
@@ -362,7 +365,7 @@ def render_send_by_link_id(link_id, email, name):
         # render and send the documents by email
         render_and_send_docs(
             user, signer_user, thisdoc, b64_pdf_file,
-            google_credentials_info, render_wp_only, render_nda_only)
+            google_credentials_info, render_wp_only, render_nda_only, doc_file_name, contract_file_name)
 
         return response
 
@@ -925,7 +928,7 @@ def create_dynamic_endpoint(document, userjson):
     return False
 
 
-def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user, attachments_list):
+def render_document(tmpdir, thisdoc, doc_file_name, user, google_credentials_info, signer_user, attachments_list):
     WPCI_FILE_NAME = "whitepaper.pdf"
     wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
     wpci_result = False
@@ -953,8 +956,8 @@ def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user,
         with open(wpci_file_path, 'wb') as temp_file:
             temp_file.write(wpci_result)
 
-        uploaded_document_url = upload_to_s3(wpci_file_path, "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
-        signer_user.s3_doc_url = uploaded_document_url
+        uploaded_document_url = upload_to_s3(wpci_file_path, doc_file_name)
+        signer_user.s3_doc_url = S3_BASE_URL.format(doc_file_name)
         signer_user.update()
         # this is the payload for the white paper file
         wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
@@ -969,7 +972,7 @@ def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user,
         return attachments_list, error
 
 
-def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachments_list):
+def render_contract(tmpdir, nda_file_base64, contract_file_name, user, signer_user, attachments_list):
     tx_id = error = ""
     NDA_FILE_NAME = "contract.pdf"
     tx_record = None
@@ -1035,8 +1038,11 @@ def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachm
         # if the request returned a nda pdf file correctly then store it as pdf
         with open(nda_file_path, 'wb') as temp_file:
             temp_file.write(nda_result)
-        uploaded_document_url = upload_to_s3(nda_file_path, "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
-        signer_user.s3_contract_url = uploaded_document_url
+
+        uploaded_document_url = upload_to_s3(
+            nda_file_path, contract_file_name
+        )
+        signer_user.s3_contract_url = S3_BASE_URL.format(contract_file_name)
         signer_user.update()
         # this is the payload for the nda file
         nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
@@ -1051,7 +1057,7 @@ def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachm
 
 
 def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
-                         render_wp_only, render_nda_only):
+                         render_wp_only, render_nda_only, doc_file_name="", contract_file_name=""):
     """Renders the documents and if needed send it to cryptosign and finally send it by email"""
 
     attachments_list = []
@@ -1062,10 +1068,10 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
     with tempfile.TemporaryDirectory() as tmp_dir:
         try:
             if render_nda_only is False:
-                attachments_list, error = render_document(tmp_dir, thisdoc, user, google_credentials_info,
+                attachments_list, error = render_document(tmp_dir, thisdoc, doc_file_name, user, google_credentials_info,
                                                           signer_user, attachments_list)
             if render_wp_only is False:
-                attachments_list, error = render_contract(tmp_dir, nda_file_base64, thisdoc, user,
+                attachments_list, error = render_contract(tmp_dir, nda_file_base64, contract_file_name, user,
                                                           signer_user, attachments_list)
 
             if error != "":
