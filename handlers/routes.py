@@ -326,18 +326,24 @@ def render_send_by_link_id(link_id, email, name):
                 logger.info(error)
                 return False
             else:
-                # The file name is composed by the email of the user, the document id and the timestamp of the creation
+                # The file name is composed by the email of the user, the link id and the timestamp of the creation
                 file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
-                response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
+                signer_user.s3_doc_url = S3_BASE_URL.format(file_name)
+                response.update({"s3_doc_url": signer_user.s3_doc_url})
                 pdf_url = thisdoc.wp_url
         else:
             pdf_url = thisdoc.nda_url
             file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
-            response.update({"s3_contract_url": S3_BASE_URL.format(file_name)})
+            signer_user.s3_contract_url = S3_BASE_URL.format(file_name)
+            response.update({"s3_contract_url": signer_user.s3_contract_url})
             if thisdoc.wp_url is None or thisdoc.wp_url == "":
                 render_nda_only = True
                 file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
-                response.update({"s3_doc_url": S3_BASE_URL.format(file_name)})
+                signer_user.s3_contract_url = S3_BASE_URL.format(file_name)
+                response.update({"s3_doc_url": signer_user.s3_doc_url})
+
+        # We update the signer user information with the final s3 docs urls
+        signer_user.update()
 
         doc_type = getattr(thisdoc, "render", False)
         if doc_type is not False and doc_type == "google":
@@ -953,9 +959,9 @@ def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user,
         with open(wpci_file_path, 'wb') as temp_file:
             temp_file.write(wpci_result)
 
-        uploaded_document_url = upload_to_s3(wpci_file_path, "doc_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
-        signer_user.s3_doc_url = uploaded_document_url
-        signer_user.update()
+        # We get the file name from the full s3 document url
+        file_name = signer_user.s3_doc_url.split("/doc")
+        uploaded_document_url = upload_to_s3(wpci_file_path, "doc_{}".format(file_name[1]))
         # this is the payload for the white paper file
         wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                                file_path=wpci_file_path,
@@ -969,7 +975,7 @@ def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user,
         return attachments_list, error
 
 
-def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachments_list):
+def render_contract(tmpdir, nda_file_base64, thisdoc, link_id, user, signer_user, attachments_list):
     tx_id = error = ""
     NDA_FILE_NAME = "contract.pdf"
     tx_record = None
@@ -1035,9 +1041,11 @@ def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachm
         # if the request returned a nda pdf file correctly then store it as pdf
         with open(nda_file_path, 'wb') as temp_file:
             temp_file.write(nda_result)
-        uploaded_document_url = upload_to_s3(nda_file_path, "contract_{}_{}.pdf".format(signer_user.email, thisdoc.doc_id))
-        signer_user.s3_contract_url = uploaded_document_url
-        signer_user.update()
+        # We get the file name from the full s3 document url
+        file_name = signer_user.s3_contract_url.split("/contract")
+        uploaded_document_url = upload_to_s3(
+            nda_file_path, "contract_{}".format(file_name[1])
+        )
         # this is the payload for the nda file
         nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                               file_path=nda_file_path,
