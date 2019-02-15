@@ -319,6 +319,7 @@ def render_send_by_link_id(link_id, email, name):
         signer_user = signerUser.SignerUser(email, name)
         # create the signer user so it can generate their keys
         signer_user.create()
+        timestamp_now = str(int(time.time()))
 
         if thisdoc.nda_url is None or thisdoc.nda_url == "":
             render_wp_only = True
@@ -328,16 +329,17 @@ def render_send_by_link_id(link_id, email, name):
                 return False
             else:
                 # The file name is composed by the email of the user, the link id and the timestamp of the creation
-                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
+                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
                 response.update({"s3_doc_url": S3_BASE_URL.format(doc_file_name)})
                 pdf_url = thisdoc.wp_url
         else:
             pdf_url = thisdoc.nda_url
-            contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
+            contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
             response.update({"s3_contract_url": S3_BASE_URL.format(contract_file_name)})
             if thisdoc.wp_url is None or thisdoc.wp_url == "":
                 render_nda_only = True
-                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, str(int(time.time())))
+            else:
+                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
                 response.update({"s3_doc_url": S3_BASE_URL.format(doc_file_name)})
 
         doc_type = getattr(thisdoc, "render", False)
