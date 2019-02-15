@@ -78,12 +78,21 @@
     "GOOGLE_CLIENT_ID": {
 	  "required": true
       },
+    "REXCHAIN_URL": {
+	  "required": true
+      },
     "GOOGLE_PROJECT_ID": {
 	  "required": true
       },
     "GOOGLE_CLIENT_SECRET": {
 	  "required": true
-      },	
+      },
+    "AWS_ACCESS_KEY": {
+	  "required": true
+      },
+    "AWS_SECRET_KEY": {
+	  "required": true
+      },
     "GITHUB_OAUTH_URI": {
         "required": true
       }

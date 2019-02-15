@@ -13,7 +13,7 @@
 			<div class="row remove-padding">
 				<div id="login-card" class="col-lg-8 col-md-8 col-sm-8">
 					<div class="login-form">
-						<form action="{{ url_for('login') }}" method="post">
+						<form action="{{ url_for('login') }}" method="post" id="login-form">
 							<h1 style="font-weight:900;" class="login-h1">Please login</h1>
 							{% if error %}
 								<h3 style="font-weight:900;background-color:#ffcccc" class="login-h1"> {{ error }}</h3>
@@ -28,10 +28,13 @@
 										<label for="password">Password</label>
 										<input type="password" class="form-control" id="password" name="password" value="{{request.form.password }}" placeholder="Enter your Password" >
 									</div>
-									<button type="submit" class="btn btn-info" value="Login">Login</button>
+
 								</div>
 							</div>
 						</form>
+						<button onClick="document.getElementById('login-form').submit();"  type="submit" class="btn btn-info" value="Login">Login</button>
+						or
+						<button  onClick="location.href='{{ url_for('register') }}'" class="btn btn-info" value="register">Register</button>
 					</div>
 				</div>
 			</div>
