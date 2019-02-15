@@ -975,7 +975,7 @@ def render_document(tmpdir, thisdoc, user, google_credentials_info, signer_user,
         return attachments_list, error
 
 
-def render_contract(tmpdir, nda_file_base64, thisdoc, link_id, user, signer_user, attachments_list):
+def render_contract(tmpdir, nda_file_base64, thisdoc, user, signer_user, attachments_list):
     tx_id = error = ""
     NDA_FILE_NAME = "contract.pdf"
     tx_record = None
