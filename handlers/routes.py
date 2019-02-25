@@ -272,25 +272,6 @@ def authenticate_json(json_data):
         return False
 
 
-def store_petition(remote_url, petition_type, username='anonymous'):
-    '''This saves a model with the rendering information of the signer and the document'''
-    result = False
-    mydb = None
-    try:
-        collection = "Petitions"
-        mydb = ManageDB(collection)
-        result = mydb.insert_json({"username": username, "timestamp": time.time(), "remote_url": remote_url, "petition_type": petition_type})
-
-    except Exception as error:
-        logger.info("storing petition"+ str(error))
-
-    finally:
-        if mydb is not None:
-            mydb.close()
-
-    return result
-
-
 def render_send_by_link_id(link_id, email, name):
     """Download and render and then sign a document from google and send it by email"""
     b64_pdf_file = pdf_url = None
@@ -387,7 +368,6 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
         return("NO EMAIL TO HASH")
     user_email = user_email.strip()
 
-    store_petition(repo_url, RENDER_HASH, user_email)
     logger.info("No private access")
 
     watermark = "Document generated for: "+ user_email
@@ -465,7 +445,6 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     except:
         return ("Invalid GIT Repository URL")
 
-    store_petition(repo_url, RENDER_HASH, user.username)
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
     if user_email is None or user_email == "":
@@ -539,7 +518,6 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
     except:
         return("Invalid GIT Repository URL")
 
-    store_petition(repo_url, RENDER_HASH, user.username)
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
     if email is None or email == "":
@@ -678,7 +656,6 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
     if email is None or email== "":
         return False, False
 
-    store_petition(repo_url, RENDER_HASH, email)
     watermark = "Document generated for: "+ email
 
     clone = 'git clone ' + repo_url
@@ -737,7 +714,6 @@ def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):
     repo_name = ''
     file_full_path = ''
     new_main_tex = "main.tex"
-    store_petition(repo_url, RENDER_NOHASH, "")
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
@@ -972,10 +948,9 @@ def render_document(tmpdir, thisdoc, doc_file_name, user, google_credentials_inf
         return attachments_list, error
 
 
-def render_contract(tmpdir, nda_file_base64, contract_file_name, user, signer_user, attachments_list):
+def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_user, attachments_list):
     tx_id = error = ""
     NDA_FILE_NAME = "contract.pdf"
-    tx_record = None
     try:
         if user.org_logo is None or user.org_logo == "":
             org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
@@ -983,32 +958,7 @@ def render_contract(tmpdir, nda_file_base64, contract_file_name, user, signer_us
             org_logo = user.org_logo
 
         nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
-
-        # send the payload to rexchain
-        rexchain_data = {
-            "timezone": TIMEZONE,
-            "signatures": [
-                {
-                    "hash": signer_user.sign,
-                    "email": signer_user.email,
-                    "name": signer_user.name
-                }
-            ],
-            "params": {
-                "locale": LANGUAGE,
-                "title": user.org_name + " contract",
-                "file_name": NDA_FILE_NAME
-            }
-        }
-        rexchain_result = post_to_rexchain(rexchain_data, user)
-
-        if rexchain_result and rexchain_result.get("hash_id", False):
-            tx_id = rexchain_result.get("hash_id")
-            tx_record = signRecord.SignRecord(tx_id)
-            tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id
-            tx_record.rx_is_valid = rexchain_result.get("is_valid")
-            tx_record.signer_user = signer_user.email
-            tx_record.create()
+        sign_document_hash(signer_user, nda_file_base64)
 
         crypto_sign_payload = {
             "pdf": nda_file_base64,
@@ -1024,11 +974,10 @@ def render_contract(tmpdir, nda_file_base64, contract_file_name, user, signer_us
                 "title": user.org_name + " contract",
                 "file_name": NDA_FILE_NAME,
                 "logo": org_logo,
-                "rexchain_url": conf.REXCHAIN_URL + "hash/" + tx_id
             }
         }
 
-        nda_result = get_nda(crypto_sign_payload, tx_record)
+        nda_result = get_nda(crypto_sign_payload, signer_user)
 
         if not nda_result:
             error = "Failed loading contract"
@@ -1056,8 +1005,8 @@ def render_contract(tmpdir, nda_file_base64, contract_file_name, user, signer_us
         return attachments_list, error
 
 
-def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
-                         render_wp_only, render_nda_only, doc_file_name="", contract_file_name=""):
+def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info,
+                         render_wp_only, render_nda_only, signer_user, doc_file_name="", contract_file_name=""):
     """Renders the documents and if needed send it to cryptosign and finally send it by email"""
 
     attachments_list = []
@@ -1067,12 +1016,13 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
     # Here we create a temporary directory to store the files while the function sends it by email
     with tempfile.TemporaryDirectory() as tmp_dir:
         try:
+
             if render_nda_only is False:
                 attachments_list, error = render_document(tmp_dir, thisdoc, doc_file_name, user, google_credentials_info,
                                                           signer_user, attachments_list)
             if render_wp_only is False:
-                attachments_list, error = render_contract(tmp_dir, nda_file_base64, contract_file_name, user,
-                                                          signer_user, attachments_list)
+                attachments_list, error = render_contract(user, tmp_dir, nda_file_base64,
+                                                          contract_file_name, signer_user, attachments_list)
 
             if error != "":
                 return render_template('pdf_form.html', id=doc_id, error=error)
@@ -1099,6 +1049,7 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
             logger.info("sending the email with the documents " + str(e))
             error = "Error sending the email"
             return render_template('pdf_form.html', id=doc_id, error=error)
+
 
 @jwtauth
 class APINotFoundHandler(BaseHandler):

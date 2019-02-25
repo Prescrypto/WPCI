@@ -945,21 +945,21 @@ def show_pdf(id):
         try:
             signer_user = signerUser.SignerUser(request.form.get("signer_email"), request.form.get("signer_name"))
 
-            if signer_user.email is None or signer_user.email == "":
+            if not signer_user.email:
                 error = "Error, you must enter a valid email"
                 logger.info(error)
                 return render_template('pdf_form.html', id=doc_id, error=error)
-            if signer_user.name is None or signer_user.name == "":
+            if not signer_user.name:
                 error = "Error, you must enter a valid Name"
                 logger.info(error)
                 return render_template('pdf_form.html', id=doc_id, error=error)
 
-            #create the signer user so it can generate their keys
-            signer_user.create()
-
             nda_file_base64 = str(request.form.get("nda_file"))
             doc = Document.Document()
             thisdoc = doc.find_by_doc_id(doc_id)
+
+            # create the signer user so it can generate their keys
+            signer_user.create()
 
             if thisdoc is not None and thisdoc.org_id is not None:
                 if thisdoc.nda_url is None or thisdoc.nda_url == "" :
@@ -983,9 +983,8 @@ def show_pdf(id):
                 doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
                 contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
                 # render and send the documents by email
-                render_and_send_docs(
-                    user, signer_user, thisdoc, nda_file_base64,
-                    google_credentials_info, render_wp_only, render_nda_only, doc_file_name, contract_file_name)
+                render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
+                                     render_nda_only, signer_user, doc_file_name, contract_file_name)
 
                 message = "successfully sent your files "
 

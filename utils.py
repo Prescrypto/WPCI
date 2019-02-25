@@ -41,6 +41,7 @@ FOLDER = "signed_files/"
 BUCKET = "wpci-signed-docs"
 S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/"+BUCKET+"/"+FOLDER+"{}"
 
+
 def get_hash(strings_list, hashes_list=[]):
     payload = ""
     hashed_payload = None
@@ -53,12 +54,15 @@ def get_hash(strings_list, hashes_list=[]):
 
     return hashed_payload
 
+
 def is_valid_email(email):
-  return bool(re.search(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,3}$", email))
+    return bool(re.search(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,3}$", email))
+
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def create_jira_issue(summary, description, comment="", project_key="PROP", task_type="Task"):
     # Method to create JIRA issue
@@ -80,7 +84,8 @@ def create_jira_issue(summary, description, comment="", project_key="PROP", task
             authed_jira.add_comment(new_issue, comment)
 
     except Exception as e:
-        logger.error( "Error al Crear Issue en JIRA : %s." % e)
+        logger.error("Error al Crear Issue en JIRA : %s." % e)
+
 
 def credentials_to_dict(credentials):
   return {'token': credentials.token,
@@ -89,6 +94,7 @@ def credentials_to_dict(credentials):
           'client_id': credentials.client_id,
           'client_secret': credentials.client_secret,
           'scopes': credentials.scopes}
+
 
 def get_id_from_url(pdf_url):
     pdf_id = ""
@@ -103,6 +109,7 @@ def get_id_from_url(pdf_url):
         return False
 
     return pdf_id
+
 
 def generate_credentials():
     loader = Loader("static/auth")
@@ -162,6 +169,25 @@ def upload_to_s3(file_path, file_name):
     except Exception as e:
         logger.info("Error uploading files: {}".format(str(e)))
         return ""
+
+
+def sign_document_hash(signer_user, document_bytes):
+    """Use the signer document hash to create a signature for it"""
+    try:
+        crypto_tool = CryptoTools()
+        document_hash = get_hash(document_bytes, hashes_list=[])
+
+        signer_user.sign = crypto_tool.sign(
+            document_hash.encode('utf-8'),
+            crypto_tool.import_RSA_string(signer_user.priv_key)
+        ).decode('utf-8')
+
+        signer_user.update()
+
+        return signer_user
+    except Exception as e:
+        logger.info("ERROR creating document hash signature: {}".format(str(e)))
+        return False
 
 
 class CryptoTools(object):
