@@ -952,6 +952,7 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
     tx_id = error = ""
     NDA_FILE_NAME = "contract.pdf"
     try:
+        crypto_tool = CryptoTools()
         if user.org_logo is None or user.org_logo == "":
             org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
         else:
@@ -959,16 +960,17 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
 
         nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
         sign_document_hash(signer_user, nda_file_base64)
-
+        rsa_object = crypto_tool.import_RSA_string(signer_user.priv_key)
+        pub_key_hex = crypto_tool.savify_key(rsa_object.publickey()).decode("utf-8")
         crypto_sign_payload = {
             "pdf": nda_file_base64,
             "timezone": TIMEZONE,
-            "public_key": signer_user.pub_key,
             "signatures": [
                 {
                     "hash": signer_user.sign,
                     "email": signer_user.email,
-                    "name": signer_user.name
+                    "name": signer_user.name,
+                    "public_key": pub_key_hex
                 }],
             "params": {
                 "locale": LANGUAGE,
