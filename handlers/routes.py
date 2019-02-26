@@ -346,7 +346,7 @@ def render_send_by_link_id(link_id, email, name):
         # render and send the documents by email
         render_and_send_docs(
             user, signer_user, thisdoc, b64_pdf_file,
-            google_credentials_info, render_wp_only, render_nda_only, doc_file_name, contract_file_name)
+            google_credentials_info, render_wp_only, render_nda_only, link_id, doc_file_name, contract_file_name)
 
         return response
 
@@ -948,7 +948,7 @@ def render_document(tmpdir, thisdoc, doc_file_name, user, google_credentials_inf
         return attachments_list, error
 
 
-def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_user, attachments_list):
+def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_user, attachments_list, link_id):
     tx_id = error = ""
     NDA_FILE_NAME = "contract.pdf"
     try:
@@ -963,6 +963,7 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
         crypto_sign_payload = {
             "pdf": nda_file_base64,
             "timezone": TIMEZONE,
+            "public_key": signer_user.pub_key,
             "signatures": [
                 {
                     "hash": signer_user.sign,
@@ -977,7 +978,7 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
             }
         }
 
-        nda_result = get_nda(crypto_sign_payload, signer_user)
+        nda_result, sign_record = get_nda(crypto_sign_payload, signer_user)
 
         if not nda_result:
             error = "Failed loading contract"
@@ -991,8 +992,9 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
         uploaded_document_url = upload_to_s3(
             nda_file_path, contract_file_name
         )
-        signer_user.s3_contract_url = S3_BASE_URL.format(contract_file_name)
-        signer_user.update()
+        sign_record.s3_contract_url = S3_BASE_URL.format(contract_file_name)
+        sign_record.link_id = link_id
+        sign_record.update()
         # this is the payload for the nda file
         nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                               file_path=nda_file_path,
@@ -1006,7 +1008,7 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
 
 
 def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info,
-                         render_wp_only, render_nda_only, signer_user, doc_file_name="", contract_file_name=""):
+                         render_wp_only, render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name=""):
     """Renders the documents and if needed send it to cryptosign and finally send it by email"""
 
     attachments_list = []
@@ -1022,7 +1024,7 @@ def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info
                                                           signer_user, attachments_list)
             if render_wp_only is False:
                 attachments_list, error = render_contract(user, tmp_dir, nda_file_base64,
-                                                          contract_file_name, signer_user, attachments_list)
+                                                          contract_file_name, signer_user, attachments_list, link_id)
 
             if error != "":
                 return render_template('pdf_form.html', id=doc_id, error=error)

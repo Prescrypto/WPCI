@@ -984,7 +984,7 @@ def show_pdf(id):
                 contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
                 # render and send the documents by email
                 render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
-                                     render_nda_only, signer_user, doc_file_name, contract_file_name)
+                                     render_nda_only, signer_user, id, doc_file_name, contract_file_name)
 
                 message = "successfully sent your files "
 
