@@ -95,6 +95,29 @@ github = oauth.remote_app(
     authorize_url= conf.GITHUB_OAUTH_URI +'authorize'
 )
 
+
+@app.template_filter()
+def get_s3_presigned_url(file_url):
+    """Upload a file to the default S3 bucket"""
+    try:
+        file_name = file_url.split("/")[5]
+        # Get the service client.
+        s3 = boto3.client('s3')
+        # Generate the URL to get 'key-name' from 'bucket-name'
+        document_url = s3.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={
+                'Bucket': BUCKET,
+                'Key': '{}/{}'.format(FOLDER, file_name),
+            },
+            ExpiresIn=3600
+        )
+        return document_url
+    except Exception as e:
+        logger.info("Error getting presigned url: {}".format(str(e)))
+        return "No Valid Url"
+
+
 @app.template_filter('strftime')
 def _jinja2_filter_datetime(date, fmt=None):
     date = datetime.datetime.fromtimestamp(int(date))
@@ -371,8 +394,9 @@ def view_docs():
         document_list = docs
         doc_len = len(document_list)
 
+    return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len,
+                           base_url = PDF_URL, success=success)
 
-    return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len, base_url = PDF_URL, success=success)
 
 @app.route(BASE_PATH+'view_links/<doc_id>', methods=['GET', 'POST'])
 def view_links(doc_id):
@@ -418,7 +442,10 @@ def view_sign_records(link_id):
     if request.method == 'GET' or request.method == 'POST':
         sign_record = signRecord.SignRecord()
         sign_records = sign_record.find_by_attr("link_id", link_id)
-        records_len = len(sign_records)
+        if not sign_records:
+            records_len = 0
+        else:
+            records_len = len(sign_records)
 
     return render_template('view_sign_records.html', error=error, sign_records=sign_records,
                            records_len=records_len, base_url=PDF_URL, link_id=link_id)
