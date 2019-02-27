@@ -54,7 +54,7 @@ def get_nda(payload, signer_user):
                 if not json_result.get("pdf"):
                     logger.info("No pdf resulting from cryptosign")
                 else:
-                    tx_id = json_result.get("hash")
+                    tx_id = json_result.get("tx_id")
                     tx_record = signRecord.SignRecord(tx_id)
                     tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id
                     tx_record.rx_is_valid = True
@@ -68,5 +68,6 @@ def get_nda(payload, signer_user):
 
     except Exception as e:
         logger.info("requesting cryptosign pdf "+ str(e))
+        logger.info("Error getting the PDF: {}".format(json_result))
 
     return False, False

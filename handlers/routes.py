@@ -966,9 +966,9 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
         crypto_sign_payload = {
             "pdf": nda_file_base64,
             "timezone": TIMEZONE,
-            "signatures": [
+            "signature": signer_user.sign,
+            "signatories": [
                 {
-                    "hash": signer_user.sign,
                     "email": signer_user.email,
                     "name": signer_user.name,
                     "public_key": pub_key_hex
