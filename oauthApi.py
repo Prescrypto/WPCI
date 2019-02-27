@@ -27,7 +27,7 @@ import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import *
 from handlers.emailHandler import Mailer
-from models import User, Document,signerUser,signRecord
+from models import User, Document,signerUser, signRecord
 from handlers.WSHandler import *
 from utils import *
 
@@ -396,8 +396,32 @@ def view_links(doc_id):
         link_list = links
         link_len = len(link_list)
 
-
     return render_template('view_links.html', error=error, link_list = link_list, link_len=link_len, base_url = PDF_URL, doc_id=doc_id)
+
+
+@app.route(BASE_PATH+'view_sign_records/<link_id>', methods=['GET', 'POST'])
+def view_sign_records(link_id):
+    document_list = []
+    error = ''
+    username = ''
+    success = ''
+    doc_len = 0
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
+    if request.method == 'GET' or request.method == 'POST':
+        sign_record = signRecord.SignRecord()
+        sign_records = sign_record.find_by_attr("link_id", link_id)
+        records_len = len(sign_records)
+
+    return render_template('view_sign_records.html', error=error, sign_records=sign_records,
+                           records_len=records_len, base_url=PDF_URL, link_id=link_id)
 
 
 @app.route(BASE_PATH+'google_latex_docs', methods=['GET', 'POST'])

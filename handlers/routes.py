@@ -962,6 +962,7 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
         sign_document_hash(signer_user, nda_file_base64)
         rsa_object = crypto_tool.import_RSA_string(signer_user.priv_key)
         pub_key_hex = crypto_tool.savify_key(rsa_object.publickey()).decode("utf-8")
+
         crypto_sign_payload = {
             "pdf": nda_file_base64,
             "timezone": TIMEZONE,

@@ -60,8 +60,7 @@ class SignRecord(object):
             mydb = ManageDB(collection)
             docs = mydb.select(key, value)
             if len(docs) > 0:
-                self.__dict__ = docs[0]
-                return self
+                result = docs
             else:
                 logger.info("sign record not found")
 

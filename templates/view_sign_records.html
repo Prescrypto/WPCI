@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block content %}
+
+  <form action="{{ url_for('index') }}" method="get" >
+    {% if error %}
+      <div class="uk-margin uk-text-center">
+        <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">
+          {{ error }}
+        </h3>
+      </div>
+    {% endif %}
+    {% if records_len > 0 %}
+      <h2 style="font-weight:700;padding:20px;margin:40px;margin-top:60px;text-align:center;" class="login-h1">Signatures made on the document: {{ link_id }}</h2>
+      <table class="uk-table uk-table-responsive uk-table-striped uk-table-small" id="document_table" >
+        <caption></caption>
+        <thead>
+          <tr>
+            <th style="text-align:center">Audit Url</th>
+            <th style="text-align:center">S3 Url</th>
+            <th style="text-align:center">Signer</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in sign_records %}
+            <tr>
+              <td>
+                <p class="td_overflow">
+                  <span class="a_overflow ellipsis"><a href="{{ item.crypto_audit_url  }}">{{ item.crypto_audit_url }}</a></span>
+                  <span class="a_overflow indent"><a href="{{ item.crypto_audit_url  }}">{{ item.crypto_audit_url }}</a></span>
+                </p>
+              </td>
+              <td>
+                <p class="td_overflow">
+                  <span class="a_overflow ellipsis"><a href="{{ item.s3_contract_url  }}">{{ item.s3_contract_url }}</a></span>
+                  <span class="a_overflow indent"><a href="{{ item.s3_contract_url  }}">{{ item.s3_contract_url }}</a></span>
+                </p>
+              </td>
+              <td align="center">{{ item.signer_user }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    {% else %}
+      <div class="uk-margin uk-text-center">
+        <h1 style="font-weight:900;" class="login-h1">There are no links created yet</h1>
+      </div>
+    {% endif %}
+    <div class="uk-margin uk-text-center">
+      <button  onClick="history.go(-1)" class="btn btn-info uk-text-center" value="back">Go back</button>
+    </div>
+
+  </form>
+
+
+{% endblock %}
