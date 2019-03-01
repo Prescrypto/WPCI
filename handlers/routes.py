@@ -319,7 +319,7 @@ def render_send_by_link_id(link_id, email, name):
         else:
             pdf_url = thisdoc.nda_url
             contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
-            response.update({"s3_contract_url": url_for("view_sign_records", link_id=link_id)})
+            response.update({"s3_contract_url": "{}{}view_sign_records/{}".format(conf.BASE_URL, BASE_PATH, link_id)})
             if thisdoc.wp_url is None or thisdoc.wp_url == "":
                 render_nda_only = True
             else:
