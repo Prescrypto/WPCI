@@ -347,9 +347,8 @@ def render_send_by_link_id(link_id, email, name):
         thislink.update()
 
         # render and send the documents by email
-        render_and_send_docs(
-            user, signer_user, thisdoc, b64_pdf_file,
-            google_credentials_info, render_wp_only, render_nda_only, link_id, doc_file_name, contract_file_name)
+        render_and_send_docs(user, thisdoc, b64_pdf_file, google_credentials_info, render_wp_only, render_nda_only,
+                             signer_user, link_id, doc_file_name, contract_file_name)
 
         return response
 
@@ -1013,8 +1012,8 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
         return attachments_list, error
 
 
-def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info,
-                         render_wp_only, render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name=""):
+def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
+                         render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name=""):
     """Renders the documents and if needed send it to cryptosign and finally send it by email"""
 
     attachments_list = []
