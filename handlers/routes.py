@@ -56,9 +56,6 @@ latex_jinja_env = jinja2.Environment(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tornado-info')
 
-# Flask app
-app = Flask(__name__)
-
 SECRET = conf.SECRET
 RENDER_EMAIL = "render_and_send_by_email"
 RENDER_HASH = "render_sethash_and_download"
@@ -1303,7 +1300,6 @@ class Links(BaseHandler):
                 #Replace the Link id for the full link url
                 result["link"] = conf.BASE_URL +BASE_PATH+"pdf/" + result.pop("link")
 
-                print(result)
                 self.write_json(result, 200)
             else:
                 self.write(json.dumps({"doc_status": "failed"}))
