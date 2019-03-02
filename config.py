@@ -57,5 +57,5 @@ NUM_RETRIES = 5
 CHUNKSIZE = 2 * 1024 * 1024
 
 #AWS KEYS
-ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
-SECRET_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID'] # This is the exact name of the variables for AWS Authentication
+SECRET_KEY = os.environ['AWS_SECRET_ACCESS_KEY'] # This is the exact name of the variables for AWS Authentication
