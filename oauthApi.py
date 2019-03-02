@@ -110,7 +110,7 @@ def get_s3_presigned_url(file_url):
                 'Bucket': BUCKET,
                 'Key': '{}/{}'.format(FOLDER, file_name),
             },
-            ExpiresIn=3600
+            ExpiresIn=ONE_HOUR
         )
         return document_url
     except Exception as e:
