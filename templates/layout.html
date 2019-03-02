@@ -13,6 +13,34 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 		{% block cssblock %}
+
+			<style>
+
+				.td_overflow{
+				  width: 500px;
+				  padding: 10px 10px;
+				  white-space:nowrap;
+				}
+
+				.a_overflow {
+				  white-space: nowrap;
+				  overflow: hidden;
+				  vertical-align:middle;
+				}
+
+				.ellipsis {
+				  display: inline-block;
+				  width: calc(50% + 1.2em);
+				  text-overflow: ellipsis;
+				}
+
+				.indent {
+				  display:inline-flex;
+				  width: calc(50% - 1.2em);
+				  justify-content:flex-end;
+				}
+
+		  </style>
 		{% endblock cssblock %}
 
 	</head>

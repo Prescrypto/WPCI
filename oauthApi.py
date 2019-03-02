@@ -27,7 +27,7 @@ import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import *
 from handlers.emailHandler import Mailer
-from models import User, Document,signerUser,signRecord
+from models import User, Document,signerUser, signRecord
 from handlers.WSHandler import *
 from utils import *
 
@@ -94,6 +94,29 @@ github = oauth.remote_app(
     access_token_url= conf.GITHUB_OAUTH_URI +'access_token',
     authorize_url= conf.GITHUB_OAUTH_URI +'authorize'
 )
+
+
+@app.template_filter()
+def get_s3_presigned_url(file_url):
+    """Upload a file to the default S3 bucket"""
+    try:
+        file_name = file_url.split("/")[5]
+        # Get the service client.
+        s3 = boto3.client('s3')
+        # Generate the URL to get 'key-name' from 'bucket-name'
+        document_url = s3.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={
+                'Bucket': BUCKET,
+                'Key': '{}/{}'.format(FOLDER, file_name),
+            },
+            ExpiresIn=ONE_HOUR
+        )
+        return document_url
+    except Exception as e:
+        logger.info("Error getting presigned url: {}".format(str(e)))
+        return "No Valid Url"
+
 
 @app.template_filter('strftime')
 def _jinja2_filter_datetime(date, fmt=None):
@@ -371,8 +394,9 @@ def view_docs():
         document_list = docs
         doc_len = len(document_list)
 
+    return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len,
+                           base_url = PDF_URL, success=success)
 
-    return render_template('view_docs.html', error=error, document_list = document_list, doc_len=doc_len, base_url = PDF_URL, success=success)
 
 @app.route(BASE_PATH+'view_links/<doc_id>', methods=['GET', 'POST'])
 def view_links(doc_id):
@@ -396,8 +420,35 @@ def view_links(doc_id):
         link_list = links
         link_len = len(link_list)
 
-
     return render_template('view_links.html', error=error, link_list = link_list, link_len=link_len, base_url = PDF_URL, doc_id=doc_id)
+
+
+@app.route(BASE_PATH+'view_sign_records/<link_id>', methods=['GET', 'POST'])
+def view_sign_records(link_id):
+    document_list = []
+    error = ''
+    username = ''
+    success = ''
+    doc_len = 0
+    user = User.User()
+    if 'user' in session:
+        username = session['user']['username']
+        # we get all the user data by the username
+        user = user.find_by_attr("username", username)
+    else:
+        logger.info("The user is not logued in")
+        return redirect(url_for('login'))
+
+    if request.method == 'GET' or request.method == 'POST':
+        sign_record = signRecord.SignRecord()
+        sign_records = sign_record.find_by_attr("link_id", link_id)
+        if not sign_records:
+            records_len = 0
+        else:
+            records_len = len(sign_records)
+
+    return render_template('view_sign_records.html', error=error, sign_records=sign_records,
+                           records_len=records_len, base_url=PDF_URL, link_id=link_id)
 
 
 @app.route(BASE_PATH+'google_latex_docs', methods=['GET', 'POST'])
@@ -945,21 +996,21 @@ def show_pdf(id):
         try:
             signer_user = signerUser.SignerUser(request.form.get("signer_email"), request.form.get("signer_name"))
 
-            if signer_user.email is None or signer_user.email == "":
+            if not signer_user.email:
                 error = "Error, you must enter a valid email"
                 logger.info(error)
                 return render_template('pdf_form.html', id=doc_id, error=error)
-            if signer_user.name is None or signer_user.name == "":
+            if not signer_user.name:
                 error = "Error, you must enter a valid Name"
                 logger.info(error)
                 return render_template('pdf_form.html', id=doc_id, error=error)
 
-            #create the signer user so it can generate their keys
-            signer_user.create()
-
             nda_file_base64 = str(request.form.get("nda_file"))
             doc = Document.Document()
             thisdoc = doc.find_by_doc_id(doc_id)
+
+            # create the signer user so it can generate their keys
+            signer_user.create()
 
             if thisdoc is not None and thisdoc.org_id is not None:
                 if thisdoc.nda_url is None or thisdoc.nda_url == "" :
@@ -983,9 +1034,8 @@ def show_pdf(id):
                 doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
                 contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
                 # render and send the documents by email
-                render_and_send_docs(
-                    user, signer_user, thisdoc, nda_file_base64,
-                    google_credentials_info, render_wp_only, render_nda_only, doc_file_name, contract_file_name)
+                render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
+                                     render_nda_only, signer_user, id, doc_file_name, contract_file_name)
 
                 message = "successfully sent your files "
 

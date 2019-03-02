@@ -57,6 +57,7 @@ uritemplate==3.0.0
 jira==2.0.0
 click==6.7
 tinys3==0.1.12
+boto3==1.9.104
 
 #github oauth
 oauth2client==4.1.3

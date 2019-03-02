@@ -173,7 +173,7 @@ class User(object):
         try:
             collection = "User"
             mydb = ManageDB(collection)
-            temp_user= self.__dict__
+            temp_user = self.__dict__.copy()
             if not update_password:
                 logger.info("no password update")
                 temp_user.pop("password")
