@@ -9,7 +9,7 @@ import base64
 import random 
 import _pickle as cPickle
 from collections import OrderedDict
-
+import boto3
 
 #Cryptographic library
 import rsa
@@ -40,6 +40,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 FOLDER = "signed_files/"
 BUCKET = "wpci-signed-docs"
 S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/"+BUCKET+"/"+FOLDER+"{}"
+ONE_HOUR = 3600
 
 
 def get_hash(strings_list, hashes_list=[]):

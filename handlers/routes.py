@@ -120,7 +120,7 @@ def encode_auth_token(user):
     """
     try:
         payload = {
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=3600),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=ONE_HOUR),
             "iat": datetime.datetime.utcnow(),
             "username": user.username,
             "password": user.password
@@ -316,7 +316,7 @@ def render_send_by_link_id(link_id, email, name):
         else:
             pdf_url = thisdoc.nda_url
             contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
-            response.update({"s3_contract_url": S3_BASE_URL.format(contract_file_name)})
+            response.update({"s3_contract_url": "{}{}view_sign_records/{}".format(conf.BASE_URL, BASE_PATH, link_id)})
             if thisdoc.wp_url is None or thisdoc.wp_url == "":
                 render_nda_only = True
             else:
@@ -344,9 +344,8 @@ def render_send_by_link_id(link_id, email, name):
         thislink.update()
 
         # render and send the documents by email
-        render_and_send_docs(
-            user, signer_user, thisdoc, b64_pdf_file,
-            google_credentials_info, render_wp_only, render_nda_only, link_id, doc_file_name, contract_file_name)
+        render_and_send_docs(user, thisdoc, b64_pdf_file, google_credentials_info, render_wp_only, render_nda_only,
+                             signer_user, link_id, doc_file_name, contract_file_name)
 
         return response
 
@@ -1010,8 +1009,8 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
         return attachments_list, error
 
 
-def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info,
-                         render_wp_only, render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name=""):
+def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
+                         render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name=""):
     """Renders the documents and if needed send it to cryptosign and finally send it by email"""
 
     attachments_list = []
@@ -1301,7 +1300,6 @@ class Links(BaseHandler):
                 #Replace the Link id for the full link url
                 result["link"] = conf.BASE_URL +BASE_PATH+"pdf/" + result.pop("link")
 
-                print(result)
                 self.write_json(result, 200)
             else:
                 self.write(json.dumps({"doc_status": "failed"}))

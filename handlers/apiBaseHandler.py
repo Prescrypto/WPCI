@@ -34,7 +34,6 @@ class BaseHandler(RequestHandler):
         self.finish(json.dumps({"response": "NOT FOUND"}))
 
     def options(self, *args, **kwargs):
-        print ("in options")
         self.set_status(200)
         self.finish()
         #raise HTTPError(**status_0)

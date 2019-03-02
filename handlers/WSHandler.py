@@ -39,7 +39,7 @@ def get_nda(payload, signer_user):
     }
 
     auth = HTTPBasicAuth(conf.CRYPTO_ID, conf.CRYPTO_SECRET)
-
+    sign_result = ""
     try:
         token_result = requests.post(url=URL+TOKEN_URL, data=jsondata, headers=tokenheaders, auth=auth)
         token_json_result = json.loads(token_result.content)
@@ -64,10 +64,10 @@ def get_nda(payload, signer_user):
                     pdfbytes = base64.b64decode(json_result.get("pdf"))
                     return pdfbytes, tx_record
             else:
-                logger.info("Error getting the PDF: {}".format(json_result))
+                logger.info("Error getting the PDF: {}".format(sign_result.content))
 
     except Exception as e:
         logger.info("requesting cryptosign pdf "+ str(e))
-        logger.info("Error getting the PDF: {}".format(json_result))
+        logger.info("Error getting the PDF: {}".format(sign_result.content))
 
     return False, False

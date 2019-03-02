@@ -31,8 +31,9 @@
               </td>
               <td>
                 <p class="td_overflow">
-                  <span class="a_overflow ellipsis"><a href="{{ item.s3_contract_url  }}">{{ item.s3_contract_url }}</a></span>
-                  <span class="a_overflow indent"><a href="{{ item.s3_contract_url  }}">{{ item.s3_contract_url }}</a></span>
+                  {% set temp_file_url = item.s3_contract_url|get_s3_presigned_url %}
+                  <span class="a_overflow ellipsis"><a href="{{ temp_file_url }}">{{ temp_file_url}}</a></span>
+                  <span class="a_overflow indent"><a href="{{ temp_file_url }}">{{ temp_file_url }}</a></span>
                 </p>
               </td>
               <td align="center">{{ item.signer_user }}</td>
@@ -43,7 +44,7 @@
 
     {% else %}
       <div class="uk-margin uk-text-center">
-        <h1 style="font-weight:900;" class="login-h1">There are no links created yet</h1>
+        <h1 style="font-weight:900;" class="login-h1">There are no signed documents yet</h1>
       </div>
     {% endif %}
     <div class="uk-margin uk-text-center">
