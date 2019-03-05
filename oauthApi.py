@@ -400,11 +400,9 @@ def view_docs():
 
 @app.route(BASE_PATH+'view_links/<doc_id>', methods=['GET', 'POST'])
 def view_links(doc_id):
-    document_list = []
+    link_list = []
     error = ''
-    username = ''
-    success = ''
-    doc_len = 0
+    link_len = 0
     user = User.User()
     if 'user' in session:
         username = session['user']['username']
@@ -414,13 +412,24 @@ def view_links(doc_id):
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-    if request.method == 'GET' or request.method == 'POST':
+    if request.method == 'POST':
+        result = create_link(doc_id)
+        if not result:
+            error = "There was a problem creating the new link"
+        else:
+            links = Link.Link(doc_id)
+            links = links.find_by_attr("doc_id", doc_id)
+            link_list = links
+            link_len = len(link_list)
+
+    if request.method == 'GET':
         links = Link.Link(doc_id)
         links = links.find_by_attr("doc_id", doc_id)
         link_list = links
         link_len = len(link_list)
 
-    return render_template('view_links.html', error=error, link_list = link_list, link_len=link_len, base_url = PDF_URL, doc_id=doc_id)
+    return render_template('view_links.html', error=error, link_list=link_list,
+                           link_len=link_len, base_url=PDF_URL, doc_id=doc_id)
 
 
 @app.route(BASE_PATH+'view_sign_records/<link_id>', methods=['GET', 'POST'])

@@ -804,7 +804,7 @@ def create_link(doc_id):
         return result
 
     except Exception as e:
-        logger.info("error creating the link"+ str(e))
+        logger.info("error creating the link" + str(e))
         return False
 
 

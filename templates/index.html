@@ -141,7 +141,8 @@
                         {% endif %}
                       </td>
                       <td align="center">
-                        <span style="color:#3366BB;" class="uk-button" onClick="go_to_link( '{{ item.doc_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
+                        <span style="color:#3366BB;" uk-tooltip="Create a new link " class="uk-button" onClick="post_to_link( '{{ item.doc_id }}' )" uk-icon="icon: plus; ratio: 1.0"></span>
+                        <span style="color:#3366BB;" uk-tooltip="Show all the links" class="uk-button" onClick="go_to_link( '{{ item.doc_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
                       </td>
                     </tr>
                   {% endfor %}
@@ -159,10 +160,19 @@
 
 <!-- Javascript -->
 <script>
-
   function go_to_link(myid){
+    //Go to the links page on this specific document
     var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
     window.location.replace(myurl);
+  }
+  function post_to_link(myid){
+    //Create a post method (form) to create a new link for this specific document
+    var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
+    var form = $('<form action="' + myurl + '" method="post" style="display:none">' +
+    '<input type="text" name="doc_id" value="' + myid + '" />' +
+    '</form>');
+    $('body').append(form);
+    form.submit();
   }
 </script>
 
