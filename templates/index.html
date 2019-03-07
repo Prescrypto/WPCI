@@ -100,7 +100,7 @@
         
         <!-- STEP 3 -->
         <li >
-          <form action="{{ url_for('view_docs') }}" method="post">
+          <form action="{{ url_for('view_links', doc_id='') }}" method="post" id="tableform" name="tableform">
             {% if error %}
               <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">{{ error }}</h3>
             {% endif %}
@@ -168,11 +168,9 @@
   function post_to_link(myid){
     //Create a post method (form) to create a new link for this specific document
     var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
-    var form = $('<form action="' + myurl + '" method="post" style="display:none">' +
-    '<input type="text" name="doc_id" value="' + myid + '" />' +
-    '</form>');
-    $('body').append(form);
-    form.submit();
+    var myform = document.tableform;
+    myform.action = myurl;
+    myform.submit();
   }
 </script>
 
