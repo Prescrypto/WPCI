@@ -417,19 +417,14 @@ def view_links(doc_id):
         if not result:
             error = "There was a problem creating the new link"
         else:
-            links = Link.Link(doc_id)
-            links = links.find_by_attr("doc_id", doc_id)
-            link_list = links
-            link_len = len(link_list)
+            _link = Link.Link()
+            link_list = _link.find_by_attr("doc_id", doc_id)
 
     if request.method == 'GET':
         links = Link.Link(doc_id)
-        links = links.find_by_attr("doc_id", doc_id)
-        link_list = links
-        link_len = len(link_list)
+        link_list = links.find_by_attr("doc_id", doc_id)
 
-    return render_template('view_links.html', error=error, link_list=link_list,
-                           link_len=link_len, base_url=PDF_URL, doc_id=doc_id)
+    return render_template('view_links.html', error=error, link_list=link_list, base_url=PDF_URL, doc_id=doc_id)
 
 
 @app.route(BASE_PATH+'view_sign_records/<link_id>', methods=['GET', 'POST'])
