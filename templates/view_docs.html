@@ -3,7 +3,7 @@
 	<div class="uk-margin uk-text-left" style="padding-top:30px;padding-left:30px;">
 		<button  onClick="history.go(-1)" class=" uk-text-center uk-button uk-button-default" value="back">Go back</button>
 	</div>
-  <form action="{{ url_for('view_docs') }}" method="post">
+  <form action="{{ url_for('view_links', doc_id='') }}" method="post" id="tableform" name="tableform">
     {% if error %}
       <h3 style="font-weight:900;background-color:#ffcccc;color=#000" class="login-h1">{{ error }}</h3>
     {% elif success %}
@@ -13,45 +13,46 @@
     {% if doc_len > 0 %}
       <h3 style="font-weight:900;padding-top:30px;" >Create links or check the analytics of each document</h3>
       <h3>You can only create links with the API, please visit <a target="blank" href="https://www.wpci.io/docs">our API documentation.</a></h3>
-      <table class="uk-table uk-table-responsive uk-table-striped uk-table-small" id="document_table">
-        <caption></caption>
-        <thead>
-          <tr>
-            <th style="text-align:center">Name</th>
-            <th style="text-align:center">Document ID</th>
-            <th style="text-align:center">Type</th>
-            <th style="text-align:center">Date</th>
-            <th style="text-align:center">Links</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in document_list %}
+        <table class="uk-table uk-table-responsive uk-table-striped uk-table-small" id="document_table">
+          <caption></caption>
+          <thead>
             <tr>
-              <td align="center">{{ item.wp_name }}</td>
-              <td align="center" >
-                <a href="#"><span id="{{ item.doc_id }}" onClick="go_to_link( '{{ item.doc_id }}' )">{{ item.doc_id }}</span></a>
-              </td>
-              <td align="center">
-                {% if item.render %}
-                    {{ item.render }}
-                {% else %}
-                    Unknown
-                {% endif %}
-              </td>
-              <td align="center">
-               {% if item.date %}
-                    {{ item.date|strftime }}
-                {% else %}
-                    Unknown
-                {% endif %}
-              </td>
-              <td align="center">
-                <span style="color:#3366BB;" class="uk-button" onClick="go_to_link( '{{ item.doc_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
-              </td>
+              <th style="text-align:center">Name</th>
+              <th style="text-align:center">Document ID</th>
+              <th style="text-align:center">Type</th>
+              <th style="text-align:center">Date</th>
+              <th style="text-align:center">Links</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for item in document_list %}
+              <tr>
+                <td align="center">{{ item.wp_name }}</td>
+                <td align="center" >
+                  <a href="#"><span id="{{ item.doc_id }}" onClick="go_to_link( '{{ item.doc_id }}' )">{{ item.doc_id }}</span></a>
+                </td>
+                <td align="center">
+                  {% if item.render %}
+                      {{ item.render }}
+                  {% else %}
+                      Unknown
+                  {% endif %}
+                </td>
+                <td align="center">
+                 {% if item.date %}
+                      {{ item.date|strftime }}
+                  {% else %}
+                      Unknown
+                  {% endif %}
+                </td>
+                <td align="center">
+                  <span style="color:#3366BB;" uk-tooltip="Create a new link " class="uk-button" onClick="post_to_link( '{{ item.doc_id }}' )" uk-icon="icon: plus; ratio: 1.0"></span>
+                  <span style="color:#3366BB;" uk-tooltip="Show all the links" class="uk-button" onClick="go_to_link( '{{ item.doc_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
     {% else %}
       <h1 style="font-weight:900;" class="login-h1"><a href="{{ url_for('google_latex_docs') }}">Start creating your documents!.</a></h1>
     {% endif %}
@@ -59,10 +60,19 @@
 
 <!-- Javascript -->
 <script>
-
   function go_to_link(myid){
+  //Go to the links page on this specific document
     var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
     window.location.replace(myurl);
+  }
+
+  function post_to_link(myid){
+    //Create a post method (form) to create a new link for this specific document
+    var myurl = "{{ url_for('view_links', doc_id='') }}" + myid;
+    var myform = document.tableform;
+    myform.action = myurl;
+    myform.submit();
+
   }
 </script>
 
