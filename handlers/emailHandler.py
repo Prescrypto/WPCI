@@ -19,7 +19,7 @@ logger = logging.getLogger('tornado-info')
 
 class Mailer(object):
     def __init__(self, **kwargs):
-        mandatory_args = ["username","password","host","port"]
+        mandatory_args = ["username", "password", "host", "port"]
         for x in mandatory_args:
             if kwargs.get(x, False) == False:
                 raise ValueError("%s must be provided" % (x))
@@ -27,9 +27,8 @@ class Mailer(object):
         loader = Loader("templates/email")
         self.EMAIL_HTML_TEMPLATE = loader.load("document_send_email.html")
 
-
     def send(self, **kwargs):
-        mandatory_args = ["subject","email_from","emails_to"]
+        mandatory_args = ["subject", "email_from", "emails_to"]
         for x in mandatory_args:
             if not kwargs.get(x, False):
                 raise ValueError("%s is mandatory" % (x))
@@ -49,12 +48,12 @@ class Mailer(object):
 
             text = kwargs.get('text_message', '')
             html = kwargs.get('html_message', '')
-            attachments_list = kwargs.get('attachments_list',[])
+            attachments_list = kwargs.get('attachments_list', [])
             if text is not None and text != "":
                 msg.attach(MIMEText(text, 'plain'))
             if html is not None and html != "":
                 html = self.EMAIL_HTML_TEMPLATE.generate(body_msg=html)
-                msg.attach(MIMEText(html.decode("utf-8") , 'html'))
+                msg.attach(MIMEText(html.decode("utf-8"), 'html'))
 
             for attachment in attachments_list:
                 part = MIMEBase('application', attachment.get("file_type"))
