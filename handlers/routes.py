@@ -1286,8 +1286,6 @@ class PostWpNda(BaseHandler):
             else:
                 self.write(json.dumps(result))
 
-
-
         except Exception as e:
             logger.info("error on clone" + str(e))
             self.write(json.dumps({"response": "Error"}))
