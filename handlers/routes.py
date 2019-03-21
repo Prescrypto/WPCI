@@ -272,8 +272,8 @@ def authenticate_json(json_data):
         return False
 
 
-def render_send_by_link_id(link_id, email, name):
-    """Download and render and then sign a document from google and send it by email"""
+def render_send_by_link_id(link_id, email, name, email_body_html="", email_body_text=""):
+    """Download and render a document then sign and send it by email"""
     b64_pdf_file = pdf_url = None
     doc_file_name = contract_file_name = ""
     render_nda_only = render_wp_only = False
@@ -345,7 +345,7 @@ def render_send_by_link_id(link_id, email, name):
 
         # render and send the documents by email
         render_and_send_docs(user, thisdoc, b64_pdf_file, google_credentials_info, render_wp_only, render_nda_only,
-                             signer_user, link_id, doc_file_name, contract_file_name)
+                             signer_user, link_id, doc_file_name, contract_file_name, email_body_html, email_body_text)
 
         return response
 
@@ -1010,7 +1010,8 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
 
 
 def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
-                         render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name=""):
+                         render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name="",
+                         email_body_html="", email_body_text=""):
     """Renders the documents and if needed send it to cryptosign and finally send it by email"""
 
     attachments_list = []
@@ -1030,6 +1031,8 @@ def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info
 
             if error != "":
                 return render_template('pdf_form.html', id=doc_id, error=error)
+            if not email_body_html:
+                email_body_html = DEFAULT_HTML_TEXT
 
             # send the email with the result attachments
             sender_format = "{} <{}>"
@@ -1038,16 +1041,18 @@ def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info
             notification_subject = "Your Document {} has been downloaded".format(thisdoc.doc_id)
             analytics_link = "{}{}analytics/{}".format(conf.BASE_URL, BASE_PATH, thisdoc.doc_id)
 
-            mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
+            mymail.send(subject=thisdoc.wp_name, email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
                         emails_to=[signer_user.email],
                         attachments_list=attachments_list,
-                        html_message=DEFAULT_HTML_TEXT + button.generate().decode("utf-8"))
+                        html_message=email_body_html + button.generate().decode("utf-8"),
+                        text_message=email_body_text)
 
             html_text = NOTIFICATION_HTML.format(signer_user.email, thisdoc.doc_id, analytics_link, analytics_link)
             mymail.send(subject=notification_subject,
                         attachments_list=attachments_list,
                         email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
-                        emails_to=[user.org_email], html_message=html_text)
+                        emails_to=[user.org_email], html_message=html_text,
+                        text_message=email_body_text)
 
         except Exception as e:  # except from temp directory
             logger.info("sending the email with the documents " + str(e))
@@ -1220,7 +1225,7 @@ class RenderUrl(BaseHandler):
             email_body_text =self.get_argument('email_body_text', "")
             options = json.loads(self.get_argument('options', "{}"))
 
-            result = render_send_by_link_id(link_id, email, name)
+            result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
             if not result:
                 self.write(json.dumps({"response": "Error"}))
             else:
@@ -1248,6 +1253,10 @@ class PostWpNda(BaseHandler):
                 json_data["main_tex"] = "main.tex"
             if not json_data.get("nda_url"):
                 json_data["nda_url"] = ""
+            if not json_data.get("email_body_html"):
+                json_data["email_body_html"] = ""
+            if not json_data.get("email_body_txt"):
+                json_data["email_body_txt"] = ""
 
             doc.__dict__ = json_data
             userjson = ast.literal_eval(userid)
@@ -1271,13 +1280,11 @@ class PostWpNda(BaseHandler):
             email_body_text = self.get_argument('email_body_text', "")
             options = json.loads(self.get_argument('options', "{}"))
 
-            result = render_send_by_link_id(link_id, email, name)
+            result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
             if not result:
                 self.write(json.dumps({"response": "Error"}))
             else:
                 self.write(json.dumps(result))
-
-
 
         except Exception as e:
             logger.info("error on clone" + str(e))
