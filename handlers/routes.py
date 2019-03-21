@@ -273,7 +273,7 @@ def authenticate_json(json_data):
 
 
 def render_send_by_link_id(link_id, email, name, email_body_html="", email_body_text=""):
-    """Download and render and then sign a document from google and send it by email"""
+    """Download and render a document then sign and send it by email"""
     b64_pdf_file = pdf_url = None
     doc_file_name = contract_file_name = ""
     render_nda_only = render_wp_only = False
