@@ -85,25 +85,14 @@ class SignerUser(object):
         try:
             collection = "SignerUser"
             mydb = ManageDB(collection)
-            crypto_tool = CryptoTools()
 
-            if not self.pub_key or not self.priv_key:
-                # creating RSA keys for the signer user
-                public_key, private_key = crypto_tool.create_key_with_entropy()
-                self.priv_key = crypto_tool.get_pem_format(private_key).decode("utf-8")
-                self.pub_key = crypto_tool.get_pem_format(public_key).decode("utf-8")
-
+            if not self.find_by_attr("email", self.email):
+                self.create_keys()
+                mydb.insert_json(self.__dict__)
+                result = self
             else:
-                logger.info("keys already created")
-
-            # Use the signer email and name to create a signature for it
-            signer_signature = self.email + self.name
-            self.sign = crypto_tool.sign(
-                signer_signature.encode('utf-8'),
-                crypto_tool.import_RSA_string(self.priv_key)
-            ).decode('utf-8')
-
-            result = mydb.insert_json(self.__dict__)
+                logger.info("signer user already created")
+                result = self.find_by_attr("email", self.email)
 
         except Exception as error:
             logger.info("creating user", error)
@@ -121,15 +110,17 @@ class SignerUser(object):
         try:
             collection = "SignerUser"
             mydb = ManageDB(collection)
-            temp_user = self.__dict__
+            temp_user = self.__dict__.copy()
             has_record_id = getattr(temp_user, "_id", False)
             if has_record_id:
                 # Exclude the _id from the object since it's going to be updated
                 temp_user.pop("_id")
-            result = mydb.update({"sign": self.sign}, temp_user)
+            temp_user.pop("priv_key")
+            temp_user.pop("pub_key")
+            result = mydb.update({"email": self.email}, temp_user)
 
         except Exception as error:
-            logger.info("updating email "+ str(error))
+            logger.info("updating signer user "+ str(error))
             result = None
 
         finally:
@@ -156,3 +147,11 @@ class SignerUser(object):
                 mydb.close()
 
         return result
+
+    def create_keys(self):
+        """Create new keys for the user"""
+        crypto_tool = CryptoTools()
+        # creating RSA keys for the signer user
+        public_key, private_key = crypto_tool.create_key_with_entropy()
+        self.priv_key = crypto_tool.get_pem_format(private_key).decode("utf-8")
+        self.pub_key = crypto_tool.get_pem_format(public_key).decode("utf-8")

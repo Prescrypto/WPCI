@@ -120,7 +120,7 @@ def encode_auth_token(user):
     """
     try:
         payload = {
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=3600),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=ONE_HOUR),
             "iat": datetime.datetime.utcnow(),
             "username": user.username,
             "password": user.password
@@ -272,27 +272,8 @@ def authenticate_json(json_data):
         return False
 
 
-def store_petition(remote_url, petition_type, username='anonymous'):
-    '''This saves a model with the rendering information of the signer and the document'''
-    result = False
-    mydb = None
-    try:
-        collection = "Petitions"
-        mydb = ManageDB(collection)
-        result = mydb.insert_json({"username": username, "timestamp": time.time(), "remote_url": remote_url, "petition_type": petition_type})
-
-    except Exception as error:
-        logger.info("storing petition"+ str(error))
-
-    finally:
-        if mydb is not None:
-            mydb.close()
-
-    return result
-
-
-def render_send_by_link_id(link_id, email, name):
-    """Download and render and then sign a document from google and send it by email"""
+def render_send_by_link_id(link_id, email, name, email_body_html="", email_body_text=""):
+    """Download and render a document then sign and send it by email"""
     b64_pdf_file = pdf_url = None
     doc_file_name = contract_file_name = ""
     render_nda_only = render_wp_only = False
@@ -335,7 +316,7 @@ def render_send_by_link_id(link_id, email, name):
         else:
             pdf_url = thisdoc.nda_url
             contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
-            response.update({"s3_contract_url": S3_BASE_URL.format(contract_file_name)})
+            response.update({"s3_contract_url": "{}{}view_sign_records/{}".format(conf.BASE_URL, BASE_PATH, link_id)})
             if thisdoc.wp_url is None or thisdoc.wp_url == "":
                 render_nda_only = True
             else:
@@ -363,9 +344,8 @@ def render_send_by_link_id(link_id, email, name):
         thislink.update()
 
         # render and send the documents by email
-        render_and_send_docs(
-            user, signer_user, thisdoc, b64_pdf_file,
-            google_credentials_info, render_wp_only, render_nda_only, doc_file_name, contract_file_name)
+        render_and_send_docs(user, thisdoc, b64_pdf_file, google_credentials_info, render_wp_only, render_nda_only,
+                             signer_user, link_id, doc_file_name, contract_file_name, email_body_html, email_body_text)
 
         return response
 
@@ -387,7 +367,6 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
         return("NO EMAIL TO HASH")
     user_email = user_email.strip()
 
-    store_petition(repo_url, RENDER_HASH, user_email)
     logger.info("No private access")
 
     watermark = "Document generated for: "+ user_email
@@ -465,7 +444,6 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
     except:
         return ("Invalid GIT Repository URL")
 
-    store_petition(repo_url, RENDER_HASH, user.username)
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
     if user_email is None or user_email == "":
@@ -539,7 +517,6 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
     except:
         return("Invalid GIT Repository URL")
 
-    store_petition(repo_url, RENDER_HASH, user.username)
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
     if email is None or email == "":
@@ -678,7 +655,6 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
     if email is None or email== "":
         return False, False
 
-    store_petition(repo_url, RENDER_HASH, email)
     watermark = "Document generated for: "+ email
 
     clone = 'git clone ' + repo_url
@@ -737,7 +713,6 @@ def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):
     repo_name = ''
     file_full_path = ''
     new_main_tex = "main.tex"
-    store_petition(repo_url, RENDER_NOHASH, "")
 
     clone = 'git clone ' + repo_url
     rev_parse = 'git rev-parse master'
@@ -829,7 +804,7 @@ def create_link(doc_id):
         return result
 
     except Exception as e:
-        logger.info("error creating the link"+ str(e))
+        logger.info("error creating the link" + str(e))
         return False
 
 
@@ -972,63 +947,40 @@ def render_document(tmpdir, thisdoc, doc_file_name, user, google_credentials_inf
         return attachments_list, error
 
 
-def render_contract(tmpdir, nda_file_base64, contract_file_name, user, signer_user, attachments_list):
+def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_user, attachments_list, link_id):
     tx_id = error = ""
     NDA_FILE_NAME = "contract.pdf"
-    tx_record = None
     try:
+        crypto_tool = CryptoTools()
         if user.org_logo is None or user.org_logo == "":
             org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
         else:
             org_logo = user.org_logo
 
         nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
-
-        # send the payload to rexchain
-        rexchain_data = {
-            "timezone": TIMEZONE,
-            "signatures": [
-                {
-                    "hash": signer_user.sign,
-                    "email": signer_user.email,
-                    "name": signer_user.name
-                }
-            ],
-            "params": {
-                "locale": LANGUAGE,
-                "title": user.org_name + " contract",
-                "file_name": NDA_FILE_NAME
-            }
-        }
-        rexchain_result = post_to_rexchain(rexchain_data, user)
-
-        if rexchain_result and rexchain_result.get("hash_id", False):
-            tx_id = rexchain_result.get("hash_id")
-            tx_record = signRecord.SignRecord(tx_id)
-            tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id
-            tx_record.rx_is_valid = rexchain_result.get("is_valid")
-            tx_record.signer_user = signer_user.email
-            tx_record.create()
+        sign_document_hash(signer_user, nda_file_base64)
+        rsa_object = crypto_tool.import_RSA_string(signer_user.priv_key)
+        pub_key_hex = crypto_tool.savify_key(rsa_object.publickey()).decode("utf-8")
 
         crypto_sign_payload = {
             "pdf": nda_file_base64,
             "timezone": TIMEZONE,
-            "signatures": [
+            "signature": signer_user.sign,
+            "signatories": [
                 {
-                    "hash": signer_user.sign,
                     "email": signer_user.email,
-                    "name": signer_user.name
+                    "name": signer_user.name,
+                    "public_key": pub_key_hex
                 }],
             "params": {
                 "locale": LANGUAGE,
                 "title": user.org_name + " contract",
                 "file_name": NDA_FILE_NAME,
                 "logo": org_logo,
-                "rexchain_url": conf.REXCHAIN_URL + "hash/" + tx_id
             }
         }
 
-        nda_result = get_nda(crypto_sign_payload, tx_record)
+        nda_result, sign_record = get_nda(crypto_sign_payload, signer_user)
 
         if not nda_result:
             error = "Failed loading contract"
@@ -1042,8 +994,9 @@ def render_contract(tmpdir, nda_file_base64, contract_file_name, user, signer_us
         uploaded_document_url = upload_to_s3(
             nda_file_path, contract_file_name
         )
-        signer_user.s3_contract_url = S3_BASE_URL.format(contract_file_name)
-        signer_user.update()
+        sign_record.s3_contract_url = S3_BASE_URL.format(contract_file_name)
+        sign_record.link_id = link_id
+        sign_record.update()
         # this is the payload for the nda file
         nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
                               file_path=nda_file_path,
@@ -1056,8 +1009,9 @@ def render_contract(tmpdir, nda_file_base64, contract_file_name, user, signer_us
         return attachments_list, error
 
 
-def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_credentials_info,
-                         render_wp_only, render_nda_only, doc_file_name="", contract_file_name=""):
+def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
+                         render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name="",
+                         email_body_html="", email_body_text=""):
     """Renders the documents and if needed send it to cryptosign and finally send it by email"""
 
     attachments_list = []
@@ -1067,15 +1021,18 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
     # Here we create a temporary directory to store the files while the function sends it by email
     with tempfile.TemporaryDirectory() as tmp_dir:
         try:
+
             if render_nda_only is False:
                 attachments_list, error = render_document(tmp_dir, thisdoc, doc_file_name, user, google_credentials_info,
                                                           signer_user, attachments_list)
             if render_wp_only is False:
-                attachments_list, error = render_contract(tmp_dir, nda_file_base64, contract_file_name, user,
-                                                          signer_user, attachments_list)
+                attachments_list, error = render_contract(user, tmp_dir, nda_file_base64,
+                                                          contract_file_name, signer_user, attachments_list, link_id)
 
             if error != "":
                 return render_template('pdf_form.html', id=doc_id, error=error)
+            if not email_body_html:
+                email_body_html = DEFAULT_HTML_TEXT
 
             # send the email with the result attachments
             sender_format = "{} <{}>"
@@ -1084,21 +1041,24 @@ def render_and_send_docs(user, signer_user, thisdoc, nda_file_base64, google_cre
             notification_subject = "Your Document {} has been downloaded".format(thisdoc.doc_id)
             analytics_link = "{}{}analytics/{}".format(conf.BASE_URL, BASE_PATH, thisdoc.doc_id)
 
-            mymail.send(subject="Documentation", email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
+            mymail.send(subject=thisdoc.wp_name, email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
                         emails_to=[signer_user.email],
                         attachments_list=attachments_list,
-                        html_message=DEFAULT_HTML_TEXT + button.generate().decode("utf-8"))
+                        html_message=email_body_html + button.generate().decode("utf-8"),
+                        text_message=email_body_text)
 
             html_text = NOTIFICATION_HTML.format(signer_user.email, thisdoc.doc_id, analytics_link, analytics_link)
             mymail.send(subject=notification_subject,
                         attachments_list=attachments_list,
                         email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
-                        emails_to=[user.org_email], html_message=html_text)
+                        emails_to=[user.org_email], html_message=html_text,
+                        text_message=email_body_text)
 
         except Exception as e:  # except from temp directory
             logger.info("sending the email with the documents " + str(e))
             error = "Error sending the email"
             return render_template('pdf_form.html', id=doc_id, error=error)
+
 
 @jwtauth
 class APINotFoundHandler(BaseHandler):
@@ -1265,7 +1225,7 @@ class RenderUrl(BaseHandler):
             email_body_text =self.get_argument('email_body_text', "")
             options = json.loads(self.get_argument('options', "{}"))
 
-            result = render_send_by_link_id(link_id, email, name)
+            result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
             if not result:
                 self.write(json.dumps({"response": "Error"}))
             else:
@@ -1293,6 +1253,10 @@ class PostWpNda(BaseHandler):
                 json_data["main_tex"] = "main.tex"
             if not json_data.get("nda_url"):
                 json_data["nda_url"] = ""
+            if not json_data.get("email_body_html"):
+                json_data["email_body_html"] = ""
+            if not json_data.get("email_body_txt"):
+                json_data["email_body_txt"] = ""
 
             doc.__dict__ = json_data
             userjson = ast.literal_eval(userid)
@@ -1316,13 +1280,11 @@ class PostWpNda(BaseHandler):
             email_body_text = self.get_argument('email_body_text', "")
             options = json.loads(self.get_argument('options', "{}"))
 
-            result = render_send_by_link_id(link_id, email, name)
+            result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
             if not result:
                 self.write(json.dumps({"response": "Error"}))
             else:
                 self.write(json.dumps(result))
-
-
 
         except Exception as e:
             logger.info("error on clone" + str(e))
@@ -1345,7 +1307,6 @@ class Links(BaseHandler):
                 #Replace the Link id for the full link url
                 result["link"] = conf.BASE_URL +BASE_PATH+"pdf/" + result.pop("link")
 
-                print(result)
                 self.write_json(result, 200)
             else:
                 self.write(json.dumps({"doc_status": "failed"}))

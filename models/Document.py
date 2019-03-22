@@ -48,7 +48,6 @@ class Document(object):
             self.down_count = 0
             self.date = int(time.time())
 
-
             if self.nda_url is None:
                 self.nda_url = ""
             if self.wp_url is None:

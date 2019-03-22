@@ -31,7 +31,6 @@ class SignRecord(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-
     def find(self):
         '''finds a signer user by the tx_id'''
         result = False
@@ -61,8 +60,7 @@ class SignRecord(object):
             mydb = ManageDB(collection)
             docs = mydb.select(key, value)
             if len(docs) > 0:
-                self.__dict__ = docs[0]
-                return self
+                result = docs
             else:
                 logger.info("sign record not found")
 
@@ -101,7 +99,8 @@ class SignRecord(object):
         try:
             collection = "SignRecord"
             mydb = ManageDB(collection)
-            temp_record = self.__dict__
+            temp_record = self.__dict__.copy()
+            temp_record.pop("_id")
 
             result = mydb.update({"tx_id": self.tx_id}, temp_record)
 

@@ -87,10 +87,10 @@
     "GOOGLE_CLIENT_SECRET": {
 	  "required": true
       },
-    "AWS_ACCESS_KEY": {
+    "AWS_ACCESS_KEY_ID": {
 	  "required": true
       },
-    "AWS_SECRET_KEY": {
+    "AWS_SECRET_ACCESS_KEY": {
 	  "required": true
       },
     "GITHUB_OAUTH_URI": {
