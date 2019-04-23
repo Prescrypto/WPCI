@@ -312,7 +312,7 @@ def render_send_by_link_id(link_id, email, name, email_body_html="", email_body_
             else:
                 # The file name is composed by the email of the user, the link id and the timestamp of the creation
                 doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
-                response.update({"s3_doc_url": S3_BASE_URL.format(doc_file_name)})
+                response.update({"s3_doc_url": "{}{}view_sign_records/{}".format(conf.BASE_URL, BASE_PATH, link_id)})
                 pdf_url = thisdoc.wp_url
         else:
             pdf_url = thisdoc.nda_url
@@ -322,7 +322,7 @@ def render_send_by_link_id(link_id, email, name, email_body_html="", email_body_
                 render_nda_only = True
             else:
                 doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
-                response.update({"s3_doc_url": S3_BASE_URL.format(doc_file_name)})
+                response.update({"s3_doc_url": "{}{}view_sign_records/{}".format(conf.BASE_URL, BASE_PATH, link_id)})
 
         doc_type = getattr(thisdoc, "render", False)
         if doc_type is not False and doc_type == "google":
@@ -1020,7 +1020,7 @@ def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info
     """Renders the documents and if needed send it to cryptosign and finally send it by email"""
 
     attachments_list = []
-    doc_id = error = ""
+    doc_id = error = errornda = errorwp = ""
     mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
 
     # Here we create a temporary directory to store the files while the function sends it by email
@@ -1028,42 +1028,41 @@ def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info
         try:
 
             if render_nda_only is False:
-                attachments_list, error = render_document(tmp_dir, thisdoc, doc_file_name, user, google_credentials_info,
+                attachments_list, errornda = render_document(tmp_dir, thisdoc, doc_file_name, user, google_credentials_info,
                                                           signer_user, attachments_list)
             if render_wp_only is False:
-                attachments_list, error = render_contract(user, tmp_dir, nda_file_base64,
+                attachments_list, errorwp = render_contract(user, tmp_dir, nda_file_base64,
                                                           contract_file_name, signer_user, attachments_list, link_id)
-
+            error = errornda + errorwp
             if error != "":
-                logger.info("error not empty "+ error)
+                logger.info("error not empty {}".format(error))
                # return render_template('pdf_form.html', id=doc_id, error=error)
-            if not email_body_html:
-                email_body_html = DEFAULT_HTML_TEXT
+            else:
+                if not email_body_html:
+                    email_body_html = DEFAULT_HTML_TEXT
 
-            # send the email with the result attachments
-            sender_format = "{} <{}>"
-            loader = Loader("templates/email")
-            button = loader.load("cta_button.html")
-            notification_subject = "Your Document {} has been downloaded".format(thisdoc.doc_id)
-            analytics_link = "{}{}analytics/{}".format(conf.BASE_URL, BASE_PATH, thisdoc.doc_id)
+                # send the email with the result attachments
+                sender_format = "{} <{}>"
+                loader = Loader("templates/email")
+                button = loader.load("cta_button.html")
+                notification_subject = "Your Document {} has been downloaded".format(thisdoc.doc_id)
+                analytics_link = "{}{}analytics/{}".format(conf.BASE_URL, BASE_PATH, thisdoc.doc_id)
 
-            mymail.send(subject=thisdoc.wp_name, email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
-                        emails_to=[signer_user.email],
-                        attachments_list=attachments_list,
-                        html_message=email_body_html + button.generate().decode("utf-8"),
-                        text_message=email_body_text)
+                mymail.send(subject=thisdoc.wp_name, email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
+                            emails_to=[signer_user.email],
+                            attachments_list=attachments_list,
+                            html_message=email_body_html + button.generate().decode("utf-8"),
+                            text_message=email_body_text)
 
-            html_text = NOTIFICATION_HTML.format(signer_user.email, thisdoc.doc_id, analytics_link, analytics_link)
-            mymail.send(subject=notification_subject,
-                        attachments_list=attachments_list,
-                        email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
-                        emails_to=[user.org_email], html_message=html_text,
-                        text_message=email_body_text)
+                html_text = NOTIFICATION_HTML.format(signer_user.email, thisdoc.doc_id, analytics_link, analytics_link)
+                mymail.send(subject=notification_subject,
+                            attachments_list=attachments_list,
+                            email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
+                            emails_to=[user.org_email], html_message=html_text,
+                            text_message=email_body_text)
 
         except Exception as e:  # except from temp directory
-            logger.info("sending the email with the documents " + str(e))
-            error = "Error sending the email"
-            #return redirect(conf.BASE_URL + BASE_PATH + "pdf/{}".format(doc_id))
+            logger.info("[ERROR] sending the email with the documents " + str(e))
 
 
 @jwtauth
