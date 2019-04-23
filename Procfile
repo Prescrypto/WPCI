@@ -1,1 +1,1 @@
-web: gunicorn --timeout 120 app:application 
+web: python app.py --port=$PORT

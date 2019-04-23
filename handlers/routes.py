@@ -14,9 +14,10 @@ import base64
 import io
 
 #web app
-from tornado.web import  os
+from tornado.web import os, asynchronous
 import tornado
-from tornado import gen, ioloop
+from tornado import gen
+from tornado.ioloop import IOLoop
 import jinja2
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
 
@@ -344,8 +345,11 @@ def render_send_by_link_id(link_id, email, name, email_body_html="", email_body_
         thislink.update()
 
         # render and send the documents by email
-        render_and_send_docs(user, thisdoc, b64_pdf_file, google_credentials_info, render_wp_only, render_nda_only,
-                             signer_user, link_id, doc_file_name, contract_file_name, email_body_html, email_body_text)
+        IOLoop.instance().add_callback(callback=lambda: render_and_send_docs(user, thisdoc, b64_pdf_file,
+                                                                             google_credentials_info, render_wp_only,
+                                                                             render_nda_only, signer_user, link_id,
+                                                                             doc_file_name, contract_file_name,
+                                                                             email_body_html, email_body_text))
 
         return response
 
@@ -1009,6 +1013,7 @@ def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_u
         return attachments_list, error
 
 
+@gen.engine
 def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
                          render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name="",
                          email_body_html="", email_body_text=""):
