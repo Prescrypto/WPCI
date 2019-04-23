@@ -1062,7 +1062,7 @@ def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info
         except Exception as e:  # except from temp directory
             logger.info("sending the email with the documents " + str(e))
             error = "Error sending the email"
-            return render_template('pdf_form.html', id=doc_id, error=error)
+            return redirect(conf.BASE_URL + BASE_PATH + "pdf/", id=doc_id, error=error)
 
 
 @jwtauth
