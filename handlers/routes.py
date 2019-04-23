@@ -1036,7 +1036,6 @@ def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info
             error = errornda + errorwp
             if error != "":
                 logger.info("error not empty {}".format(error))
-               # return render_template('pdf_form.html', id=doc_id, error=error)
             else:
                 if not email_body_html:
                     email_body_html = DEFAULT_HTML_TEXT
