@@ -393,8 +393,13 @@ def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex",
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
                                                cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+
             pointa = fitz.Point(AXIS_X,AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
@@ -464,7 +469,11 @@ def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
                                                cwd=filesdir)
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
@@ -532,8 +541,13 @@ def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", opt
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
                                                cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
@@ -665,8 +679,13 @@ def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
             complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
                                                cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+
             pointa = fitz.Point(AXIS_X, AXIS_Y)
             pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
             document = fitz.open(file_full_path)
@@ -713,7 +732,11 @@ def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):
                 new_main_tex = main_tex
 
             run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
+            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
+                                               cwd=filesdir)
+            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
                                                cwd=filesdir)
 
             file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
