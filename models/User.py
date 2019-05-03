@@ -23,12 +23,14 @@ pwd_context = CryptContext(
         pbkdf2_sha256__default_rounds=300
 )
 
+
 class User(object):
 
     def __init__(self, username=None, password=None):
         self.username = username
         self.password = password
         self.github_token = None
+        self.is_admin = False
 
     def __str__(self):
         return "User(username='%s')" % self.username
@@ -56,7 +58,6 @@ class User(object):
 
     def __setitem__(self, name, value):
         self.__dict__[name] = value
-
 
     def find(self):
         '''finds a user'''

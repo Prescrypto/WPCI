@@ -8,6 +8,9 @@
 	<div>
 		{%  if session.user %}
 			<div class="uk-child-width-expand@s uk-text-center" style="padding-top:10px;" uk-grid>
+				{% if not myuser.is_admin %}
+				  <div></div>
+				{% endif %}
         <div>
           <div class="uk-card uk-card-hover uk-card-default uk-card-large" >
             <div class="uk-card-header">
@@ -15,13 +18,17 @@
             </div>
           </div>
         </div>
-        <div>
-          <div class="uk-card uk-card-hover uk-card-default uk-card-large">
-            <div class="uk-card-header">
-              <h2 class="uk-card-title-md"><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
-            </div>
-          </div>
-        </div>
+				{% if myuser.is_admin %}
+	        <div>
+	          <div class="uk-card uk-card-hover uk-card-default uk-card-large">
+	            <div class="uk-card-header">
+	              <h2 class="uk-card-title-md"><a href="{{ url_for('edit_docs', render='latex') }}"  >Get your document from overleaf or a repository on Github</a></h2>
+	            </div>
+	          </div>
+	        </div>
+				{% else %}
+				  <div></div>
+				{% endif %}
       </div>
 		{% endif %}
 		{% if error %}

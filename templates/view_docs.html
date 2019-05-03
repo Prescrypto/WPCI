@@ -11,8 +11,7 @@
     {% endif %}
 
     {% if doc_len > 0 %}
-      <h3 style="font-weight:900;padding-top:30px;" >Create links or check the analytics of each document</h3>
-      <h3>You can only create links with the API, please visit <a target="blank" href="https://www.wpci.io/docs">our API documentation.</a></h3>
+        <h3>You can share or create new links for your documents</h3>
         <table class="uk-table uk-table-responsive uk-table-striped uk-table-small" id="document_table">
           <caption></caption>
           <thead>
@@ -21,6 +20,7 @@
               <th style="text-align:center">Document ID</th>
               <th style="text-align:center">Type</th>
               <th style="text-align:center">Date</th>
+              <th style="text-align:center">Show Links</th>
               <th style="text-align:center">Links</th>
             </tr>
           </thead>
@@ -46,8 +46,12 @@
                   {% endif %}
                 </td>
                 <td align="center">
-                  <span style="color:#3366BB;" uk-tooltip="Create a new link " class="uk-button" onClick="post_to_link( '{{ item.doc_id }}' )" uk-icon="icon: plus; ratio: 1.0"></span>
-                  <span style="color:#3366BB;" uk-tooltip="Show all the links" class="uk-button" onClick="go_to_link( '{{ item.doc_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
+                  <span style="color:#3366BB;" uk-tooltip="Create a new link " class="uk-button"
+                        onClick="post_to_link( '{{ item.doc_id }}' )" uk-icon="icon: plus; ratio: 1.0"></span>
+                </td>
+                <td>
+                  <span style="color:#3366BB;" uk-tooltip="Show all the links" class="uk-button"
+                          onClick="go_to_link( '{{ item.doc_id }}' )" uk-icon="icon: link; ratio: 1.5"></span>
                 </td>
               </tr>
             {% endfor %}
