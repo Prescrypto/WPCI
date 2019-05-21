@@ -1035,7 +1035,7 @@ def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info
                                                           contract_file_name, signer_user, attachments_list, link_id)
             error = errornda + errorwp
             if error != "":
-                logger.info("error not empty {}".format(error))
+                logger.info("There was an error on the documents rendering: {}".format(error))
             else:
                 if not email_body_html:
                     email_body_html = DEFAULT_HTML_TEXT
