@@ -9,9 +9,9 @@ else
     sudo apt-get install -y libncurses5-dev  libncursesw5-dev xz-utils tk-dev
     # get source code
     cd $HOME
-    wget https://www.python.org/ftp/python/3.6.6/Python-3.6.6.tgz
-    tar -zxvf Python-3.6.6.tgz
-    cd Python-3.6.6
+    wget https://www.python.org/ftp/python/3.6.8/Python-3.6.8.tgz
+    tar -zxvf Python-3.6.8.tgz
+    cd Python-3.6.8
     # build & install
     echo "=> build & install..."
     ./configure
@@ -19,7 +19,7 @@ else
     sudo make install  # is used to prevent replacing the default python binary file
     # cleanup
     cd ..
-    sudo rm -fr ./Python-3.6.6*
+    sudo rm -fr ./Python-3.6.8*
     # upgrade (just in case)
     sudo pip3 install -U pip
     sudo pip3 install -U setuptools
