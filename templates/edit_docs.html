@@ -22,36 +22,50 @@
 		{% else %}
 			{%  if session.user %}
 				<div class="uk-child-width-expand@s uk-text-center" uk-grid>
-					<div>
-						<div class="uk-card uk-card-hover uk-card-default uk-card-large" >
-							<div class="uk-card-header">
-								<h1 class="uk-card-title-md" ><a href="{{ url_for('documents', type='wp', render= render ) }}"  > Protect my document</a></h1>
-							</div>
-							<div class="uk-card-body">
-								<h4>Require a name and email address for users to access your document.</h4>
+					{% if myuser.is_admin %}
+						<div>
+							<div class="uk-card uk-card-hover uk-card-default uk-card-large" >
+								<div class="uk-card-header">
+									<h1 class="uk-card-title-md" >
+										<a href="{{ url_for('documents', type='wp', render= render ) }}"  > Protect my document</a>
+									</h1>
+								</div>
+								<div class="uk-card-body">
+									<h4>Require a name and email address for users to access your document.</h4>
+								</div>
 							</div>
 						</div>
-					</div>
+					{% else %}
+					  <div></div>
+					{% endif %}
 					<div>
 						<div class="uk-card uk-card-hover uk-card-default uk-card-large">
 							<div class="uk-card-header">
-								<h1 class="uk-card-title-md"><a href="{{ url_for('documents', type='nda', render=render ) }}">Make a contract</a></h1>
+								<h1 class="uk-card-title-md">
+									<a href="{{ url_for('documents', type='nda', render=render ) }}">Make a contract</a>
+								</h1>
 							</div>
 							<div class="uk-card-body">
 								<h4>Make a secure contract that can be safely signed online by all parties.</h4>
 							</div>
 						</div>
 					</div>
-					<div>
-						<div class="uk-card uk-card-hover uk-card-default uk-card-large">
-							<div class="uk-card-header">
-								<h1 class="uk-card-title-md"><a href="{{ url_for('documents', type='wp_nda', render=render ) }}">Create an NDA</a></h1>
-							</div>
-							<div class="uk-card-body">
-								<h4>Make users sign an NDA before accessing your document.</h4>
+					{% if myuser.is_admin %}
+						<div>
+							<div class="uk-card uk-card-hover uk-card-default uk-card-large">
+								<div class="uk-card-header">
+									<h1 class="uk-card-title-md">
+										<a href="{{ url_for('documents', type='wp_nda', render=render ) }}">Create an NDA</a>
+									</h1>
+								</div>
+								<div class="uk-card-body">
+									<h4>Make users sign an NDA before accessing your document.</h4>
+								</div>
 							</div>
 						</div>
-					</div>
+					{% else %}
+					  <div></div>
+					{% endif %}
 				</div>
 			{% endif %}
 		{% endif %}
@@ -60,7 +74,7 @@
 <!-- Javascript -->
 <script>
 	var alert_template = "<p class='uk-modal-body'>WPCI is currently on a Google apps verification process,\
-		on the 'This app is not verified' page please click on the bottom left link: 'Go to wpci.io(unsafe)'</br>\
+	on the 'This app is not verified' page please click on the bottom left link: 'Go to wpci.io(unsafe)'</br>\
 		Don't worry we will only use the permission to render the document</p>"
 
   function go_to_url(url){

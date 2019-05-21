@@ -1,15 +1,23 @@
 #python
 import os
+import logging
 #web app
-from tornado.wsgi import WSGIAdapter
 from tornado.web import Application, FallbackHandler, StaticFileHandler
+from tornado.httpserver import HTTPServer
+from tornado.ioloop import IOLoop
 
 #internal
 from handlers import routes
 from oauthApi import oauth_app
+import config as conf
+
+# Load Logging definition
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('tornado-info')
 
 DOCS_BASE_PATH = "docs/"
 API_BASE_PATH = "api/v1/"
+LISTEN_PORT = conf.LISTEN_PORT
 cwd = os.getcwd() # used by static file server
 # execute asynchronously action
 
@@ -21,7 +29,6 @@ cwd = os.getcwd() # used by static file server
 
 '''Initializing the application with routes'''
 web_app = Application([
-    #TODO: add verbose urls
     (r"/"+API_BASE_PATH+"documents/links/([^/]+)", routes.Links),
     (r"/"+API_BASE_PATH+"documents/([^/]+)", routes.Documents),
     (r"/"+API_BASE_PATH+"documents/pdf/([^/]+)", routes.RenderDocToPDF),
@@ -40,8 +47,7 @@ web_app = Application([
     (r'.*', routes.APINotFoundHandler)],
     debug=True)
 
-
-application = WSGIAdapter(web_app)
-
-
-
+httpServer = HTTPServer(web_app)
+httpServer.listen(LISTEN_PORT)
+httpServer.start()
+IOLoop.instance().start()

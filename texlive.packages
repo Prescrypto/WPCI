@@ -33,3 +33,4 @@ wrapfig
 relsize 
 ifoddpage
 bigfoot
+latexmk

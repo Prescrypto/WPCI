@@ -11,6 +11,8 @@ from werkzeug.utils import secure_filename
 from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
 from flask_sslify import SSLify
+from tornado import gen
+from tornado.ioloop import IOLoop
 from tornado.template import Loader
 
 #google oauth
@@ -201,7 +203,8 @@ def index():
             error = 'Invalid Values. Please try again.'
             logger.info(error)
 
-    return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user, document_list = document_list, doc_len=doc_len, success=success)
+    return render_template('index.html', error=error, step_2=step_2, step_3=step_3, myuser=user,
+                           document_list=document_list, doc_len=doc_len, success=success)
 
 
 @app.route(BASE_PATH+'github_reg')
@@ -300,15 +303,15 @@ def register():
                     error = "Couldn't send verification code, please try again."
             else:
                 error = "This user already exists, please reset your password or use a different email."
-                logger.info(error) # TODO @val: change these to logger.error
+                logger.info(error)  # TODO @val: change these to logger.error
 
     return render_template('register.html', error=error)
 
 
 @app.route(BASE_PATH +'register_org', methods=['GET', 'POST'])
 def register_org():
-    error=''
-    username=''
+    error = ''
+    username = ''
     myuser = None
 
     user = User.User()
@@ -467,7 +470,7 @@ def google_latex_docs():
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-    return render_template('google_latex_docs.html', error=error)
+    return render_template('google_latex_docs.html', error=error, myuser=user)
 
 
 @app.route(BASE_PATH+'edit_docs/<render>', methods=['GET', 'POST'])
@@ -491,13 +494,15 @@ def edit_docs(render):
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-    return render_template('edit_docs.html', error=error, render = render)
+    return render_template('edit_docs.html', error=error, render=render, myuser=user)
+
 
 @app.route(BASE_PATH+'success', methods=['GET'])
 def register_success():
     error=""
     message = ""
     return render_template('register_success.html', error=error)
+
 
 @app.route(BASE_PATH+'pay_success', methods=['GET'])
 def pay_success():
@@ -817,9 +822,11 @@ def authorized():
         error= "error getting Token"
     return redirect(url_for('github_reg', error=error))
 
+
 @github.tokengetter
 def get_github_oauth_token():
     return session.get('github_token')
+
 
 @app.route(BASE_PATH+'google_authorize')
 def google_authorize():
@@ -846,6 +853,7 @@ def google_authorize():
         logger.info("no state session")
 
     return redirect(authorization_url)
+
 
 @app.route(BASE_PATH+'oauth2callback')
 def oauth2callback():
@@ -885,28 +893,33 @@ def oauth2callback():
         user.google_refresh_token = session['credentials'].get("refresh_token")
     user.update()
 
-    return redirect(url_for('google_latex_docs'))
+    return redirect(url_for('documents', render="google", type="nda"))
 
 
 @app.route(BASE_PATH+'oauth2callback/google38fb6f671eadab58.html')
 def oauthgoogle38fb6f671eadab58():
     return render_template('google38fb6f671eadab58.html')
 
+
 @app.route(BASE_PATH+'termsofuse')
 def termsofuse():
     return render_template('termsofuse.html')
+
 
 @app.route(BASE_PATH+'privacypolicy')
 def privacypolicy():
     return render_template('privacypolicy.html')
 
+
 @app.route('/api/v1/pdf/<id>', methods=['GET', 'POST'])
 def redir_pdf(id):
     return redirect(url_for('show_pdf', id=id))
 
+
 @app.route('/', methods=['GET', 'POST'])
 def redir_login():
     return redirect(url_for('login'))
+
 
 @app.route(BASE_PATH+'pdf/<id>', methods=['GET', 'POST'])
 def show_pdf(id):
@@ -1033,13 +1046,17 @@ def show_pdf(id):
                                            'client_secret': conf.GOOGLE_CLIENT_SECRET,
                                            'scopes': conf.SCOPES}
 
-                #generate document and contract file names by the email, link id and the current timestamp
+                # generate document and contract file names by the email, link id and the current timestamp
                 timestamp_now = str(int(time.time()))
                 doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
                 contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
                 # render and send the documents by email
-                render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
-                                     render_nda_only, signer_user, id, doc_file_name, contract_file_name)
+                # TODO find a way to parse all the parameters different than by individual variables
+                IOLoop.instance().add_callback(callback=lambda: render_and_send_docs(user, thisdoc, nda_file_base64,
+                                                                                     google_credentials_info,
+                                                                                     render_wp_only, render_nda_only,
+                                                                                     signer_user, id, doc_file_name,
+                                                                                     contract_file_name))
 
                 message = "successfully sent your files "
 

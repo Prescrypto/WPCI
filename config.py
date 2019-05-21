@@ -34,6 +34,7 @@ JIRA_URL = os.environ['JIRA_URL']
 JIRA_USER = os.environ['JIRA_USER']
 JIRA_PASSWORD = os.environ['JIRA_PASSWORD']
 PRODUCTION = os.environ['PRODUCTION']
+LISTEN_PORT = os.environ['PORT']
 
 #PRESCRYPTO PAYMENT CREDENTIALS
 PAY_URL = os.environ['PAY_URL']
