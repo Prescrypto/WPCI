@@ -820,6 +820,7 @@ def delete_link(doc_id):
         logger.info("error deleting the link" + str(e))
         return False
 
+
 def get_link_details(link_id):
     ''' Retrieves the status of a Document link (signed or unsigned)'''
     result = False
@@ -831,6 +832,7 @@ def get_link_details(link_id):
     except Exception as e:
         logger.info("error deleting the link" + str(e))
         return False
+
 
 def get_document_details(doc_id):
     ''' Retrieves the status of a Document link (signed or unsigned)'''

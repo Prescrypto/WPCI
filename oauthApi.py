@@ -201,7 +201,8 @@ def index():
             error = 'Invalid Values. Please try again.'
             logger.info(error)
 
-    return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user, document_list = document_list, doc_len=doc_len, success=success)
+    return render_template('index.html', error=error, step_2=step_2, step_3=step_3, myuser=user,
+                           document_list=document_list, doc_len=doc_len, success=success)
 
 
 @app.route(BASE_PATH+'github_reg')
@@ -300,15 +301,15 @@ def register():
                     error = "Couldn't send verification code, please try again."
             else:
                 error = "This user already exists, please reset your password or use a different email."
-                logger.info(error) # TODO @val: change these to logger.error
+                logger.info(error)  # TODO @val: change these to logger.error
 
     return render_template('register.html', error=error)
 
 
 @app.route(BASE_PATH +'register_org', methods=['GET', 'POST'])
 def register_org():
-    error=''
-    username=''
+    error = ''
+    username = ''
     myuser = None
 
     user = User.User()
@@ -467,7 +468,7 @@ def google_latex_docs():
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-    return render_template('google_latex_docs.html', error=error)
+    return render_template('google_latex_docs.html', error=error, myuser=user)
 
 
 @app.route(BASE_PATH+'edit_docs/<render>', methods=['GET', 'POST'])
@@ -491,13 +492,15 @@ def edit_docs(render):
         logger.info("The user is not logued in")
         return redirect(url_for('login'))
 
-    return render_template('edit_docs.html', error=error, render = render)
+    return render_template('edit_docs.html', error=error, render=render, myuser=user)
+
 
 @app.route(BASE_PATH+'success', methods=['GET'])
 def register_success():
     error=""
     message = ""
     return render_template('register_success.html', error=error)
+
 
 @app.route(BASE_PATH+'pay_success', methods=['GET'])
 def pay_success():
@@ -885,7 +888,7 @@ def oauth2callback():
         user.google_refresh_token = session['credentials'].get("refresh_token")
     user.update()
 
-    return redirect(url_for('google_latex_docs'))
+    return redirect(url_for('documents', render="google", type="nda"))
 
 
 @app.route(BASE_PATH+'oauth2callback/google38fb6f671eadab58.html')
