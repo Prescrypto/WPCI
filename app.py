@@ -47,13 +47,7 @@ web_app = Application([
     (r'.*', routes.APINotFoundHandler)],
     debug=True)
 
-try:
-    httpServer = HTTPServer(web_app)
-    httpServer.listen(LISTEN_PORT)
-    httpServer.start()
-    IOLoop.instance().start()
-except KeyboardInterrupt:
-    IOLoop.instance().stop()
-    logger.info("keyboard interrupt")
-except Exception as e:
-    logger.info(e)
+httpServer = HTTPServer(web_app)
+httpServer.listen(LISTEN_PORT)
+httpServer.start()
+IOLoop.instance().start()
