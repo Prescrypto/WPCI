@@ -55,8 +55,8 @@ class Document(object):
 
             if self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
-
-                self.doc_id = '{}_{}'.format(self.wp_name.strip(" ").replace(" ", "_"), str(int(time.time() * 1000)))
+                doc_name = self.wp_name.strip(" ").replace(" ", "_")
+                self.doc_id = '{}_{}'.format(doc_name, str(int(time.time() * 1000)))
                 result = self.create()
                 if not result:
                     logger.info("couldn't save the document to the db")
