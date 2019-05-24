@@ -37,7 +37,7 @@ logger = logging.getLogger('tornado-info')
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 # S3 PATHS
-FOLDER = "signed_files/"
+FOLDER = f"{conf.FOLDER_NAME}/"
 BUCKET = "wpci-signed-docs"
 S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/"+BUCKET+"/"+FOLDER+"{}"
 ONE_HOUR = 3600
