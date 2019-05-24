@@ -62,12 +62,18 @@ class Mailer(object):
                 part.add_header('Content-Disposition', 'attachment; filename="' + attachment.get('filename') + '"')
                 msg.attach(part)
 
-            self.server = smtplib.SMTP(host=self.host, port=self.port)
-            self.server.ehlo()
-            self.server.starttls()
-            self.server.ehlo()
-            self.server.login(self.username, self.password)
-            self.server.sendmail(msg['From'], toaddr_list, msg.as_string())
-            logger.info(self.server.quit())
+            if conf.DEBUG:
+                self.server = smtplib.SMTP(host=self.host, port=self.port)
+                self.server.ehlo()
+                self.server.starttls()
+                self.server.ehlo()
+                self.server.login(self.username, self.password)
+                self.server.sendmail(msg['From'], toaddr_list, msg.as_string())
+                logger.info(self.server.quit())
+            else:
+                logger.info(f"Email sent: {msg}")
+                logger.info(f"text: {text}")
+                logger.info(f"html: {html}")
+
         except Exception as e:
-            logger.info("error sending email"+ str(e))
+            logger.info(f"error sending email {e}")
