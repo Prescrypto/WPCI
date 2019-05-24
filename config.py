@@ -35,6 +35,7 @@ JIRA_USER = os.environ['JIRA_USER']
 JIRA_PASSWORD = os.environ['JIRA_PASSWORD']
 PRODUCTION = os.environ['PRODUCTION']
 LISTEN_PORT = os.environ['PORT']
+DEBUG = os.environ['DEBUG']
 
 #PRESCRYPTO PAYMENT CREDENTIALS
 PAY_URL = os.environ['PAY_URL']
@@ -60,3 +61,4 @@ CHUNKSIZE = 2 * 1024 * 1024
 #AWS KEYS
 ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID'] # This is the exact name of the variables for AWS Authentication
 SECRET_KEY = os.environ['AWS_SECRET_ACCESS_KEY'] # This is the exact name of the variables for AWS Authentication
+FOLDER_NAME = os.environ["FOLDER_NAME"]
