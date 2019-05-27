@@ -69,6 +69,9 @@
     "PRODUCTION": {
 	  "required": true
       },
+    "DEBUG": {
+	  "required": true
+      },
     "PAY_URL": {
 	  "required": true
       },
@@ -91,6 +94,9 @@
 	  "required": true
       },
     "AWS_SECRET_ACCESS_KEY": {
+	  "required": true
+      },
+    "FOLDER_NAME": {
 	  "required": true
       },
     "GITHUB_OAUTH_URI": {
