@@ -72,7 +72,7 @@ DEFAULT_HTML_TEXT = \
 NOTIFICATION_HTML = \
             "<h3>Hi!</h3>\
             <p> {} has just downloaded the following document {}!</p>\
-            <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
+            <p>You can view detailed analytics here: <a href='{}'>{}</a></p>\
             <p>Keep crushing it!</p>\
             <p>WPCI Admin</p>"
 ATTACH_CONTENT_TYPE = 'octet-stream'
