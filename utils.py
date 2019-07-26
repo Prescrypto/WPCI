@@ -37,7 +37,7 @@ logger = logging.getLogger('tornado-info')
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 # S3 PATHS
-FOLDER = "signed_files/"
+FOLDER = f"{conf.FOLDER_NAME}/"
 BUCKET = "wpci-signed-docs"
 S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/"+BUCKET+"/"+FOLDER+"{}"
 ONE_HOUR = 3600
@@ -57,7 +57,7 @@ def get_hash(strings_list, hashes_list=[]):
 
 
 def is_valid_email(email):
-    return bool(re.search(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,3}$", email))
+    return bool(re.search(r'^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email))
 
 
 def allowed_file(filename):
