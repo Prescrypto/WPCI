@@ -5,9 +5,9 @@ from email.mime.base import MIMEBase
 import logging
 from email import encoders
 import smtplib
+import ast
 #web app
 from tornado.template import Loader
-
 #internal
 import config as conf
 
@@ -62,12 +62,18 @@ class Mailer(object):
                 part.add_header('Content-Disposition', 'attachment; filename="' + attachment.get('filename') + '"')
                 msg.attach(part)
 
-            self.server = smtplib.SMTP(host=self.host, port=self.port)
-            self.server.ehlo()
-            self.server.starttls()
-            self.server.ehlo()
-            self.server.login(self.username, self.password)
-            self.server.sendmail(msg['From'], toaddr_list, msg.as_string())
-            logger.info(self.server.quit())
+            if ast.literal_eval(conf.DEBUG):
+                self.server = smtplib.SMTP(host=self.host, port=self.port)
+                self.server.ehlo()
+                self.server.starttls()
+                self.server.ehlo()
+                self.server.login(self.username, self.password)
+                self.server.sendmail(msg['From'], toaddr_list, msg.as_string())
+                logger.info(self.server.quit())
+            else:
+                logger.info(f"Email sent:")
+                logger.info(f"text: {text}")
+                logger.info(f"html: {html}")
+
         except Exception as e:
-            logger.info("error sending email"+ str(e))
+            logger.info(f"error sending email {e}")

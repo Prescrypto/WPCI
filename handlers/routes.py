@@ -72,13 +72,13 @@ DEFAULT_HTML_TEXT = \
 NOTIFICATION_HTML = \
             "<h3>Hi!</h3>\
             <p> {} has just downloaded the following document {}!</p>\
-            <p>You can view detailed analytrics here: <a href='{}'>{}</a></p>\
+            <p>You can view detailed analytics here: <a href='{}'>{}</a></p>\
             <p>Keep crushing it!</p>\
             <p>WPCI Admin</p>"
 ATTACH_CONTENT_TYPE = 'octet-stream'
 
 # S3 PATHS
-FOLDER = "signed_files/"
+FOLDER = f"{conf.FOLDER_NAME}/"
 BUCKET = "wpci-signed-docs"
 S3_BASE_URL = "https://s3-us-west-2.amazonaws.com/"+BUCKET+"/"+FOLDER+"{}"
 
@@ -1122,12 +1122,14 @@ class RegisterUser(BaseHandler):
     def post(self):
         try:
             json_data = json.loads(self.request.body.decode('utf-8'))
-            user = User.User(json_data.get("username"), json_data.get("password"))
-            if not user.find():
-                user.create()
-                self.write(json.dumps({"response": "user created successfully"}))
-            else:
-                self.write(json.dumps({"response": "user already exists"}))
+            username = json_data.get("username")
+            if is_valid_email(username):
+                user = User.User(username, json_data.get("password"))
+                if not user.find():
+                    user.create()
+                    self.write(json.dumps({"response": "user created successfully"}))
+                else:
+                    self.write(json.dumps({"response": "user already exists"}))
         except:
             self.write(json.dumps({"response": "error registering user"}))
 
@@ -1138,17 +1140,19 @@ class WebhookConfirm(BaseHandler):
         try:
             user = User.User()
             json_data = json.loads(self.request.body.decode('utf-8'))
-            if json_data.get("token") is not None and json_data.get("user_email") is not None :
-                user = user.find_by_attr("username", json_data.get("user_email"))
-                if json_data.get("token") == conf.PAY_TOKEN and json_data.get("payment_status") is not None:
-                    user.set_attributes({"has_paid": json_data.get("payment_status")})
-                    user.update()
+            username = json_data.get("user_email")
+            if json_data.get("token") is not None and username is not None:
+                if is_valid_email(username):
+                    user = user.find_by_attr("username", username)
+                    if json_data.get("token") == conf.PAY_TOKEN and json_data.get("payment_status") is not None:
+                        user.set_attributes({"has_paid": json_data.get("payment_status")})
+                        user.update()
 
-                    self.write_json({"response": "ok"}, 200)
-                else:
-                    error = "error on token"
-                    logger.info(error)
-                    self.write_json({"error": error}, 401)
+                        self.write_json({"response": "ok"}, 200)
+                    else:
+                        error = "error on token"
+                        logger.info(error)
+                        self.write_json({"error": error}, 401)
         except:
             error= "error getting response"
             logger.error(error)
@@ -1163,6 +1167,7 @@ class PostRepoHash(BaseHandler):
         self.write(json.dumps({"response": "GET not found"}))
 
     def post(self, userid):
+        result = None
         json_data = json.loads(self.request.body.decode('utf-8'))
         try:
             if json_data.get("main_tex") is None or json_data.get("main_tex") == "":
@@ -1190,9 +1195,10 @@ class PostRepoHash(BaseHandler):
             else:
                 options = json_data.get("options")
 
-
             userjson = ast.literal_eval(userid)
-            result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email, email_body_html, main_tex,  email_body_text, options)
+            if is_valid_email(email):
+                result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email,
+                                               email_body_html, main_tex,  email_body_text, options)
             if result:
                 self.write(json.dumps({"response": "done"}))
             else:
@@ -1207,6 +1213,7 @@ class RenderUrl(BaseHandler):
     '''Receives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
 
     def get(self):
+        result = None
         try:
             link_id = self.get_argument('link_id', "")
             email = self.get_argument('email', "")
@@ -1215,7 +1222,9 @@ class RenderUrl(BaseHandler):
             email_body_text =self.get_argument('email_body_text', "")
             options = json.loads(self.get_argument('options', "{}"))
 
-            result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
+            if is_valid_email(email):
+                result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
+
             if not result:
                 self.write(json.dumps({"response": "Error"}))
             else:
@@ -1262,6 +1271,7 @@ class PostWpNda(BaseHandler):
             self.write(json.dumps({"response": "Error"}))
 
     def get(self, userid):
+        result = None
         try:
             link_id = self.get_argument('link_id', "")
             email = self.get_argument('email', "")
@@ -1270,7 +1280,8 @@ class PostWpNda(BaseHandler):
             email_body_text = self.get_argument('email_body_text', "")
             options = json.loads(self.get_argument('options', "{}"))
 
-            result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
+            if is_valid_email(email):
+                result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
             if not result:
                 self.write(json.dumps({"response": "Error"}))
             else:
