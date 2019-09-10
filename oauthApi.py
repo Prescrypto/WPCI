@@ -579,8 +579,8 @@ def documents(type, render):
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        NDA_NOT_EMPTY = False
-        WP_NOT_EMPTY = False
+        CONTRACT_NOT_EMPTY = False
+        DOC_NOT_EMPTY = False
         if request.form['wp_name']:
             try:
                 id_property = getattr(user, "org_id", False)
@@ -599,11 +599,11 @@ def documents(type, render):
                 if data.get("redirect_url") is None or data.get("redirect_url") == "":
                     data["redirect_url"] = ""
 
-                if type == "nda":
+                if type == conf.CONTRACT:
                     '''This is a contract document without a white paper or other document'''
-                    data["nda_url"] = data.get("wp_url")
-                    data["wp_url"] = ""
-                elif type == "wp":
+                    data["nda_url"] = data.get("doc_url")
+                    data["doc_url"] = ""
+                elif type == conf.DOCUMENT:
                     '''this is a document protected'''
                     data["nda_url"] = ""
 
@@ -613,18 +613,18 @@ def documents(type, render):
                         data["wp_description"] = user.org_name + " requires you to sign this before you can continue. Please\
                         read carefully and sign to continue."
 
-                    if data.get("wp_getit_btn") == "":
-                        data["wp_getit_btn"] = "I agree to the above terms in this NDA"
+                    if data.get("doc_getit_btn") == "":
+                        data["doc_getit_btn"] = "I agree to the above terms in this NDA"
                 else:
-                    if data.get("wp_getit_btn") == "":
-                        data["wp_getit_btn"] = "To get the complete document please check this box and fill the following fields"
+                    if data.get("doc_getit_btn") == "":
+                        data["doc_getit_btn"] = "To get the complete document please check this box and fill the following fields"
 
-                    if data.get("wp_description") == "":
-                        data["wp_description"] = user.org_name + " Click on the Get it! button and enter your email so we can send you a copy of \
+                    if data.get("doc_description") == "":
+                        data["doc_description"] = user.org_name + " Click on the Get it! button and enter your email so we can send you a copy of \
                         this document to your email."
 
-                if data.get("wp_url") is not None and data.get("wp_url") != "":
-                    WP_NOT_EMPTY = True
+                if data.get("doc_url") is not None and data.get("doc_url") != "":
+                    DOC_NOT_EMPTY = True
 
                 if render == "latex":
                     '''Check if the permissions are enough for the repositories if the 
@@ -634,10 +634,10 @@ def documents(type, render):
                         logger.info("github token is not set")
                         try:
                             GITHUB_URL = "github.com"
-                            if NDA_NOT_EMPTY and GITHUB_URL in data.get("nda_url").split("/"):
-                                data["nda_url"] = "git://{}".format(data.get("nda_url").split("://")[1])
-                            if WP_NOT_EMPTY and GITHUB_URL in data.get("wp_url").split("/"):
-                                data["wp_url"] = "git://{}".format(data.get("wp_url").split("://")[1])
+                            if NDA_NOT_EMPTY and GITHUB_URL in data.get("contract_url").split("/"):
+                                data["contract_url"] = "git://{}".format(data.get("contract_url").split("://")[1])
+                            if DOC_NOT_EMPTY and GITHUB_URL in data.get("doc_url").split("/"):
+                                data["doc_url"] = "git://{}".format(data.get("doc_url").split("://")[1])
                         except:
                             error ="error getting correct url on git for public access"
                             logger.info(error)
@@ -645,10 +645,10 @@ def documents(type, render):
 
                     else:
                         try:
-                            if NDA_NOT_EMPTY:
-                                data["nda_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("nda_url").split("://")[1])
-                            if WP_NOT_EMPTY:
-                                data["wp_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("wp_url").split("://")[1])
+                            if CONTRACT_NOT_EMPTY:
+                                data["nda_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("contract_url").split("://")[1])
+                            if DOC_NOT_EMPTY:
+                                data["DOC_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("doc_url").split("://")[1])
                         except:
                             error = "error getting correct url on git for private access"
                             logger.info(error)

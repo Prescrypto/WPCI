@@ -1,6 +1,27 @@
 import os
+import fitz
 TIMEZONE = "America/Mexico_City"
 headers = {"Content-Type" :  "application/json" } #get the content in json format
+GOOGLE = "google"
+LATEX = "latex"
+EXTERNAL = "external"
+DOCUMENT = "wp"
+CONTRACT = "nda"
+NDA = "wp_nda"
+DOC_FILE_NAME = "document.pdf"
+
+# Axis for the pdf header
+AXIS_X = 15
+AXIS_Y = 500
+AXIS_Y_GOOGLE = 200
+AXIS_X_LOWER = 28
+AXIS_Y_LOWER = AXIS_Y + 11
+PRESENTATION_OFFSET = 130
+WATERMARK_ROTATION = 90
+WATERMARK_FONT = "Times-Roman"
+WATERMARK_SIZE = 10
+FLIP_MATRIX = fitz.Matrix(1.0, -1.0)  # this generates [a=1,b=0,c=0,d=-1,e=0,f= 0]
+
 
 SECRET = os.environ.get('SECRET', '')
 MONGO_URI= os.environ['MONGODB_URI']
