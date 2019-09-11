@@ -24,7 +24,7 @@ headers = conf.headers
 GIT_BASE_URI = conf.GITHUB_API_URL
 
 
-def get_nda(payload, signer_user):
+def get_b2h_document(payload, signer_user):
     '''this function creates a new page dynamically by storing the payload posted into the data base'''
     URL= conf.CRYPTO_SIGN_URL
     SIGN_URL = 'api/v1/sign/'

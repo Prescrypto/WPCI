@@ -2,17 +2,17 @@
 import tempfile
 import io
 import fitz
+import subprocess
 
 #web
 import jinja2
 from tornado import gen
-from tornado.ioloop import IOLoop
 
 # internal
 from models import Document, Link, signerUser
 from handlers.emailHandler import Mailer
 from utils import *
-
+from handlers.WSHandler import get_b2h_document
 
 #google oauth
 import google.oauth2.credentials
@@ -59,6 +59,7 @@ class manageDocuments():
     signer_user = None
     google_credentials = None
     git_credentials = None
+    link_id = None
 
     def __init__(self, doc_id=None):
         if doc_id:
@@ -123,7 +124,7 @@ class manageDocuments():
                 return True
         return False
 
-    def download_and_sign_google_doc(self, pdf_id, timestamp_now):
+    def download_and_sign_google_doc(self, pdf_id, timestamp_now, is_contract=False):
         MORPH = None
         watermark = "Document generated for: " + self.signer_user.email
         complete_hash = get_hash([timestamp_now, self.signer_user.email], [pdf_id])
@@ -133,7 +134,6 @@ class manageDocuments():
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
-                file_full_path64 = tmpdir + "/" + pdf_id + ".base64"
                 file_full_path = tmpdir + "/" + pdf_id + ".pdf"
                 drive = googleapiclient.discovery.build(
                     conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
@@ -154,26 +154,27 @@ class manageDocuments():
                 with open(file_full_path, 'wb') as mypdf:
                     mypdf.write(fh.getvalue())
 
-                if mime_type == "application/vnd.google-apps.presentation":
-                    pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y - conf.PRESENTATION_OFFSET)
-                    pointb = fitz.Point(conf.AXIS_X_LOWER, conf.AXIS_Y - conf.PRESENTATION_OFFSET)
-                elif mime_type == "application/vnd.google-apps.spreadsheet":
-                    pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y)
-                    pointb = fitz.Point(conf.AXIS_X_LOWER, conf.AXIS_Y)
+                if not is_contract:
+                    if mime_type == "application/vnd.google-apps.presentation":
+                        pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y - conf.PRESENTATION_OFFSET)
+                        pointb = fitz.Point(conf.AXIS_X_LOWER, conf.AXIS_Y - conf.PRESENTATION_OFFSET)
+                    elif mime_type == "application/vnd.google-apps.spreadsheet":
+                        pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y)
+                        pointb = fitz.Point(conf.AXIS_X_LOWER, conf.AXIS_Y)
 
-                else:
-                    pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y_GOOGLE)
-                    pointb = fitz.Point(conf.AXIS_X_LOWER,conf. AXIS_Y_GOOGLE)
-                    MORPH = (pointb, conf.FLIP_MATRIX)
+                    else:
+                        pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y_GOOGLE)
+                        pointb = fitz.Point(conf.AXIS_X_LOWER,conf. AXIS_Y_GOOGLE)
+                        MORPH = (pointb, conf.FLIP_MATRIX)
 
-                document = fitz.open(file_full_path)
-                for page in document:
-                    page.insertText(pointa, text=watermark, fontsize=conf.WATERMARK_SIZE, fontname=conf.WATERMARK_FONT,
-                                    rotate=conf.WATERMARK_ROTATION, morph=MORPH)
-                    page.insertText(pointb, text="DocId: " + complete_hash, fontsize=conf.WATERMARK_SIZE,
-                                    fontname=conf.WATERMARK_FONT, rotate=conf.WATERMARK_ROTATION, morph=MORPH)
-                document.save(file_full_path, incremental=1)
-                document.close()
+                    document = fitz.open(file_full_path)
+                    for page in document:
+                        page.insertText(pointa, text=watermark, fontsize=conf.WATERMARK_SIZE, fontname=conf.WATERMARK_FONT,
+                                        rotate=conf.WATERMARK_ROTATION, morph=MORPH)
+                        page.insertText(pointb, text="DocId: " + complete_hash, fontsize=conf.WATERMARK_SIZE,
+                                        fontname=conf.WATERMARK_FONT, rotate=conf.WATERMARK_ROTATION, morph=MORPH)
+                    document.save(file_full_path, incremental=1)
+                    document.close()
 
                 pdffile = open(file_full_path, 'rb').read()
 
@@ -186,12 +187,64 @@ class manageDocuments():
                 logger.info("other error google render" + str(e))
                 return None, None, None
 
-    def render_document(self, timestamp_now, email, name):
+    def download_and_sign_latex_doc(self, repo_url, main_tex="main.tex", is_contract=False, options={}):
+        '''Clones a repo and renders the file received as main_tex '''
+        new_main_tex = "main2.tex"
+        watermark = "Document generated for: " + self.signer_user.email
+
+        clone = F'git clone {repo_url}'
+        rev_parse = 'git rev-parse master'
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                timestamp = str(time.time())
+                subprocess.check_output(clone, shell=True, cwd=tmpdir)
+                repo_name = os.listdir(tmpdir)[0]
+                file_tittle = repo_name.strip(" ") + ".pdf"
+                filesdir = os.path.join(tmpdir, repo_name)
+                if options != {}:  # if there are special conditions to render
+                    # modify the original template:
+                    template = latex_jinja_env.get_template(filesdir + "/" + main_tex)
+                    renderer_template = template.render(**options)
+                    with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
+                        f.write(renderer_template)
+                else:
+                    new_main_tex = main_tex
+
+                file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
+                run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+                complete_hash = get_hash([timestamp, self.signer_user.email], [run_git_rev_parse.decode('UTF-8')])
+                subprocess.call(
+                    F"texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f {new_main_tex}",
+                    shell=True,
+                    cwd=filesdir
+                )
+
+                if not is_contract:
+                    pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y)
+                    pointb = fitz.Point(conf.AXIS_X_LOWER, conf.AXIS_Y)
+                    document = fitz.open(file_full_path)
+                    for page in document:
+                        page.insertText(pointa, text=watermark, fontsize=conf.WATERMARK_SIZE, fontname=conf.WATERMARK_FONT,
+                                        rotate=conf.WATERMARK_ROTATION)
+                        page.insertText(pointb, text="DocId: " + complete_hash, fontsize=conf.WATERMARK_SIZE,
+                                        fontname=conf.WATERMARK_FONT, rotate=conf.WATERMARK_ROTATION)
+                    document.save(file_full_path, incremental=1)
+                    document.close()
+
+                pdffile = open(file_full_path, 'rb').read()
+                return pdffile, complete_hash, file_tittle
+
+            except IOError as e:
+                logger.info('IOError' + str(e))
+                return None, None, None
+            except Exception as e:
+                logger.info("other error" + str(e))
+                return None, None, None
+
+    def render_document(self, main_tex, timestamp_now):
         pdffile = None
         doc_type = getattr(self.document, "render", "")
-        self.signer_user = signerUser.SignerUser(email, name)
-        # create the signer user so it can generate their keys
-        self.signer_user.create()
 
         if doc_type == conf.GOOGLE:
             self.set_google_credentials()
@@ -203,20 +256,100 @@ class manageDocuments():
             return pdffile, complete_hash, file_tittle
 
         elif doc_type == conf.LATEX:
-            return None, None, None
+            pdffile, complete_hash, file_tittle = self.download_and_sign_latex_doc(
+                self.document.doc_url,
+                main_tex
+            )
+            return pdffile, complete_hash, file_tittle
 
         elif doc_type == conf.EXTERNAL:
             return None, None, None
+        else:
+            return None, None, None
+
+    def render_contract(self, timestamp_now, main_tex):
+        tx_id = error = ""
+        CONTRACT_FILE_NAME = "document.pdf"
+        pdf_file = contract_b2chainized = sign_record = None
+
+        doc_type = getattr(self.document, "render", "")
+        if doc_type == conf.GOOGLE:
+            self.set_google_credentials()
+            doc_google_id = get_id_from_url(self.document.contract_url)
+            pdf_file, complete_hash, file_tittle = self.download_and_sign_google_doc(
+                doc_google_id,
+                timestamp_now,
+                is_contract=True
+            )
+
+        elif doc_type == conf.LATEX:
+            pdf_file, complete_hash, file_tittle = self.download_and_sign_latex_doc(
+                self.document.contract_url,
+                main_tex,
+                is_contract=True
+            )
+
+        b64_pdf = self.convert_bytes_to_b64(pdf_file)
+        if not b64_pdf:
+            error = "[Error render_contract] couldn't convert to b64"
+            logger.error(error)
+            return None, error
+
+        try:
+            crypto_tool = CryptoTools()
+            if self.user.org_logo is None or self.user.org_logo == "":
+                org_logo = open(conf.DEFAULT_LOGO_PATH, 'r').read()
+            else:
+                org_logo = self.user.org_logo
+
+            sign_document_hash(self.signer_user, b64_pdf)
+            rsa_object = crypto_tool.import_RSA_string(self.signer_user.priv_key)
+            pub_key_hex = crypto_tool.savify_key(rsa_object.publickey()).decode("utf-8")
+
+            crypto_sign_payload = {
+                "pdf": b64_pdf,
+                "timezone": conf.TIMEZONE,
+                "signature": self.signer_user.sign,
+                "signatories": [
+                    {
+                        "email": self.signer_user.email,
+                        "name": self.signer_user.name,
+                        "public_key": pub_key_hex
+                    }],
+                "params": {
+                    "locale": conf.LANGUAGE,
+                    "title": self.user.org_name + " contract",
+                    "file_name": CONTRACT_FILE_NAME,
+                    "logo": org_logo,
+                }
+            }
+
+            contract_b2chainized, sign_record = get_b2h_document(crypto_sign_payload, self.signer_user)
+
+            if not contract_b2chainized:
+                error = "Failed loading contract"
+                logger.error(error)
+                return None, None, error
+
+        except Exception as e:
+            logger.info("Error rendering contract: {}".format(str(e)))
+        finally:
+            return contract_b2chainized, sign_record, error
 
     @gen.engine
-    def render_and_send_all_documents(self, email, name, email_body_html, main_tex="main.tex", email_body_text=""):
+    def render_and_send_all_documents(self, email, name, email_body_html, timestamp_now,
+                                      contract_file_name, doc_file_name,
+                                      main_tex="main.tex", email_body_text=""):
         """ Trigger the renderization of the documents/contracts related to this doc object """
         ATTACH_CONTENT_TYPE = 'octet-stream'
         render_doc = False
         attachment_list = []
         render_contract = False
-        timestamp_now = str(int(time.time()))
         error = ""
+
+        self.signer_user = signerUser.SignerUser(email, name)
+        # create the signer user so it can generate their keys
+        self.signer_user.create()
 
         with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -234,41 +367,72 @@ class manageDocuments():
 
                 if render_doc:
                     try:
+                        print("start rend doc")
                         doc_file_path = os.path.join(tmp_dir, conf.DOC_FILE_NAME)
-                        s3_file_name = F"doc_{self.signer_user.email}_{self.link_id}_{timestamp_now}.pdf"
+                        print("ag")
                         pdf_file, complete_hash, file_tittle = self.render_document(
-                            timestamp_now,
-                            email,
-                            name
+                            main_tex,
+                            timestamp_now
                         )
-                        with open(doc_file_path, 'wb') as temp_file:
-                            temp_file.write(pdf_file)
+                        print("pdf done", complete_hash)
+                        if pdf_file:
+                            with open(doc_file_path, 'wb') as temp_file:
+                                temp_file.write(pdf_file)
 
-                        uploaded_document_url = upload_to_s3(doc_file_path, s3_file_name)
-                        self.signer_user.s3_doc_url = S3_BASE_URL.format(s3_file_name)
-                        self.signer_user.update()
-                        # this is the payload for the white paper file
-                        doc_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
-                                              file_path=doc_file_path,
-                                              filename=conf.DOC_FILE_NAME)
-                        attachment_list.append(doc_attachment)
+                            print("upload to s3")
+
+                            uploaded_document_url = upload_to_s3(doc_file_path, doc_file_name)
+                            self.signer_user.s3_doc_url = S3_BASE_URL.format(doc_file_name)
+                            self.signer_user.update()
+                            # this is the payload for the white paper file
+                            doc_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                                  file_path=doc_file_path,
+                                                  filename=conf.DOC_FILE_NAME)
+                            attachment_list.append(doc_attachment)
+                        else:
+                            logger.error(F"[ERROR render_and_send_all_documents render_doc] Couldn't render the pdf")
+
                     except Exception as e:
                         logger.error(F"[ERROR render_and_send_all_documents] {e}")
                         error = "couldn't render the document"
 
                 if render_contract:
-                    pass
+                    print("start rend contr")
+                    contract_file_path = os.path.join(tmp_dir, conf.CONTRACT_FILE_NAME)
+                    print("contrrr")
+                    contract_b2chainized, sign_record, error = self.render_contract(timestamp_now, main_tex)
 
-                if error != "":
-                    logger.info("There was an error on the documents rendering: {}".format(error))
-                else:
-                    self.send_attachments(attachment_list, email_body_html, email_body_text)
+                    print("pdf done c", sign_record)
+                    if contract_b2chainized:
+                        with open(contract_file_path, 'wb') as temp_file:
+                            temp_file.write(contract_b2chainized)
+
+                        print("upload to s3")
+
+                        sign_record.s3_contract_url = S3_BASE_URL.format(contract_file_name)
+                        sign_record.link_id = self.link_id
+                        sign_record.update()
+
+                        uploaded_document_url = upload_to_s3(contract_file_path, contract_file_name)
+                        self.signer_user.s3_doc_url = S3_BASE_URL.format(contract_file_name)
+                        self.signer_user.update()
+                        # this is the payload for the white paper file
+                        doc_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                              file_path=contract_file_path,
+                                              filename=conf.CONTRACT_FILE_NAME)
+                        attachment_list.append(doc_attachment)
+
+                    else:
+                        logger.error(F"[ERROR render_and_send_all_documents render_contract] Couldn't render the pdf")
+
+                    if len(attachment_list) > 0:
+                        self.send_attachments(attachment_list, email_body_html, email_body_text)
 
             except Exception as e:
-                logger.info("error rendering documents: {}".format(str(e)))
-                error = "error rendering document"
+                logger.info("error rendering all documents: {}".format(str(e)))
+                error = "error rendering all documents"
             finally:
-                return attachment_list, error
+                logger.info("documents rendering has finished")
 
     def send_attachments(self, attachment_list, email_body_html, email_body_text):
         """Send a list of attachments to the signer and organization"""
@@ -300,17 +464,21 @@ class manageDocuments():
                     emails_to=[self.user.org_email], html_message=html_text,
                     text_message=email_body_text)
 
-    def render_contract(self):
-        return None
-
-    def get_b64_pdf_from_document(self):
+    def convert_bytes_to_b64(self, pdf_file):
         '''Call the render function and retrive a base 64 pdf'''
-        result = False
+        b64_pdf = None
+
         try:
 
-            return None
+            with tempfile.TemporaryDirectory() as tmpdir:
+                file_full_path64 = os.path.join(tmpdir, "temp_b64_file.base64")
+                with open(file_full_path64, 'wb') as ftemp:
+                    # write in a new file the base64
+                    ftemp.write(base64.b64encode(pdf_file))
+
+                b64_pdf = open(file_full_path64, 'r').read()
 
         except Exception as e:
-            logger.info("error rendering the document link " + str(e))
+            logger.info("[Error] convert_bytes_to_b64 " + str(e))
 
-        return result
+        return b64_pdf

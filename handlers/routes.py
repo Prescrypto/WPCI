@@ -32,7 +32,6 @@ import fitz
 
 #internal
 from handlers.apiBaseHandler import BaseHandler
-import config as conf
 from models import User, Document, Link, signRecord, signerUser
 from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
@@ -274,516 +273,6 @@ def authenticate_json(json_data):
         return False
 
 
-def render_send_by_link_id(link_id, email, name, email_body_html="", email_body_text=""):
-    """Download and render a document then sign and send it by email"""
-    b64_pdf_file = pdf_url = None
-    doc_file_name = contract_file_name = ""
-    render_nda_only = render_wp_only = False
-    response = dict()
-    try:
-        doc_id = "_".join(link_id.split("_")[:-1])
-    except Exception as e:
-        logger.info("error obtaining link id")
-        return False
-
-    try:
-        doc = Document.Document()
-        thisdoc = doc.find_by_doc_id(doc_id)
-        user = User.User()
-        user = user.find_by_attr("org_id", thisdoc.org_id)
-
-        google_credentials_info = {'token': user.google_token,
-                                   'refresh_token': user.google_refresh_token,
-                                   'token_uri': conf.GOOGLE_TOKEN_URI,
-                                   'client_id': conf.GOOGLE_CLIENT_ID,
-                                   'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                                   'scopes': conf.SCOPES}
-
-        signer_user = signerUser.SignerUser(email, name)
-        # create the signer user so it can generate their keys
-        signer_user.create()
-        timestamp_now = str(int(time.time()))
-
-        if thisdoc.nda_url is None or thisdoc.nda_url == "":
-            render_wp_only = True
-            if thisdoc.wp_url is None or thisdoc.wp_url == "":
-                error = "No valid Pdf url found"
-                logger.info(error)
-                return False
-            else:
-                # The file name is composed by the email of the user, the link id and the timestamp of the creation
-                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
-                response.update({"s3_doc_url": "{}{}view_sign_records/{}".format(conf.BASE_URL, BASE_PATH, link_id)})
-                pdf_url = thisdoc.wp_url
-        else:
-            pdf_url = thisdoc.nda_url
-            contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
-            response.update({"s3_contract_url": "{}{}view_sign_records/{}".format(conf.BASE_URL, BASE_PATH, link_id)})
-            if thisdoc.wp_url is None or thisdoc.wp_url == "":
-                render_nda_only = True
-            else:
-                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, link_id, timestamp_now)
-                response.update({"s3_doc_url": "{}{}view_sign_records/{}".format(conf.BASE_URL, BASE_PATH, link_id)})
-
-        doc_type = getattr(thisdoc, "render", False)
-        if doc_type is not False and doc_type == "google":
-            google_token = getattr(user, "google_token", False)
-            if google_token is not False:
-                b64_pdf_file = render_pdf_base64_google(pdf_url, google_credentials_info)
-        else:
-            b64_pdf_file = render_pdf_base64_latex(pdf_url, "main.tex", {})
-
-        if not b64_pdf_file:
-            error = "Error rendering the pdf with the nda url"
-            logger.info(error)
-            return False
-
-        thislink = Link.Link()
-        thislink = thislink.find_by_link(link_id)
-        temp_signed_count = thislink.signed_count
-        thislink.signed_count = int(temp_signed_count) + 1
-        thislink.status = "signed"
-        thislink.update()
-
-        # render and send the documents by email
-        IOLoop.instance().add_callback(callback=lambda: render_and_send_docs(user, thisdoc, b64_pdf_file,
-                                                                             google_credentials_info, render_wp_only,
-                                                                             render_nda_only, signer_user, link_id,
-                                                                             doc_file_name, contract_file_name,
-                                                                             email_body_html, email_body_text))
-
-        return response
-
-    except Exception as e:
-        logger.info("Checking document information {}".format(str(e)))
-        return False
-
-
-def create_email_pdf(repo_url, user_email, email_body_html, main_tex="main.tex", email_body_text="", options ={}):
-    '''Clones a repo and renders the file received as main_tex and then signs it'''
-    repo_name = ''
-    file_full_path = ''
-    attachments_list = []
-    new_main_tex = "main2.tex"
-    ATTACH_CONTENT_TYPE = 'octet-stream'
-    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
-
-    if user_email is None or user_email== "":
-        return("NO EMAIL TO HASH")
-    user_email = user_email.strip()
-
-    logger.info("No private access")
-
-    watermark = "Document generated for: "+ user_email
-
-    clone = 'git clone ' + repo_url
-    rev_parse = 'git rev-parse master'
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            timestamp = str(time.time())
-            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            repo_name = os.listdir(tmpdir)[0]
-            filesdir = os.path.join(tmpdir, repo_name)
-
-            if options != {}: #if there are special conditions to render
-                # modify the original template:
-                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
-                renderer_template = template.render(**options)
-                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
-                    f.write(renderer_template)
-            else:
-                new_main_tex = main_tex
-
-            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
-            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=latex " + new_main_tex, shell=True,
-                                               cwd=filesdir)
-            run_latex_result = subprocess.call("bibtex " + new_main_tex.split(".")[0], shell=True,
-                                               cwd=filesdir)
-            run_latex_result = subprocess.call("texliveonfly --compiler=pdflatex " + new_main_tex, shell=True,
-                                               cwd=filesdir)
-
-            pointa = fitz.Point(AXIS_X,AXIS_Y)
-            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
-            document = fitz.open(file_full_path)
-            for page in document:
-                page.insertText(pointa, text=watermark, fontsize=10, fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
-                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=10, fontname=WATERMARK_FONT,
-                                rotate=WATERMARK_ROTATION)
-            document.save(file_full_path, incremental=1)
-            document.close()
-
-            attachment = dict(file_type=ATTACH_CONTENT_TYPE, file_path=file_full_path, filename="documentation.pdf")
-            attachments_list.append(attachment)
-            mymail.send(subject="Documentation", email_from=SMTP_EMAIL,emails_to=[user_email],emails_bcc=[conf.ADMIN_EMAIL],
-                        attachments_list=attachments_list, text_message=email_body_text,
-                        html_message=email_body_html)
-
-        except IOError as e:
-            logger.info('IOError'+ str(e))
-            return("IO ERROR")
-        except Exception as e:
-            logger.info("other error"+ str(e))
-            return("ERROR PRIVATE REPO OR COULDN'T FIND MAIN.TEX")
-    return True
-
-
-def create_email_pdf_auth(repo_url, userjson, user_email, email_body_html, main_tex="main.tex", email_body_text ="", options={}):
-    '''Clones a repo and renders the file received as main_tex and then sends it to the user email (username)'''
-    repo_name = ''
-    file_full_path = ''
-    attachments_list = []
-    new_main_tex = "main2.tex"
-    ATTACH_CONTENT_TYPE = 'octet-stream'
-    mymail = Mailer(username=SMTP_USER, password=SMTP_PASS, host=SMTP_ADDRESS, port=SMTP_PORT)
-
-    user = User.User(userjson.get("username"), userjson.get("password"))
-    github_token = user.get_attribute('github_token')
-    if github_token is None or github_token == '':
-        return ("ERROR NO GITHUB TOKEN")
-
-    try:
-        repo_url = "https://{}:x-oauth-basic@{}".format(github_token,repo_url.split("://")[1])
-    except:
-        return ("Invalid GIT Repository URL")
-
-    clone = 'git clone ' + repo_url
-    rev_parse = 'git rev-parse master'
-    if user_email is None or user_email == "":
-        user_email = user.username
-    user_email = user_email.strip()
-    watermark = "Document generated for: " + user_email
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            timestamp = str(time.time())
-            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            repo_name = os.listdir(tmpdir)[0]
-            filesdir = os.path.join(tmpdir, repo_name)
-            if options != {}: #if there are special conditions to render
-                # modify the original template:
-                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
-                renderer_template = template.render(**options)
-                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
-                    f.write(renderer_template)
-            else:
-                new_main_tex = main_tex
-
-            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
-            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash([timestamp, user_email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
-                                               cwd=filesdir)
-            pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
-            document = fitz.open(file_full_path)
-            for page in document:
-                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
-                                rotate= WATERMARK_ROTATION)
-                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
-                                fontname=WATERMARK_FONT, rotate= WATERMARK_ROTATION)
-            document.save(file_full_path, incremental=1)
-            document.close()
-
-            attachment = dict(file_type=ATTACH_CONTENT_TYPE, file_path=file_full_path, filename="documentation.pdf")
-            attachments_list.append(attachment)
-            mymail.send(subject="Documentation", email_from=SMTP_EMAIL, emails_to=[user_email],emails_bcc=[conf.ADMIN_EMAIL],
-                        attachments_list=attachments_list, text_message=email_body_text,
-                        html_message=email_body_html)
-
-        except IOError as e:
-            logger.info('IOError'+ str(e))
-            return ("IO ERROR")
-        except Exception as e:
-            logger.info("other error"+ str(e))
-            return ("ERROR")
-    return True
-
-
-def create_download_pdf_auth(repo_url, userjson, email, main_tex="main.tex", options={}):
-    '''Clones a repo and renders the file received as main_tex with authentication'''
-    repo_name = ''
-    file_full_path = ''
-    new_main_tex = "main2.tex"
-
-    user = User.User(userjson.get("username"), userjson.get("password"))
-    github_token = user.get_attribute('github_token')
-    if github_token is None or github_token == '':
-        return("ERROR NO GITHUB TOKEN")
-
-    try:
-        repo_url = "https://{}:x-oauth-basic@{}".format(github_token, repo_url.split("://")[1])
-    except:
-        return("Invalid GIT Repository URL")
-
-    clone = 'git clone ' + repo_url
-    rev_parse = 'git rev-parse master'
-    if email is None or email == "":
-        email = user.username
-    watermark = "Document generated for: " + email
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            timestamp = str(time.time())
-            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            repo_name = os.listdir(tmpdir)[0]
-            filesdir = os.path.join(tmpdir, repo_name)
-            if options != {}: # if there are special conditions to render
-                # modify the original template:
-                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
-                renderer_template = template.render(**options)
-                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
-                    f.write(renderer_template)
-            else:
-                new_main_tex = main_tex
-
-            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
-            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
-                                               cwd=filesdir)
-
-            pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
-            document = fitz.open(file_full_path)
-            for page in document:
-                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
-                                rotate=WATERMARK_ROTATION)
-                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
-                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
-            document.save(file_full_path, incremental=1)
-            document.close()
-
-            pdffile = open(file_full_path, 'rb').read()
-            return(pdffile)
-
-        except IOError as e:
-            logger.info('IOError'+ str(e))
-            return("IO ERROR")
-        except Exception as e:
-            logger.info("other error"+ str(e))
-            return("ERROR")
-
-
-def create_download_pdf_google(pdf_url, user_credentials, email):
-    '''Download and render and then sign a document from google'''
-    file_full_path = file_full_path64 = ""
-    file_tittle = "document.pdf"
-    MORPH = None
-    pdf_id = get_id_from_url(pdf_url)
-    if pdf_id is False:
-        return False
-
-    # Load credentials from the session.
-    credentials = google.oauth2.credentials.Credentials(
-        **user_credentials
-    )
-
-    timestamp = str(time.time())
-    watermark = "Document generated for: " + email
-    complete_hash = get_hash([timestamp, email], [pdf_id])
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            file_full_path64 = tmpdir + "/" + pdf_id + ".base64"
-            file_full_path = tmpdir + "/" + pdf_id + ".pdf"
-            drive = googleapiclient.discovery.build(
-                conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
-
-            request = drive.files().export_media(fileId=pdf_id,
-                                                 mimeType='application/pdf')
-            metadata = drive.files().get(fileId=pdf_id).execute()
-            file_tittle = metadata.get("title").strip(" ") + ".pdf"
-            modified_date = metadata.get("modifiedDate")
-            mime_type = metadata.get("mimeType")
-
-            fh = io.BytesIO()
-            downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
-            done = False
-            while done is False:
-                status, done = downloader.next_chunk()
-
-
-            with open(file_full_path, 'wb') as mypdf:
-                mypdf.write(fh.getvalue())
-
-            if mime_type == "application/vnd.google-apps.presentation":
-                pointa = fitz.Point(AXIS_X, AXIS_Y- PRESENTATION_OFFSET)
-                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y- PRESENTATION_OFFSET)
-            elif mime_type == "application/vnd.google-apps.spreadsheet":
-                pointa = fitz.Point(AXIS_X, AXIS_Y)
-                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
-
-            else:
-                pointa = fitz.Point(AXIS_X, AXIS_Y_GOOGLE)
-                pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y_GOOGLE)
-                MORPH = (pointb, FLIP_MATRIX)
-
-            document = fitz.open(file_full_path)
-            for page in document:
-                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
-                                rotate=WATERMARK_ROTATION, morph=MORPH)
-                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
-                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION, morph=MORPH)
-            document.save(file_full_path, incremental=1)
-            document.close()
-
-            pdffile = open(file_full_path, 'rb').read()
-
-            return pdffile, complete_hash, file_tittle
-
-        except IOError as e:
-            logger.info('google render IOError' + str(e))
-            return False, False, False
-        except Exception as e:
-            logger.info("other error google render" + str(e))
-            return False, False, False
-
-
-def create_download_pdf(repo_url, email, main_tex="main.tex", options={}):
-    '''Clones a repo and renders the file received as main_tex '''
-    repo_name = ''
-    file_tittle = "document.pdf"
-    file_full_path = ''
-    complete_hash = ""
-    new_main_tex = "main2.tex"
-    if email is None or email== "":
-        return False, False
-
-    watermark = "Document generated for: "+ email
-
-    clone = 'git clone ' + repo_url
-    rev_parse = 'git rev-parse master'
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            timestamp = str(time.time())
-            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            repo_name = os.listdir(tmpdir)[0]
-            file_tittle = repo_name.strip(" ") + ".pdf"
-            filesdir = os.path.join(tmpdir, repo_name)
-            if options != {}: #if there are special conditions to render
-                # modify the original template:
-                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
-                renderer_template = template.render(**options)
-                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
-                    f.write(renderer_template)
-            else:
-                new_main_tex = main_tex
-
-            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
-            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            complete_hash = get_hash([timestamp, email], [run_git_rev_parse.decode('UTF-8')])
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
-                                               cwd=filesdir)
-
-            pointa = fitz.Point(AXIS_X, AXIS_Y)
-            pointb = fitz.Point(AXIS_X_LOWER, AXIS_Y)
-            document = fitz.open(file_full_path)
-            for page in document:
-                page.insertText(pointa, text=watermark, fontsize=WATERMARK_SIZE, fontname=WATERMARK_FONT,
-                                rotate=WATERMARK_ROTATION)
-                page.insertText(pointb, text="DocId: " + complete_hash, fontsize=WATERMARK_SIZE,
-                                fontname=WATERMARK_FONT, rotate=WATERMARK_ROTATION)
-            document.save(file_full_path, incremental=1)
-            document.close()
-
-            pdffile = open(file_full_path, 'rb').read()
-            return pdffile, complete_hash, file_tittle
-
-        except IOError as e:
-            logger.info('IOError'+ str(e))
-            return False, False, False
-        except Exception as e:
-            logger.info("other error"+ str(e))
-            return False, False, False
-
-
-def render_pdf_base64_latex(repo_url, main_tex= "main.tex", options={}):
-    '''Clones a repo and renders the file received as main_tex '''
-    repo_name = ''
-    file_full_path = ''
-    new_main_tex = "main.tex"
-
-    clone = 'git clone ' + repo_url
-    rev_parse = 'git rev-parse master'
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            run_latex_result = subprocess.check_output(clone, shell=True, cwd=tmpdir)
-            repo_name = os.listdir(tmpdir)[0]
-            filesdir = os.path.join(tmpdir, repo_name)
-            if options != {}: #if there are special conditions to render
-                # modify the original template:
-                template = latex_jinja_env.get_template(filesdir +"/"+main_tex)
-                renderer_template = template.render(**options)
-                with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
-                    f.write(renderer_template)
-            else:
-                new_main_tex = main_tex
-
-            run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
-            run_latex_result = subprocess.call("texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f " + new_main_tex, shell=True,
-                                               cwd=filesdir)
-
-            file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
-            file_full_path64 = filesdir + "/" + new_main_tex.split(".")[0] + ".base64"
-            with open(file_full_path, 'rb') as f:
-                with open(file_full_path64, 'wb') as ftemp:
-                    # write in a new file the base64
-                    ftemp.write(base64.b64encode(f.read()))
-
-            pdffile = open(file_full_path64, 'r').read()
-
-            return (pdffile)
-
-        except IOError as e:
-            logger.info('IOError'+ str(e))
-            return False
-        except Exception as e:
-            logger.info("other error"+ str(e))
-            return False
-
-
-def render_pdf_base64_google(pdf_url, user_credentials):
-    '''Download and render a pdf file from google'''
-    file_full_path= file_full_path64 = ""
-
-    pdf_id = get_id_from_url(pdf_url)
-    if pdf_id is False:
-        return False
-
-    # Load credentials from the session.
-    credentials = google.oauth2.credentials.Credentials(
-        **user_credentials
-    )
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_full_path64 = tmpdir + "/" + pdf_id + ".base64"
-        file_full_path = tmpdir + "/" + pdf_id + ".pdf"
-        drive = googleapiclient.discovery.build(
-            conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
-
-        request = drive.files().export_media(fileId=pdf_id,
-                                             mimeType='application/pdf')
-
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
-        done = False
-        while done is False:
-            status, done = downloader.next_chunk()
-
-        with open(file_full_path64, 'wb') as ftemp:
-            # write in a new file the base64
-            ftemp.write(base64.b64encode(fh.getvalue()))
-
-        pdffile = open(file_full_path64, 'r').read()
-
-        return (pdffile)
-
-
 def create_link(doc_id):
     '''Create a new link for the document'''
     result = False
@@ -860,11 +349,11 @@ def get_b64_pdf(doc_id, userjson):
                           'client_id': conf.GOOGLE_CLIENT_ID,
                            'client_secret': conf.GOOGLE_CLIENT_SECRET,
                             'scopes': conf.SCOPES}
-                bytes =  render_pdf_base64_google(doc.get("wp_url"), user_credentials)
+                bytes = None#render_pdf_base64_google(doc.get("wp_url"), user_credentials)
             else:
                 return result
         else:
-            bytes =  render_pdf_base64_latex(doc.get("wp_url"))
+            bytes = None #render_pdf_base64_latex(doc.get("wp_url"))
         return bytes
 
     except Exception as e:
@@ -892,163 +381,6 @@ def create_dynamic_endpoint(document, userjson):
 
     logger.info("Information not valid creating doc")
     return False
-
-
-def render_document(tmpdir, thisdoc, doc_file_name, user, google_credentials_info, signer_user, attachments_list):
-    WPCI_FILE_NAME = "whitepaper.pdf"
-    wpci_file_path = os.path.join(tmpdir, WPCI_FILE_NAME)
-    wpci_result = False
-    error = ""
-    try:
-        doc_type = getattr(thisdoc, "render", False)
-        if doc_type is not False and doc_type == "google":
-            google_token = getattr(user, "google_token", False)
-            if google_token is not False:
-                wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf_google(
-                    thisdoc.wp_url,
-                    google_credentials_info,
-                    signer_user.email)
-        else:
-            wpci_result, complete_hash, WPCI_FILE_NAME = create_download_pdf(
-                thisdoc.wp_url,
-                signer_user.email,
-                thisdoc.main_tex)
-
-        if not wpci_result:
-            error = "Error rendering the document"
-            logger.info(error)
-            return attachments_list, error
-
-        with open(wpci_file_path, 'wb') as temp_file:
-            temp_file.write(wpci_result)
-
-        uploaded_document_url = upload_to_s3(wpci_file_path, doc_file_name)
-        signer_user.s3_doc_url = S3_BASE_URL.format(doc_file_name)
-        signer_user.update()
-        # this is the payload for the white paper file
-        wpci_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
-                               file_path=wpci_file_path,
-                               filename=WPCI_FILE_NAME)
-        attachments_list.append(wpci_attachment)
-
-    except Exception as e:
-        logger.info("error rendering document: {}".format(str(e)))
-        error = "error rendering document"
-    finally:
-        return attachments_list, error
-
-
-def render_contract(user, tmpdir, nda_file_base64, contract_file_name,  signer_user, attachments_list, link_id):
-    tx_id = error = ""
-    NDA_FILE_NAME = "contract.pdf"
-    try:
-        crypto_tool = CryptoTools()
-        if user.org_logo is None or user.org_logo == "":
-            org_logo = open(DEFAULT_LOGO_PATH, 'r').read()
-        else:
-            org_logo = user.org_logo
-
-        nda_file_path = os.path.join(tmpdir, NDA_FILE_NAME)
-        sign_document_hash(signer_user, nda_file_base64)
-        rsa_object = crypto_tool.import_RSA_string(signer_user.priv_key)
-        pub_key_hex = crypto_tool.savify_key(rsa_object.publickey()).decode("utf-8")
-
-        crypto_sign_payload = {
-            "pdf": nda_file_base64,
-            "timezone": TIMEZONE,
-            "signature": signer_user.sign,
-            "signatories": [
-                {
-                    "email": signer_user.email,
-                    "name": signer_user.name,
-                    "public_key": pub_key_hex
-                }],
-            "params": {
-                "locale": LANGUAGE,
-                "title": user.org_name + " contract",
-                "file_name": NDA_FILE_NAME,
-                "logo": org_logo,
-            }
-        }
-
-        nda_result, sign_record = get_nda(crypto_sign_payload, signer_user)
-
-        if not nda_result:
-            error = "Failed loading contract"
-            logger.info(error)
-            return attachments_list, error
-
-        # if the request returned a nda pdf file correctly then store it as pdf
-        with open(nda_file_path, 'wb') as temp_file:
-            temp_file.write(nda_result)
-
-        uploaded_document_url = upload_to_s3(
-            nda_file_path, contract_file_name
-        )
-        sign_record.s3_contract_url = S3_BASE_URL.format(contract_file_name)
-        sign_record.link_id = link_id
-        sign_record.update()
-        # this is the payload for the nda file
-        nda_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
-                              file_path=nda_file_path,
-                              filename=NDA_FILE_NAME)
-        attachments_list.append(nda_attachment)
-
-    except Exception as e:
-        logger.info("Error rendering contract: {}".format(str(e)))
-    finally:
-        return attachments_list, error
-
-
-@gen.engine
-def render_and_send_docs(user, thisdoc, nda_file_base64, google_credentials_info, render_wp_only,
-                         render_nda_only, signer_user, link_id, doc_file_name="", contract_file_name="",
-                         email_body_html="", email_body_text=""):
-    """Renders the documents and if needed send it to cryptosign and finally send it by email"""
-
-    attachments_list = []
-    doc_id = error = errornda = errorwp = ""
-    mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
-
-    # Here we create a temporary directory to store the files while the function sends it by email
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        try:
-
-            if render_nda_only is False:
-                attachments_list, errornda = render_document(tmp_dir, thisdoc, doc_file_name, user, google_credentials_info,
-                                                          signer_user, attachments_list)
-            if render_wp_only is False:
-                attachments_list, errorwp = render_contract(user, tmp_dir, nda_file_base64,
-                                                          contract_file_name, signer_user, attachments_list, link_id)
-            error = errornda + errorwp
-            if error != "":
-                logger.info("There was an error on the documents rendering: {}".format(error))
-            else:
-                if not email_body_html:
-                    email_body_html = DEFAULT_HTML_TEXT
-
-                # send the email with the result attachments
-                sender_format = "{} <{}>"
-                loader = Loader("templates/email")
-                button = loader.load("cta_button.html")
-                notification_subject = "Your Document {} has been downloaded".format(thisdoc.doc_id)
-                analytics_link = "{}{}analytics/{}".format(conf.BASE_URL, BASE_PATH, thisdoc.doc_id)
-
-                mymail.send(subject=thisdoc.wp_name, email_from=sender_format.format(user.org_name, conf.SMTP_EMAIL),
-                            emails_to=[signer_user.email],
-                            attachments_list=attachments_list,
-                            html_message=email_body_html + button.generate().decode("utf-8"),
-                            text_message=email_body_text)
-
-                html_text = NOTIFICATION_HTML.format(signer_user.email, thisdoc.doc_id, analytics_link, analytics_link)
-                mymail.send(subject=notification_subject,
-                            attachments_list=attachments_list,
-                            email_from=sender_format.format("WPCI Admin", conf.SMTP_EMAIL),
-                            emails_to=[user.org_email], html_message=html_text,
-                            text_message=email_body_text)
-
-        except Exception as e:  # except from temp directory
-            logger.info("[ERROR] sending the email with the documents " + str(e))
 
 
 @jwtauth
@@ -1198,8 +530,8 @@ class PostRepoHash(BaseHandler):
 
             userjson = ast.literal_eval(userid)
             if is_valid_email(email):
-                result = create_email_pdf_auth(json_data.get("remote_url"),userjson, email,
-                                               email_body_html, main_tex,  email_body_text, options)
+                result = None # TODO create_email_pdf_auth(json_data.get("remote_url"),userjson, email,
+                                             #  email_body_html, main_tex,  email_body_text, options)
             if result:
                 self.write(json.dumps({"response": "done"}))
             else:
@@ -1214,8 +546,9 @@ class RenderUrl(BaseHandler):
     '''Receives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
 
     def get(self):
-        result = None
+        response = dict()
         try:
+            timestamp_now = time.time()
             link_id = self.get_argument('link_id', "")
             email = self.get_argument('email', "")
             name = self.get_argument('name', "")
@@ -1224,12 +557,33 @@ class RenderUrl(BaseHandler):
             options = json.loads(self.get_argument('options', "{}"))
 
             if is_valid_email(email):
-                result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
+                new_document = manageDocuments()
+                new_document.get_document_by_link_id(link_id)
+                if new_document.is_valid_document():
+                    # The file name is composed by the email of the user,
+                    # the link id and the timestamp of the creation
+                    doc_file_name = F"doc_{email}_{new_document.link_id}_{timestamp_now}.pdf"
+                    response.update(
+                        {"s3_doc_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
+                    )
 
-            if not result:
+                    contract_file_name = F"contract_{email}_{new_document.link_id}_{timestamp_now}.pdf"
+                    response.update(
+                        {"s3_contract_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
+                    )
+
+                    IOLoop.instance().add_callback(
+                        callback=lambda:
+                        new_document.render_and_send_all_documents(
+                            email, name, email_body_html, timestamp_now, contract_file_name,
+                            doc_file_name, email_body_text
+                        )
+                    )
+
+            if not response:
                 self.write(json.dumps({"response": "Error"}))
             else:
-                self.write(json.dumps(result))
+                self.write(json.dumps(response))
 
         except Exception as e:
             logger.info("error on clone"+ str(e))
@@ -1273,6 +627,10 @@ class PostDocument(BaseHandler):
 
     def get(self, userid):
         result = None
+        response = dict()
+        render_contract = False
+        render_doc = False
+        contract_file_name = doc_file_name = "unknown.pdf"
         try:
             link_id = self.get_argument('link_id', "")
             email = self.get_argument('email', "")
@@ -1282,6 +640,7 @@ class PostDocument(BaseHandler):
             options = json.loads(self.get_argument('options', "{}"))
 
             if is_valid_email(email):
+                timestamp_now = str(time.time())
                 try:
                     thislink = Link.Link()
                     thislink = thislink.find_by_link(link_id)
@@ -1292,24 +651,36 @@ class PostDocument(BaseHandler):
                     new_document.get_document_by_link_id(link_id)
                     if new_document.is_valid_document():
                         # render and send the documents by email
-                        IOLoop.instance().add_callback(
-                           callback=lambda:
-                           new_document.render_and_send_all_documents(
-                             email, name, email_body_html, email_body_text
-                           )
+                        new_document.link_id = link_id
+
+                        # The file name is composed by the email of the user,
+                        # the link id and the timestamp of the creation
+                        doc_file_name = F"doc_{email}_{new_document.link_id}_{timestamp_now}.pdf"
+                        response.update(
+                            {"s3_doc_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
                         )
 
+                        contract_file_name = F"contract_{email}_{new_document.link_id}_{timestamp_now}.pdf"
+                        response.update(
+                            {"s3_contract_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
+                        )
+
+                        IOLoop.instance().add_callback(
+                            callback=lambda:
+                            new_document.render_and_send_all_documents(
+                                email, name, email_body_html, timestamp_now, contract_file_name,
+                                doc_file_name, email_body_text
+                            )
+                        )
                         thislink.status = "signed"
                         thislink.update()
+
+                        self.write(json.dumps(response))
+
                     else:
                         self.write(json.dumps({"response": "Error, Couldn't find the document"}))
                 except Exception as e:
-                    logger.error()
-
-            if not result:
-                self.write(json.dumps({"response": "Error"}))
-            else:
-                self.write(json.dumps(result))
+                    logger.error(F"[ERROR PostDocument GET] {str(e)}")
 
         except Exception as e:
             logger.info("error on clone" + str(e))

@@ -581,7 +581,7 @@ def documents(type, render):
     if request.method == 'POST':
         CONTRACT_NOT_EMPTY = False
         DOC_NOT_EMPTY = False
-        if request.form['wp_name']:
+        if request.form['doc_name']:
             try:
                 id_property = getattr(user, "org_id", False)
                 name_property = getattr(user, "org_name", False)
@@ -608,7 +608,7 @@ def documents(type, render):
                     data["nda_url"] = ""
 
                 if data.get("nda_url") is not None and data.get("nda_url") != "":
-                    NDA_NOT_EMPTY = True
+                    CONTRACT_NOT_EMPTY = True
                     if data.get("wp_description") == "":
                         data["wp_description"] = user.org_name + " requires you to sign this before you can continue. Please\
                         read carefully and sign to continue."
@@ -634,7 +634,7 @@ def documents(type, render):
                         logger.info("github token is not set")
                         try:
                             GITHUB_URL = "github.com"
-                            if NDA_NOT_EMPTY and GITHUB_URL in data.get("contract_url").split("/"):
+                            if CONTRACT_NOT_EMPTY and GITHUB_URL in data.get("contract_url").split("/"):
                                 data["contract_url"] = "git://{}".format(data.get("contract_url").split("://")[1])
                             if DOC_NOT_EMPTY and GITHUB_URL in data.get("doc_url").split("/"):
                                 data["doc_url"] = "git://{}".format(data.get("doc_url").split("://")[1])
@@ -646,9 +646,9 @@ def documents(type, render):
                     else:
                         try:
                             if CONTRACT_NOT_EMPTY:
-                                data["nda_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("contract_url").split("://")[1])
+                                data["contract_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("contract_url").split("://")[1])
                             if DOC_NOT_EMPTY:
-                                data["DOC_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("doc_url").split("://")[1])
+                                data["doc_url"] = "https://{}:x-oauth-basic@{}".format(github_token, data.get("doc_url").split("://")[1])
                         except:
                             error = "error getting correct url on git for private access"
                             logger.info(error)
@@ -656,11 +656,11 @@ def documents(type, render):
 
                     try:
                         with tempfile.TemporaryDirectory() as tmpdir:
-                            if NDA_NOT_EMPTY:
-                                clone = 'git clone ' + data["nda_url"]
+                            if CONTRACT_NOT_EMPTY:
+                                clone = 'git clone ' + data["contract_url"]
                                 subprocess.check_output(clone, shell=True, cwd=tmpdir)
 
-                            if WP_NOT_EMPTY:
+                            if DOC_NOT_EMPTY:
                                 clone = 'git clone ' + data["wp_url"]
                                 subprocess.check_output(clone, shell=True, cwd=tmpdir)
 
@@ -684,10 +684,10 @@ def documents(type, render):
                             )
 
                             pdf_id_nda = pdf_id_wp = True
-                            if NDA_NOT_EMPTY:
-                                pdf_id_nda = get_id_from_url(data["nda_url"])
-                            if WP_NOT_EMPTY:
-                                pdf_id_wp = get_id_from_url(data["wp_url"])
+                            if CONTRACT_NOT_EMPTY:
+                                pdf_id_nda = get_id_from_url(data["contract_url"])
+                            if DOC_NOT_EMPTY:
+                                pdf_id_wp = get_id_from_url(data["doc_url"])
 
                             if pdf_id_nda is False or pdf_id_wp is False:
                                 error = "error getting correct google document url please check it and try again"
@@ -698,7 +698,7 @@ def documents(type, render):
                                 drive = googleapiclient.discovery.build(
                                     conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
 
-                                if NDA_NOT_EMPTY:
+                                if CONTRACT_NOT_EMPTY:
                                     req_pdf = drive.files().export_media(fileId=pdf_id_nda,
                                                                          mimeType='application/pdf')
                                     fh = io.BytesIO()
@@ -707,7 +707,7 @@ def documents(type, render):
                                     while done is False:
                                         status, done = downloader.next_chunk()
 
-                                if WP_NOT_EMPTY:
+                                if DOC_NOT_EMPTY:
                                     req_pdf2 = drive.files().export_media(fileId=pdf_id_wp,
                                                                          mimeType='application/pdf')
                                     fh = io.BytesIO()
@@ -753,7 +753,6 @@ def documents(type, render):
 
     if request.method == 'GET':
         return render_template('documents.html', type=type, render=render, error=error)
-
 
 
 @app.route(BASE_PATH+'validate_email', methods=['GET', 'POST'])
@@ -964,15 +963,15 @@ def show_pdf(id):
                 if doc_type is not False and doc_type == "google":
                     google_token = getattr(user, "google_token", False)
                     if google_token is not False:
-                        pdffile = render_pdf_base64_google(pdf_url,
-                          {'token': user.google_token,
-                          'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
-                          'client_id': conf.GOOGLE_CLIENT_ID,
-                           'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                            'scopes': conf.SCOPES})
+                        pdffile = None #render_pdf_base64_google(pdf_url,
+                          #{'token': user.google_token,
+                          # 'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
+                          #'client_id': conf.GOOGLE_CLIENT_ID,
+                          # 'client_secret': conf.GOOGLE_CLIENT_SECRET,
+                           # 'scopes': conf.SCOPES})
 
                 else:
-                    pdffile = render_pdf_base64_latex(pdf_url, "main.tex", render_options)
+                    pdffile = None #render_pdf_base64_latex(pdf_url, "main.tex", render_options)
 
                 if not pdffile:
                     error = "Error rendering the pdf with the nda url"
@@ -1030,10 +1029,10 @@ def show_pdf(id):
             signer_user.create()
 
             if thisdoc is not None and thisdoc.org_id is not None:
-                if thisdoc.nda_url is None or thisdoc.nda_url == "" :
+                if thisdoc.nda_url is None or thisdoc.contract_url == "" :
                     render_wp_only = True
 
-                if thisdoc.wp_url is None or thisdoc.wp_url == "":
+                if thisdoc.wp_url is None or thisdoc.doc_url == "":
                     render_nda_only = True
 
                 user = User.User()
@@ -1052,11 +1051,11 @@ def show_pdf(id):
                 contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
                 # render and send the documents by email
                 # TODO find a way to parse all the parameters different than by individual variables
-                IOLoop.instance().add_callback(callback=lambda: render_and_send_docs(user, thisdoc, nda_file_base64,
-                                                                                     google_credentials_info,
-                                                                                     render_wp_only, render_nda_only,
-                                                                                     signer_user, id, doc_file_name,
-                                                                                     contract_file_name))
+                #IOLoop.instance().add_callback(callback=lambda: render_and_send_docs(user, thisdoc, nda_file_base64,
+                 #                                                                    google_credentials_info,
+                  #                                                                   render_wp_only, render_nda_only,
+                   #                                                                  signer_user, id, doc_file_name,
+                    #                                                                 contract_file_name))
 
                 message = "successfully sent your files "
 

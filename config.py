@@ -9,6 +9,9 @@ DOCUMENT = "wp"
 CONTRACT = "nda"
 NDA = "wp_nda"
 DOC_FILE_NAME = "document.pdf"
+CONTRACT_FILE_NAME = "document_.pdf"
+DEFAULT_LOGO_PATH = "static/images/default_logo.base64"
+LANGUAGE = "en"
 
 # Axis for the pdf header
 AXIS_X = 15
