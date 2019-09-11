@@ -37,6 +37,7 @@ from models import User, Document, Link, signRecord, signerUser
 from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
 from handlers.WSHandler import *
+from handlers.manageDocuments import manageDocuments
 from utils import *
 
 latex_jinja_env = jinja2.Environment(
@@ -1236,7 +1237,7 @@ class RenderUrl(BaseHandler):
 
 
 @jwtauth
-class PostWpNda(BaseHandler):
+class PostDocument(BaseHandler):
     '''Receives a post with the document url and responses with a document id '''
 
     def post(self, userid):
@@ -1281,7 +1282,30 @@ class PostWpNda(BaseHandler):
             options = json.loads(self.get_argument('options', "{}"))
 
             if is_valid_email(email):
-                result = render_send_by_link_id(link_id, email, name, email_body_html, email_body_text)
+                try:
+                    thislink = Link.Link()
+                    thislink = thislink.find_by_link(link_id)
+                    temp_signed_count = thislink.signed_count
+                    thislink.signed_count = int(temp_signed_count) + 1
+
+                    new_document = manageDocuments()
+                    new_document.get_document_by_link_id(link_id)
+                    if new_document.is_valid_document():
+                        # render and send the documents by email
+                        IOLoop.instance().add_callback(
+                           callback=lambda:
+                           new_document.render_and_send_all_documents(
+                             email, name, email_body_html, email_body_text
+                           )
+                        )
+
+                        thislink.status = "signed"
+                        thislink.update()
+                    else:
+                        self.write(json.dumps({"response": "Error, Couldn't find the document"}))
+                except Exception as e:
+                    logger.error()
+
             if not result:
                 self.write(json.dumps({"response": "Error"}))
             else:
