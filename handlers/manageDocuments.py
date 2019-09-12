@@ -124,7 +124,85 @@ class manageDocuments():
                 return True
         return False
 
+    def download_render_google_doc(self, pdf_id):
+        """Downloads and renders pdf document from google"""
+        # Load credentials from the session.
+        credentials = google.oauth2.credentials.Credentials(
+            **self.google_credentials
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                file_full_path = tmpdir + "/" + pdf_id + ".pdf"
+                drive = googleapiclient.discovery.build(
+                    conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
+
+                request = drive.files().export_media(fileId=pdf_id,
+                                                     mimeType='application/pdf')
+                metadata = drive.files().get(fileId=pdf_id).execute()
+                file_tittle = metadata.get("title").strip(" ") + ".pdf"
+                modified_date = metadata.get("modifiedDate")
+                mime_type = metadata.get("mimeType")
+
+                fh = io.BytesIO()
+                downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
+                done = False
+                while done is False:
+                    status, done = downloader.next_chunk()
+
+                with open(file_full_path, 'wb') as mypdf:
+                    mypdf.write(fh.getvalue())
+
+                pdffile = open(file_full_path, 'rb').read()
+                if not pdffile:
+                    logger.info("Error rendering google document")
+                    return None, None
+
+                return pdffile, file_tittle
+
+            except IOError as e:
+                logger.info('google render IOError' + str(e))
+                return None, None
+            except Exception as e:
+                logger.info("other error google render" + str(e))
+                return None, None
+
+    def download_render_latex_doc(self, repo_url, main_tex="main.tex"):
+        """Clones a repo and renders the file received as main_tex"""
+
+        clone = F'git clone {repo_url}'
+        rev_parse = 'git rev-parse master'
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                subprocess.check_output(clone, shell=True, cwd=tmpdir)
+                repo_name = os.listdir(tmpdir)[0]
+                file_tittle = repo_name.strip(" ") + ".pdf"
+                filesdir = os.path.join(tmpdir, repo_name)
+
+                file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
+                subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
+                subprocess.call(
+                    F"texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f {main_tex}",
+                    shell=True,
+                    cwd=filesdir
+                )
+
+                pdffile = open(file_full_path, 'rb').read()
+                if not pdffile:
+                    logger.info("Error rendering latex document")
+                    return None, None
+
+                return pdffile, file_tittle
+
+            except IOError as e:
+                logger.info('IOError' + str(e))
+            except Exception as e:
+                logger.info("other error" + str(e))
+
+        return None, None
+
     def download_and_sign_google_doc(self, pdf_id, timestamp_now, is_contract=False):
+        """Downloads, renders and signs a pdf google document"""
         MORPH = None
         watermark = "Document generated for: " + self.signer_user.email
         complete_hash = get_hash([timestamp_now, self.signer_user.email], [pdf_id])
@@ -188,7 +266,7 @@ class manageDocuments():
                 return None, None, None
 
     def download_and_sign_latex_doc(self, repo_url, main_tex="main.tex", is_contract=False, options={}):
-        '''Clones a repo and renders the file received as main_tex '''
+        """clones a repo, renders and signs a pdf latex document"""
         new_main_tex = "main2.tex"
         watermark = "Document generated for: " + self.signer_user.email
 
@@ -242,46 +320,81 @@ class manageDocuments():
                 logger.info("other error" + str(e))
                 return None, None, None
 
-    def render_document(self, main_tex, timestamp_now):
+    def render_document(self, main_tex, timestamp_now=None, sign=False):
         pdffile = None
         doc_type = getattr(self.document, "render", "")
 
         if doc_type == conf.GOOGLE:
-            self.set_google_credentials()
+            credentials_ok = self.set_google_credentials()
+            if not credentials_ok:
+                error = "Your google credentials are wrong"
+                return None, None, None
             doc_google_id = get_id_from_url(self.document.doc_url)
-            pdffile, complete_hash, file_tittle = self.download_and_sign_google_doc(
-                doc_google_id,
-                timestamp_now
-            )
-            return pdffile, complete_hash, file_tittle
+            if sign:
+                pdffile, complete_hash, file_tittle = self.download_and_sign_google_doc(
+                    doc_google_id,
+                    timestamp_now
+                )
+                return pdffile, complete_hash, file_tittle
+            else:
+                pdffile, file_tittle = self.download_render_google_doc(doc_google_id)
+                return pdffile, None, file_tittle
 
         elif doc_type == conf.LATEX:
-            pdffile, complete_hash, file_tittle = self.download_and_sign_latex_doc(
-                self.document.doc_url,
-                main_tex
-            )
-            return pdffile, complete_hash, file_tittle
+            if sign:
+                pdffile, complete_hash, file_tittle = self.download_and_sign_latex_doc(
+                    self.document.doc_url,
+                    main_tex
+                )
+                return pdffile, complete_hash, file_tittle
+            else:
+                pdffile, file_tittle = self.download_render_latex_doc(self.document.doc_url, main_tex)
+                return pdffile, None, file_tittle
 
         elif doc_type == conf.EXTERNAL:
             return None, None, None
         else:
             return None, None, None
 
-    def render_contract(self, timestamp_now, main_tex):
-        tx_id = error = ""
+    def render_contract(self, main_tex):
+        error = ""
+        CONTRACT_FILE_NAME = "document.pdf"
+        pdf_file = None
+
+        doc_type = getattr(self.document, "render", "")
+        print("nosign")
+        if doc_type == conf.GOOGLE:
+            credentials_ok = self.set_google_credentials()
+            if not credentials_ok:
+                error = "Your google credentials are wrong"
+                return None, error
+            doc_google_id = get_id_from_url(self.document.contract_url)
+            pdffile, file_tittle = self.download_render_google_doc(doc_google_id)
+            return pdffile, error
+
+        elif doc_type == conf.LATEX:
+            pdffile, file_tittle = self.download_render_latex_doc(self.document.contract_url, main_tex)
+            return pdffile, error
+
+    def render_and_sign_contract(self, main_tex, timestamp_now):
+        error = ""
         CONTRACT_FILE_NAME = "document.pdf"
         pdf_file = contract_b2chainized = sign_record = None
 
         doc_type = getattr(self.document, "render", "")
+        print("sign")
         if doc_type == conf.GOOGLE:
-            self.set_google_credentials()
+            credentials_ok = self.set_google_credentials()
+            if not credentials_ok:
+                error = "Your google credentials are wrong"
+                return None, None, error
             doc_google_id = get_id_from_url(self.document.contract_url)
+
             pdf_file, complete_hash, file_tittle = self.download_and_sign_google_doc(
                 doc_google_id,
                 timestamp_now,
                 is_contract=True
             )
-
         elif doc_type == conf.LATEX:
             pdf_file, complete_hash, file_tittle = self.download_and_sign_latex_doc(
                 self.document.contract_url,
@@ -293,7 +406,7 @@ class manageDocuments():
         if not b64_pdf:
             error = "[Error render_contract] couldn't convert to b64"
             logger.error(error)
-            return None, error
+            return None, sign_record, error
 
         try:
             crypto_tool = CryptoTools()
@@ -400,7 +513,7 @@ class manageDocuments():
                     print("start rend contr")
                     contract_file_path = os.path.join(tmp_dir, conf.CONTRACT_FILE_NAME)
                     print("contrrr")
-                    contract_b2chainized, sign_record, error = self.render_contract(timestamp_now, main_tex)
+                    contract_b2chainized, sign_record, error = self.render_and_sign_contract(main_tex, timestamp_now)
 
                     print("pdf done c", sign_record)
                     if contract_b2chainized:
@@ -433,6 +546,49 @@ class manageDocuments():
                 error = "error rendering all documents"
             finally:
                 logger.info("documents rendering has finished")
+
+    def render_main_document(self, main_tex="main.tex"):
+        """ Trigger the renderization of the documents/contracts related to this doc object """
+        pdf_rendered = None
+        error = ""
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+
+            try:
+                # Check which of the documents are going to be rendered
+                if self.document.type == conf.CONTRACT or self.document.type == conf.NDA:
+                    render_contract = True
+                    render_doc = False
+                else:
+                    render_doc = True
+                    render_contract = False
+
+                if render_doc:
+                    try:
+                        pdf_file, complete_hash, file_tittle = self.render_document(main_tex, sign=False)
+                        if not pdf_file:
+                            logger.error(F"[ERROR render_main_document render_doc] Couldn't render the pdf")
+                            return None
+                        pdf_rendered = pdf_file
+
+                    except Exception as e:
+                        logger.error(F"[ERROR render_main_document doc] {e}")
+
+                if render_contract:
+                    try:
+                        contract_rendered, error = self.render_contract(main_tex)
+                        if not contract_rendered:
+                            logger.error(F"[ERROR render_main_document render_contract] Couldn't render the pdf")
+                            return None
+                        pdf_rendered = contract_rendered
+                    except Exception as e:
+                        logger.error(F"[ERROR render_main_document contract] {e}")
+
+            except Exception as e:
+                logger.info("[error] rendering main document: {}".format(str(e)))
+            finally:
+                logger.info("documents rendering has finished")
+                return pdf_rendered
 
     def send_attachments(self, attachment_list, email_body_html, email_body_text):
         """Send a list of attachments to the signer and organization"""

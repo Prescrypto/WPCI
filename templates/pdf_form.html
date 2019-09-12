@@ -61,7 +61,7 @@
 			<!-- closing Pdf Container-->
 
 			<script type="text/javascript">
-	      {% if has_nda %}
+	      {% if is_contract %}
 	        //if the document needs first to sign a contract the it will render a checkbox
 	        var myinput = document.getElementById("getit_input");
 	        myinput.type = 'checkbox';
@@ -114,7 +114,7 @@
 				loadingTask.promise.then(function(pdf) {
 					var pdf_pages = pdf.numPages;
 
-	        {% if not has_nda %}
+	        {% if not is_contract %}
 	            pdf_pages = 1;
 	        {% endif %}
 

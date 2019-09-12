@@ -925,8 +925,8 @@ def show_pdf(id):
     error = None
     doc_id = ""
     message = None
-    has_nda = False
-    pdffile = ""
+    is_contract = False
+    b64_pdf_file = ""
     FIRST_SESSION = False
 
     try:
@@ -939,44 +939,15 @@ def show_pdf(id):
     if request.method == 'GET':
         try:
 
-            doc = Document.Document()
-            thisdoc = doc.find_by_doc_id(doc_id)
-            if thisdoc is not None:
-                if thisdoc.nda_url is None or thisdoc.nda_url == "":
-                    if thisdoc.wp_url is None or thisdoc.wp_url == "":
-                        error = "No valid Pdf url found"
-                        logger.info(error)
-                        return render_template('pdf_form.html', id=doc_id, error=error)
-                    else:
-                        pdf_url = thisdoc.wp_url
-                else:
-                    pdf_url = thisdoc.nda_url
+            new_document = manageDocuments()
+            new_document.get_document_by_link_id(id)
+            if new_document.is_valid_document():
+                # render and send the documents by email
+                new_document.link_id = id
 
-                user = User.User()
-                user = user.find_by_attr("org_id", thisdoc.org_id)
-                org_type = getattr(user, "org_type", "N/A")
-
-                render_options = {"companyname": user.org_name, "companytype": org_type,
-                                  "companyaddress": user.org_address}
-
-                doc_type = getattr(thisdoc, "render", False)
-                if doc_type is not False and doc_type == "google":
-                    google_token = getattr(user, "google_token", False)
-                    if google_token is not False:
-                        pdffile = None #render_pdf_base64_google(pdf_url,
-                          #{'token': user.google_token,
-                          # 'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
-                          #'client_id': conf.GOOGLE_CLIENT_ID,
-                          # 'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                           # 'scopes': conf.SCOPES})
-
-                else:
-                    pdffile = None #render_pdf_base64_latex(pdf_url, "main.tex", render_options)
-
-                if not pdffile:
-                    error = "Error rendering the pdf with the nda url"
-                    logger.info(error)
-                    return render_template('pdf_form.html', id=doc_id, error=error)
+                # Render the pdf and convert it to b64
+                pdf_file = new_document.render_main_document()
+                b64_pdf_file = new_document.convert_bytes_to_b64(pdf_file)
 
                 thislink = Link.Link()
                 thislink = thislink.find_by_link(id)
@@ -984,17 +955,18 @@ def show_pdf(id):
                 thislink.view_count = int(temp_view_count) + 1
                 thislink.update()
 
-                if thisdoc.nda_url != "":
-                    has_nda = True
+                if new_document.document.type == conf.CONTRACT or new_document.document.type == conf.NDA:
+                    is_contract = True
+                else:
+                    is_contract = False
 
-                if 'first_session' not in session and has_nda:
+                if 'first_session' not in session and b64_pdf_file:
                     FIRST_SESSION = True
                     session['first_session'] = True
 
-
-                return render_template('pdf_form.html', id=doc_id, error=error, has_nda=has_nda,
-                                       pdffile=pdffile, wp_description=thisdoc.wp_description,
-                                       wp_getit_btn=thisdoc.wp_getit_btn, tour_js=FIRST_SESSION)
+                return render_template('pdf_form.html', id=doc_id, error=error, is_contract=is_contract,
+                                       pdffile=b64_pdf_file, wp_description=new_document.document.doc_description,
+                                       wp_getit_btn=new_document.document.doc_getit_btn, tour_js=FIRST_SESSION)
 
             else:
                 error = 'ID not found'
