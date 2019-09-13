@@ -29,11 +29,11 @@
 				{% endif %}
 					<div class="form-group">
 						<label class="input-group-text" >Document Name</label>
-						<input type="text" class="form-control" name="wp_name" value="" placeholder="Enter the document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
+						<input type="text" class="form-control" name="doc_name" value="" placeholder="Enter the document Name" aria-label="Doc Name" aria-describedby="basic-addon1">
 					</div>
 					<div class="form-group">
 						<label class="input-group-text" >Document Url</label>
-						<input type="text" class="form-control" name="wp_url" value="" placeholder="copy and paste your document url" aria-label="wp url" aria-describedby="basic-addon1">
+						<input type="text" class="form-control" name="doc_url" value="" placeholder="copy and paste your document url" aria-label="doc url" aria-describedby="basic-addon1">
 					</div>
 				  <div class="form-group">
 						<label class="input-group-text" >Redirect Url</label>
@@ -48,16 +48,16 @@
 					{% if type == "wp_nda"%}
 						<div class="form-group">
 							<label class="input-group-text" >Contract Url</label>
-							<input type="text" class="form-control" name="nda_url" value="" placeholder="Copy and paste the contract Url" aria-label="Nda url" aria-describedby="basic-addon1">
+							<input type="text" class="form-control" name="contract_url" value="" placeholder="Copy and paste the contract Url" aria-label="contract url" aria-describedby="basic-addon1">
 						</div>
 					{% endif %}
 					<div class="form-group">
 						<label class="input-group-text" >Sidebar Description (optional)</label>
-						<input type="text" class="form-control" name="wp_description" value="" placeholder="Description" aria-label="Description" aria-describedby="basic-addon1">
+						<input type="text" class="form-control" name="doc_description" value="" placeholder="Description" aria-label="Description" aria-describedby="basic-addon1">
 					</div>
 					<div class="form-group">
 						<label class="input-group-text" >Get the document button description (optional)</label>
-						<input type="text" class="form-control" name="wp_getit_btn" value="" placeholder="button description" aria-label="wp_getit_btn" aria-describedby="basic-addon1">
+						<input type="text" class="form-control" name="doc_getit_btn" value="" placeholder="button description" aria-label="doc_getit_btn" aria-describedby="basic-addon1">
 					</div>
 			    <div class="uk-margin uk-text-center">
 						<button type="submit" class="btn btn-info" value="create">Save!</button>
