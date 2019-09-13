@@ -35,7 +35,7 @@
 							<label style="font-size: 11px">(we won't save it or use it for anything else, we promise.)</label>
 							<input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
 						</div>
-						<input type="hidden" id="nda_file" name="nda_file" value="">
+						<input type="hidden" id="contract_file" name="contract_file" value="">
 						<div class="uk-text-center">
 							<div id="spinner" ></div>
 							<button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg"  >Send!</button>
@@ -100,7 +100,7 @@
 				var winheight= $( window ).height() - 60;
 				$('#pdf_container').attr('style','height:'+ winheight +'px;overflow: scroll;');
 				var pdfData = atob('{{ pdffile }}');
-				$('#nda_file').val('{{ pdffile }}');
+				$('#contract_file').val('{{ pdffile }}');
 				// Get div#container and cache it for later use
 				var wholecontainer = document.getElementById("pdf_container");
 				var container = document.getElementById("dynamic_container");

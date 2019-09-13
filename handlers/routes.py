@@ -575,8 +575,8 @@ class RenderUrl(BaseHandler):
                     IOLoop.instance().add_callback(
                         callback=lambda:
                         new_document.render_and_send_all_documents(
-                            email, name, email_body_html, timestamp_now, contract_file_name,
-                            doc_file_name, email_body_text
+                            email, name, email_body_html, timestamp_now, contract_file_name, doc_file_name,
+                            contract_b64_file=None, main_tex="main.tex", email_body_text=email_body_text
                         )
                     )
 
@@ -628,8 +628,6 @@ class PostDocument(BaseHandler):
     def get(self, userid):
         result = None
         response = dict()
-        render_contract = False
-        render_doc = False
         contract_file_name = doc_file_name = "unknown.pdf"
         try:
             link_id = self.get_argument('link_id', "")
@@ -668,8 +666,8 @@ class PostDocument(BaseHandler):
                         IOLoop.instance().add_callback(
                             callback=lambda:
                             new_document.render_and_send_all_documents(
-                                email, name, email_body_html, timestamp_now, contract_file_name,
-                                doc_file_name, email_body_text
+                                email, name, email_body_html, timestamp_now, contract_file_name, doc_file_name,
+                                contract_b64_file=None, main_tex="main.tex", email_body_text=email_body_text
                             )
                         )
                         thislink.status = "signed"

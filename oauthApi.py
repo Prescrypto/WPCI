@@ -979,55 +979,40 @@ def show_pdf(id):
             return render_template('pdf_form.html', id=id, error=error)
 
     if request.method == 'POST':
-        render_nda_only = render_wp_only = False
-
+        email_body_html = DEFAULT_HTML_TEXT
+        timestamp_now = str(int(time.time()))
         try:
-            signer_user = signerUser.SignerUser(request.form.get("signer_email"), request.form.get("signer_name"))
+            new_document = manageDocuments()
+            new_document.get_document_by_link_id(id)
+            if new_document.is_valid_document():
+                # render and send the documents by email
+                new_document.link_id = id
+                name = request.form.get("signer_name", False)
+                email = request.form.get("signer_email", False)
 
-            if not signer_user.email:
-                error = "Error, you must enter a valid email"
-                logger.info(error)
-                return render_template('pdf_form.html', id=doc_id, error=error)
-            if not signer_user.name:
-                error = "Error, you must enter a valid Name"
-                logger.info(error)
-                return render_template('pdf_form.html', id=doc_id, error=error)
+                if not email:
+                    error = "Error, you must enter a valid email"
+                    logger.info(error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
+                if not name:
+                    error = "Error, you must enter a valid Name"
+                    logger.info(error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
 
-            nda_file_base64 = str(request.form.get("nda_file"))
-            doc = Document.Document()
-            thisdoc = doc.find_by_doc_id(doc_id)
-
-            # create the signer user so it can generate their keys
-            signer_user.create()
-
-            if thisdoc is not None and thisdoc.org_id is not None:
-                if thisdoc.nda_url is None or thisdoc.contract_url == "" :
-                    render_wp_only = True
-
-                if thisdoc.wp_url is None or thisdoc.doc_url == "":
-                    render_nda_only = True
-
-                user = User.User()
-                user = user.find_by_attr("org_id", thisdoc.org_id)
-
-                google_credentials_info = {'token': user.google_token,
-                                           'refresh_token': user.google_refresh_token,
-                                           'token_uri': conf.GOOGLE_TOKEN_URI,
-                                           'client_id': conf.GOOGLE_CLIENT_ID,
-                                           'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                                           'scopes': conf.SCOPES}
+                contract_file_base64 = str(request.form.get("contract_file"))
 
                 # generate document and contract file names by the email, link id and the current timestamp
-                timestamp_now = str(int(time.time()))
-                doc_file_name = "doc_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
-                contract_file_name = "contract_{}_{}_{}.pdf".format(signer_user.email, id, timestamp_now)
+                doc_file_name = doc_file_name = F"doc_{email}_{id}_{timestamp_now}.pdf"
+                contract_file_name = F"contract_{email}_{id}_{timestamp_now}.pdf"
                 # render and send the documents by email
-                # TODO find a way to parse all the parameters different than by individual variables
-                #IOLoop.instance().add_callback(callback=lambda: render_and_send_docs(user, thisdoc, nda_file_base64,
-                 #                                                                    google_credentials_info,
-                  #                                                                   render_wp_only, render_nda_only,
-                   #                                                                  signer_user, id, doc_file_name,
-                    #                                                                 contract_file_name))
+
+                IOLoop.instance().add_callback(
+                    callback=lambda:
+                    new_document.render_and_send_all_documents(
+                        email, name, email_body_html, timestamp_now, contract_file_name,
+                        doc_file_name, contract_b64_file=contract_file_base64
+                    )
+                )
 
                 message = "successfully sent your files "
 
@@ -1038,20 +1023,18 @@ def show_pdf(id):
                 thislink.status = "signed"
                 thislink.update()
 
-                doc_redirect_url = getattr(thisdoc, "redirect_url", False)
+                doc_redirect_url = getattr(new_document.document, "redirect_url", False)
 
                 if doc_redirect_url and doc_redirect_url != "":
                     return redirect(doc_redirect_url)
-
-            else:
-                error = 'ID not found'
-                logger.info(error)
+            else:  # Not a valid document
+                logger.info(F"error signing and rendering the files {str(e)}")
+                error = "there was an error on your files"
                 return render_template('pdf_form.html', id=doc_id, error=error)
 
         except Exception as e: #function except
-            logger.info("error loading the files "+str(e))
+            logger.info("error loading the files " + str(e))
             error = "there was an error on your files"
             return render_template('pdf_form.html', id=doc_id, error=error)
-
 
     return render_template('pdf_form.html', id=doc_id, error=error, message=message)

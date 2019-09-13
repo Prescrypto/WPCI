@@ -163,7 +163,7 @@ class manageDocuments():
                 logger.info('google render IOError' + str(e))
                 return None, None
             except Exception as e:
-                logger.info("other error google render" + str(e))
+                logger.info("other error google render " + str(e))
                 return None, None
 
     def download_render_latex_doc(self, repo_url, main_tex="main.tex"):
@@ -259,10 +259,10 @@ class manageDocuments():
                 return pdffile, complete_hash, file_tittle
 
             except IOError as e:
-                logger.info('google render IOError' + str(e))
+                logger.info('google render sign IOError' + str(e))
                 return None, None, None
             except Exception as e:
-                logger.info("other error google render" + str(e))
+                logger.info("other error google render sign" + str(e))
                 return None, None, None
 
     def download_and_sign_latex_doc(self, repo_url, main_tex="main.tex", is_contract=False, options={}):
@@ -376,37 +376,42 @@ class manageDocuments():
             pdffile, file_tittle = self.download_render_latex_doc(self.document.contract_url, main_tex)
             return pdffile, error
 
-    def render_and_sign_contract(self, main_tex, timestamp_now):
+    def render_and_sign_contract(self, main_tex, timestamp_now, b64_pdf=None):
         error = ""
         CONTRACT_FILE_NAME = "document.pdf"
         pdf_file = contract_b2chainized = sign_record = None
 
         doc_type = getattr(self.document, "render", "")
-        print("sign")
-        if doc_type == conf.GOOGLE:
-            credentials_ok = self.set_google_credentials()
-            if not credentials_ok:
-                error = "Your google credentials are wrong"
-                return None, None, error
-            doc_google_id = get_id_from_url(self.document.contract_url)
+        if b64_pdf is None:
+            print("pdf is none")
+            if doc_type == conf.GOOGLE:
+                credentials_ok = self.set_google_credentials()
+                if not credentials_ok:
+                    error = "Your google credentials are wrong"
+                    return None, None, error
+                doc_google_id = get_id_from_url(self.document.contract_url)
 
-            pdf_file, complete_hash, file_tittle = self.download_and_sign_google_doc(
-                doc_google_id,
-                timestamp_now,
-                is_contract=True
-            )
-        elif doc_type == conf.LATEX:
-            pdf_file, complete_hash, file_tittle = self.download_and_sign_latex_doc(
-                self.document.contract_url,
-                main_tex,
-                is_contract=True
-            )
+                pdf_file, complete_hash, file_tittle = self.download_and_sign_google_doc(
+                    doc_google_id,
+                    timestamp_now,
+                    is_contract=True
+                )
+            elif doc_type == conf.LATEX:
+                pdf_file, complete_hash, file_tittle = self.download_and_sign_latex_doc(
+                    self.document.contract_url,
+                    main_tex,
+                    is_contract=True
+                )
 
-        b64_pdf = self.convert_bytes_to_b64(pdf_file)
-        if not b64_pdf:
+            b64_pdf = self.convert_bytes_to_b64(pdf_file)
+
+        # Check if the b64 file exists after its rendering
+        if b64_pdf is None:
             error = "[Error render_contract] couldn't convert to b64"
             logger.error(error)
             return None, sign_record, error
+
+        #print(b64_pdf)
 
         try:
             crypto_tool = CryptoTools()
@@ -437,7 +442,9 @@ class manageDocuments():
                 }
             }
 
+            #print(crypto_sign_payload)
             contract_b2chainized, sign_record = get_b2h_document(crypto_sign_payload, self.signer_user)
+            print("done crypto")
 
             if not contract_b2chainized:
                 error = "Failed loading contract"
@@ -451,7 +458,7 @@ class manageDocuments():
 
     @gen.engine
     def render_and_send_all_documents(self, email, name, email_body_html, timestamp_now,
-                                      contract_file_name, doc_file_name,
+                                      contract_file_name, doc_file_name, contract_b64_file=None,
                                       main_tex="main.tex", email_body_text=""):
         """ Trigger the renderization of the documents/contracts related to this doc object """
         ATTACH_CONTENT_TYPE = 'octet-stream'
@@ -485,7 +492,8 @@ class manageDocuments():
                         print("ag")
                         pdf_file, complete_hash, file_tittle = self.render_document(
                             main_tex,
-                            timestamp_now
+                            timestamp_now,
+                            sign=True
                         )
                         print("pdf done", complete_hash)
                         if pdf_file:
@@ -503,17 +511,22 @@ class manageDocuments():
                                                   filename=conf.DOC_FILE_NAME)
                             attachment_list.append(doc_attachment)
                         else:
+                            error = F"Couldn't render and attach the doc: {doc_file_name}"
                             logger.error(F"[ERROR render_and_send_all_documents render_doc] Couldn't render the pdf")
 
                     except Exception as e:
                         logger.error(F"[ERROR render_and_send_all_documents] {e}")
-                        error = "couldn't render the document"
+                        error = "couldn't render the document {doc_file_name}"
 
                 if render_contract:
                     print("start rend contr")
                     contract_file_path = os.path.join(tmp_dir, conf.CONTRACT_FILE_NAME)
                     print("contrrr")
-                    contract_b2chainized, sign_record, error = self.render_and_sign_contract(main_tex, timestamp_now)
+                    contract_b2chainized, sign_record, error = self.render_and_sign_contract(
+                        main_tex,
+                        timestamp_now,
+                        contract_b64_file
+                    )
 
                     print("pdf done c", sign_record)
                     if contract_b2chainized:
@@ -536,10 +549,13 @@ class manageDocuments():
                         attachment_list.append(doc_attachment)
 
                     else:
+                        error = error + F" Couldn't render and attach the contract: {contract_file_name}"
                         logger.error(F"[ERROR render_and_send_all_documents render_contract] Couldn't render the pdf")
 
-                    if len(attachment_list) > 0:
-                        self.send_attachments(attachment_list, email_body_html, email_body_text)
+                if len(attachment_list) > 0 and error == "":
+                    self.send_attachments(attachment_list, email_body_html, email_body_text)
+                else:
+                    logger.error(error)
 
             except Exception as e:
                 logger.info("error rendering all documents: {}".format(str(e)))
