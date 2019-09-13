@@ -601,16 +601,16 @@ def documents(type, render):
 
                 if type == conf.CONTRACT:
                     '''This is a contract document without a white paper or other document'''
-                    data["nda_url"] = data.get("doc_url")
+                    data["contract_url"] = data.get("doc_url")
                     data["doc_url"] = ""
                 elif type == conf.DOCUMENT:
                     '''this is a document protected'''
-                    data["nda_url"] = ""
+                    data["contract_url"] = ""
 
-                if data.get("nda_url") is not None and data.get("nda_url") != "":
+                if data.get("contract_url") is not None and data.get("contract_url") != "":
                     CONTRACT_NOT_EMPTY = True
-                    if data.get("wp_description") == "":
-                        data["wp_description"] = user.org_name + " requires you to sign this before you can continue. Please\
+                    if data.get("doc_description") == "":
+                        data["doc_description"] = user.org_name + " requires you to sign this before you can continue. Please\
                         read carefully and sign to continue."
 
                     if data.get("doc_getit_btn") == "":
@@ -661,7 +661,7 @@ def documents(type, render):
                                 subprocess.check_output(clone, shell=True, cwd=tmpdir)
 
                             if DOC_NOT_EMPTY:
-                                clone = 'git clone ' + data["wp_url"]
+                                clone = 'git clone ' + data["doc_url"]
                                 subprocess.check_output(clone, shell=True, cwd=tmpdir)
 
                     except Exception as e:
@@ -683,13 +683,13 @@ def documents(type, render):
                                 **user_credentials
                             )
 
-                            pdf_id_nda = pdf_id_wp = True
+                            pdf_id_contract = pdf_id_doc = True
                             if CONTRACT_NOT_EMPTY:
-                                pdf_id_nda = get_id_from_url(data["contract_url"])
+                                pdf_id_contract = get_id_from_url(data["contract_url"])
                             if DOC_NOT_EMPTY:
-                                pdf_id_wp = get_id_from_url(data["doc_url"])
+                                pdf_id_doc = get_id_from_url(data["doc_url"])
 
-                            if pdf_id_nda is False or pdf_id_wp is False:
+                            if pdf_id_contract is False or pdf_id_doc is False:
                                 error = "error getting correct google document url please check it and try again"
                                 logger.info(error)
                                 return render_template('documents.html', type=type, render=render, error=error)
@@ -699,7 +699,7 @@ def documents(type, render):
                                     conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
 
                                 if CONTRACT_NOT_EMPTY:
-                                    req_pdf = drive.files().export_media(fileId=pdf_id_nda,
+                                    req_pdf = drive.files().export_media(fileId=pdf_id_contract,
                                                                          mimeType='application/pdf')
                                     fh = io.BytesIO()
                                     downloader = MediaIoBaseDownload(fh, req_pdf, chunksize=conf.CHUNKSIZE)
@@ -708,7 +708,7 @@ def documents(type, render):
                                         status, done = downloader.next_chunk()
 
                                 if DOC_NOT_EMPTY:
-                                    req_pdf2 = drive.files().export_media(fileId=pdf_id_wp,
+                                    req_pdf2 = drive.files().export_media(fileId=pdf_id_doc,
                                                                          mimeType='application/pdf')
                                     fh = io.BytesIO()
                                     downloader = MediaIoBaseDownload(fh, req_pdf2, chunksize=conf.CHUNKSIZE)
@@ -720,7 +720,6 @@ def documents(type, render):
                             error = "You don't have permissions for google docs"
                             return render_template('documents.html', type=type, render=render, error=error,
                                                    url_error="google_error")
-
 
                     except Exception as e:
                         logger.info("testing google doc: "+ str(e))
@@ -965,8 +964,8 @@ def show_pdf(id):
                     session['first_session'] = True
 
                 return render_template('pdf_form.html', id=doc_id, error=error, is_contract=is_contract,
-                                       pdffile=b64_pdf_file, wp_description=new_document.document.doc_description,
-                                       wp_getit_btn=new_document.document.doc_getit_btn, tour_js=FIRST_SESSION)
+                                       pdffile=b64_pdf_file, doc_description=new_document.document.doc_description,
+                                       doc_getit_btn=new_document.document.doc_getit_btn, tour_js=FIRST_SESSION)
 
             else:
                 error = 'ID not found'

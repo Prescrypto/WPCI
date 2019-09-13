@@ -599,14 +599,14 @@ class PostDocument(BaseHandler):
         try:
             doc = Document.Document()
 
-            if not json_data.get("wp_url"):
+            if not json_data.get("doc_url"):
                 self.write(json.dumps({"response": "Error, White paper url not found"}))
-            if not json_data.get("wp_name"):
+            if not json_data.get("doc_name"):
                 self.write(json.dumps({"response": "Error, White paper name not found"}))
-            if not json_data.get("wp_main_tex"):
+            if not json_data.get("doc_main_tex"):
                 json_data["main_tex"] = "main.tex"
-            if not json_data.get("nda_url"):
-                json_data["nda_url"] = ""
+            if not json_data.get("contract_url"):
+                json_data["contract_url"] = ""
             if not json_data.get("email_body_html"):
                 json_data["email_body_html"] = ""
             if not json_data.get("email_body_txt"):
