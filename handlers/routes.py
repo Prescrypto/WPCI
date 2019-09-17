@@ -334,27 +334,13 @@ def get_b64_pdf(doc_id, userjson):
     try:
         user = User.User()
         user = user.find_by_attr("username", userjson.get("username"))
-        doc = Document.Document()
-        docs = doc.find_by_attr("doc_id", doc_id)
-        if len(docs) > 0:
-            doc = docs[0]
-        else:
-            return result
-        doc_type = getattr(doc, "type", False)
-        if doc_type is False:
-            google_token = getattr(user, "google_token", False)
-            if google_token is not False:
-                user_credentials = {'token': user.google_token,
-                          'refresh_token':user.google_refresh_token, 'token_uri': conf.GOOGLE_TOKEN_URI,
-                          'client_id': conf.GOOGLE_CLIENT_ID,
-                           'client_secret': conf.GOOGLE_CLIENT_SECRET,
-                            'scopes': conf.SCOPES}
-                bytes = None#render_pdf_base64_google(doc.get("wp_url"), user_credentials)
-            else:
-                return result
-        else:
-            bytes = None #render_pdf_base64_latex(doc.get("wp_url"))
-        return bytes
+        new_document = manageDocuments()
+        new_document.get_document_by_doc_id(doc_id)
+        if new_document.is_valid_document() and new_document.user_has_permission(user):
+            # render and send the documents by email
+            pdffile, complete_hash, file_tittle = new_document.render_document(main_tex="main.tex")
+            pdf_b64 = new_document.convert_bytes_to_b64(pdffile)
+            return pdf_b64
 
     except Exception as e:
         logger.info("error rendering the document link " + str(e))
@@ -492,56 +478,6 @@ class WebhookConfirm(BaseHandler):
             self.write_json({"error": error}, 500)
 
 
-@jwtauth
-class PostRepoHash(BaseHandler):
-    '''Receives a post with the github repository url and renders it to PDF with clone_repo'''
-
-    def get(self, userid):
-        self.write(json.dumps({"response": "GET not found"}))
-
-    def post(self, userid):
-        result = None
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        try:
-            if json_data.get("main_tex") is None or json_data.get("main_tex") == "":
-                main_tex = "main.tex"
-            else:
-                main_tex = json_data.get("main_tex")
-
-            if json_data.get("email") is None or json_data.get("email") == "":
-                email = ""
-            else:
-                email = json_data.get("email")
-
-            if json_data.get("email_body_html") is None or json_data.get("email_body_html") == "":
-                email_body_html = DEFAULT_HTML_TEXT
-            else:
-                email_body_html = json_data.get("email_body_html")
-
-            if json_data.get("email_body_text") is None or json_data.get("email_body_text") == "":
-                email_body_text = ""
-            else:
-                email_body_text = json_data.get("email_body_text")
-
-            if json_data.get("options") is None or json_data.get("options") == {}  or json_data.get("options") == "":
-                options = {}
-            else:
-                options = json_data.get("options")
-
-            userjson = ast.literal_eval(userid)
-            if is_valid_email(email):
-                result = None # TODO create_email_pdf_auth(json_data.get("remote_url"),userjson, email,
-                                             #  email_body_html, main_tex,  email_body_text, options)
-            if result:
-                self.write(json.dumps({"response": "done"}))
-            else:
-                self.write(json.dumps({"response": "Error"}))
-
-        except Exception as e:
-            logger.info("error on clone"+ str(e))
-            self.write(json.dumps({"response": "Error"}))
-
-
 class RenderUrl(BaseHandler):
     '''Receives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
 
@@ -611,6 +547,8 @@ class PostDocument(BaseHandler):
                 json_data["email_body_html"] = ""
             if not json_data.get("email_body_txt"):
                 json_data["email_body_txt"] = ""
+            if not json_data.get("render"):
+                json_data["render"] = "google"
 
             doc.__dict__ = json_data
             userjson = ast.literal_eval(userid)

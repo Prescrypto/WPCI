@@ -80,6 +80,14 @@ class manageDocuments():
         else:
             return False
 
+    def user_has_permission(self, user):
+
+        if self.user.username == user.username:
+            return True
+
+        else:
+            return False
+
     def get_document_by_link_id(self, link_id):
         try:
             doc_id = "_".join(link_id.split("_")[:-1])
@@ -435,7 +443,7 @@ class manageDocuments():
                 return pdffile, complete_hash, file_tittle
             else:
                 pdffile, file_tittle = self.download_render_url_doc(self.document.doc_url)
-                return pdffile, None
+                return pdffile, None, file_tittle
         else:
             return None, None, None
 

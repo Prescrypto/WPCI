@@ -34,6 +34,7 @@ class Document(object):
     view_count = None
     down_count = None
     date = None
+    render = None
 
     def __init__(self, org_id=None):
         self.org_id = org_id
@@ -60,6 +61,8 @@ class Document(object):
                 self.contract_url = ""
             if self.doc_url is None:
                 self.doc_url = ""
+            if self.render is None or self.render == "":
+                self.render = "google"
 
             if self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
@@ -139,7 +142,6 @@ class Document(object):
                 mydb.close()
 
         return result
-
 
     def create(self):
         '''creates a new document on the bd'''
