@@ -531,10 +531,9 @@ class PostDocument(BaseHandler):
     '''Receives a post with the document url and responses with a document id '''
 
     def post(self, userid):
-        json_data = json.loads(self.request.body.decode('utf-8'))
-        try:
-            doc = Document.Document()
 
+        try:
+            json_data = json.loads(self.request.body.decode('utf-8'))
             if not json_data.get("doc_url"):
                 self.write(json.dumps({"response": "Error, White paper url not found"}))
             if not json_data.get("doc_name"):
@@ -551,7 +550,13 @@ class PostDocument(BaseHandler):
                 json_data["render"] = "google"
             if not json_data.get("type"):
                 json_data["type"] = "nda"
+            if not json_data.get("doc_description"):
+                json_data["doc_description"] = " It is required to sign this before you can continue. Please\
+                        read carefully and sign to continue."
+            if not json_data.get("doc_getit_btn"):
+                json_data["doc_getit_btn"] = "Sign to receive the document!"
 
+            doc = Document.Document()
             doc.__dict__ = json_data
             userjson = ast.literal_eval(userid)
 
@@ -559,11 +564,11 @@ class PostDocument(BaseHandler):
             if result is not False:
                 self.write(json.dumps({"doc_id": result}))
             else:
-                self.write(json.dumps({"response": "Error"}))
+                self.write(json.dumps({"response": "Error, Couldn't create the document"}))
 
         except Exception as e:
             logger.info("error creating endpoint" + str(e))
-            self.write(json.dumps({"response": "Error"}))
+            self.write(json.dumps({"response": "Error the parameters are incorrect please send a valid json"}))
 
     def get(self, userid):
         result = None
