@@ -3,6 +3,7 @@ import tempfile
 import io
 import fitz
 import subprocess
+import requests
 
 #web
 import jinja2
@@ -123,6 +124,80 @@ class manageDocuments():
                 }
                 return True
         return False
+
+    def download_render_url_doc(self, pdf_url):
+        """Downloads and renders pdf document from an external url"""
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                file_full_path = tmpdir + "/" + pdf_url.split("/")[-1]
+                file_tittle = file_full_path.split(".")[0]
+                req = requests.get(pdf_url)
+                if req.status == 200:
+                    with open(file_full_path, 'wb') as mypdf:
+                        mypdf.write(req.content)
+
+                    pdffile = open(file_full_path, 'rb').read()
+                    if not pdffile:
+                        logger.info("Error rendering the pdf external document")
+                        return None, None
+
+                    return pdffile, file_tittle
+                else:
+                    logger.info("[Error] download_render_url_doc: couldnt download the pdf ")
+                    return None, None
+
+            except IOError as e:
+                logger.info('pdf render IOError' + str(e))
+                return None, None
+            except Exception as e:
+                logger.info("other error pdf render " + str(e))
+                return None, None
+
+    def download_render_sign_url_doc(self, pdf_url, timestamp_now, is_contract=False):
+        """Downloads, renders and signs pdf document from an external url"""
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                file_full_path = tmpdir + "/" + pdf_url.split("/")[-1]
+                file_tittle = file_full_path.split(".")[0]
+                watermark = "Document generated for: " + self.signer_user.email
+                complete_hash = get_hash([timestamp_now, self.signer_user.email], [file_tittle])
+
+                req = requests.get(pdf_url)
+                if req.status == 200:
+                    with open(file_full_path, 'wb') as mypdf:
+                        mypdf.write(req.content)
+
+                    if not req.content:
+                        logger.info("Error rendering the pdf external document")
+                        return None, None
+
+                    if not is_contract:
+                        pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y)
+                        pointb = fitz.Point(conf.AXIS_X_LOWER, conf.AXIS_Y)
+                        document = fitz.open(file_full_path)
+                        for page in document:
+                            page.insertText(pointa, text=watermark, fontsize=conf.WATERMARK_SIZE,
+                                            fontname=conf.WATERMARK_FONT,
+                                            rotate=conf.WATERMARK_ROTATION)
+                            page.insertText(pointb, text="DocId: " + complete_hash, fontsize=conf.WATERMARK_SIZE,
+                                            fontname=conf.WATERMARK_FONT, rotate=conf.WATERMARK_ROTATION)
+                        document.save(file_full_path, incremental=1)
+                        document.close()
+
+                    pdffile = open(file_full_path, 'rb').read()
+                    return pdffile, complete_hash, file_tittle
+                else:
+                    logger.info("[Error] download_render_url_doc: couldnt download the pdf ")
+                    return None, None
+
+            except IOError as e:
+                logger.info('pdf render IOError' + str(e))
+                return None, None
+            except Exception as e:
+                logger.info("other error pdf render " + str(e))
+                return None, None
 
     def download_render_google_doc(self, pdf_id):
         """Downloads and renders pdf document from google"""
@@ -352,7 +427,15 @@ class manageDocuments():
                 return pdffile, None, file_tittle
 
         elif doc_type == conf.EXTERNAL:
-            return None, None, None
+            if sign:
+                pdffile, complete_hash, file_tittle = self.download_render_sign_url_doc(
+                    self.document.doc_url,
+                    timestamp_now
+                )
+                return pdffile, complete_hash, file_tittle
+            else:
+                pdffile, file_tittle = self.download_render_url_doc(self.document.doc_url)
+                return pdffile, None
         else:
             return None, None, None
 
@@ -375,6 +458,12 @@ class manageDocuments():
         elif doc_type == conf.LATEX:
             pdffile, file_tittle = self.download_render_latex_doc(self.document.contract_url, main_tex)
             return pdffile, error
+
+        elif doc_type == conf.EXTERNAL:
+            pdffile, file_tittle = self.download_render_url_doc(self.document.contract_url)
+            return pdffile, error
+        else:
+            return None, None
 
     def render_and_sign_contract(self, main_tex, timestamp_now, b64_pdf=None):
         error = ""
@@ -403,6 +492,13 @@ class manageDocuments():
                     is_contract=True
                 )
 
+            elif doc_type == conf.EXTERNAL:
+                pdf_file, complete_hash, file_tittle = self.download_render_sign_url_doc(
+                    self.document.contract_url,
+                    timestamp_now,
+                    is_contract=True
+                )
+
             b64_pdf = self.convert_bytes_to_b64(pdf_file)
 
         # Check if the b64 file exists after its rendering
@@ -410,8 +506,6 @@ class manageDocuments():
             error = "[Error render_contract] couldn't convert to b64"
             logger.error(error)
             return None, sign_record, error
-
-        #print(b64_pdf)
 
         try:
             crypto_tool = CryptoTools()
@@ -442,9 +536,7 @@ class manageDocuments():
                 }
             }
 
-            #print(crypto_sign_payload)
             contract_b2chainized, sign_record = get_b2h_document(crypto_sign_payload, self.signer_user)
-            print("done crypto")
 
             if not contract_b2chainized:
                 error = "Failed loading contract"
