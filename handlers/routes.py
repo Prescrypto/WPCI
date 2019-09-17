@@ -549,12 +549,19 @@ class PostDocument(BaseHandler):
             if not json_data.get("render"):
                 json_data["render"] = "google"
             if not json_data.get("type"):
-                json_data["type"] = "nda"
+                json_data["type"] = conf.CONTRACT
             if not json_data.get("doc_description"):
                 json_data["doc_description"] = " It is required to sign this before you can continue. Please\
                         read carefully and sign to continue."
             if not json_data.get("doc_getit_btn"):
                 json_data["doc_getit_btn"] = "Sign to receive the document!"
+
+            if json_data.get("type") == conf.CONTRACT and json_data.get("contract_url") == "":
+                json_data["contract_url"] = json_data.get("doc_url")
+
+            if json_data.get("type") == conf.NDA and (
+                    json_data.get("contract_url") == "" or json_data.get("doc_url") == ""):
+                self.write(json.dumps({"response": "Error, Couldn't create the document, no valid urls provided"}))
 
             doc = Document.Document()
             doc.__dict__ = json_data
