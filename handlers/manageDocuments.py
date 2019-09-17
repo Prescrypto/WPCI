@@ -141,7 +141,7 @@ class manageDocuments():
                 file_full_path = tmpdir + "/" + pdf_url.split("/")[-1]
                 file_tittle = file_full_path.split(".")[0]
                 req = requests.get(pdf_url)
-                if req.status == 200:
+                if req.status_code == 200:
                     with open(file_full_path, 'wb') as mypdf:
                         mypdf.write(req.content)
 
@@ -173,7 +173,7 @@ class manageDocuments():
                 complete_hash = get_hash([timestamp_now, self.signer_user.email], [file_tittle])
 
                 req = requests.get(pdf_url)
-                if req.status == 200:
+                if req.status_code == 200:
                     with open(file_full_path, 'wb') as mypdf:
                         mypdf.write(req.content)
 
