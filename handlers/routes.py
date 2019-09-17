@@ -549,6 +549,8 @@ class PostDocument(BaseHandler):
                 json_data["email_body_txt"] = ""
             if not json_data.get("render"):
                 json_data["render"] = "google"
+            if not json_data.get("type"):
+                json_data["type"] = "nda"
 
             doc.__dict__ = json_data
             userjson = ast.literal_eval(userid)
