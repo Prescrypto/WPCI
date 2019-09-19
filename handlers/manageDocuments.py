@@ -663,6 +663,59 @@ class manageDocuments():
             finally:
                 logger.info("documents rendering has finished")
 
+    @gen.engine
+    def b2chize_signed_doc(self, signer_public_key_hex, doc_signature, b64_pdf):
+        error = ""
+        CONTRACT_FILE_NAME = "document.pdf"
+        contract_b2chainized = sign_record = None
+
+        if b64_pdf is None:
+            error = "[Error sending  doc to bch] couldn't convert to b64"
+            logger.error(error)
+            return None, sign_record, error
+
+        try:
+
+            crypto_tool = CryptoTools()
+            if self.user.org_logo is None or self.user.org_logo == "":
+                org_logo = open(conf.DEFAULT_LOGO_PATH, 'r').read()
+            else:
+                org_logo = self.user.org_logo
+
+            signer_public_key = crypto_tool.un_savify_key(signer_public_key_hex)
+
+            if crypto_tool.verify(b64_pdf, doc_signature, signer_public_key):
+
+                crypto_sign_payload = {
+                    "pdf": b64_pdf,
+                    "timezone": conf.TIMEZONE,
+                    "signature": doc_signature,
+                    "signatories": [
+                        {
+                            "email": self.signer_user.email,
+                            "name": self.signer_user.name,
+                            "public_key": signer_public_key_hex
+                        }],
+                    "params": {
+                        "locale": conf.LANGUAGE,
+                        "title": self.user.org_name + " contract",
+                        "file_name": CONTRACT_FILE_NAME,
+                        "logo": org_logo,
+                    }
+                }
+
+                contract_b2chainized, sign_record = get_b2h_document(crypto_sign_payload, self.signer_user)
+
+                if not contract_b2chainized:
+                    error = "Failed loading contract"
+                    logger.error(error)
+                    return None, None, error
+
+        except Exception as e:
+            logger.info("Error rendering contract: {}".format(str(e)))
+        finally:
+            return contract_b2chainized, sign_record, error
+
     def render_main_document(self, main_tex="main.tex"):
         """ Trigger the renderization of the documents/contracts related to this doc object """
         pdf_rendered = None

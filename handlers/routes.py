@@ -716,6 +716,87 @@ class RenderDocToPDF(BaseHandler):
             self.write(json.dumps({"error": "not enough information to perform the action"}))
 
 
+@jwtauth
+class SignedToRexchain(BaseHandler):
+    '''Receives a get with the id of the document and renders it to PDF with clone_repo'''
+
+    def get(self, link_id):
+        '''Receives a document id and retrieves a json with a b64 pdf'''
+        response = dict()
+        userjson = validate_token(self.request.headers.get('Authorization'))
+        if not userjson:
+            self.write_json(AUTH_ERROR, 403)
+
+        try:
+            new_document = manageDocuments()
+            # Tenemos registro de este link id en la base de datos?
+            new_document.get_document_by_link_id(link_id)
+            if new_document.is_valid_document():
+                # render and send the documents by email
+                new_document.link_id = link_id
+
+                json_data = json.loads(self.request.body.decode('utf-8'))
+                if not json_data.get("signer_metadata"):
+                    self.write(json.dumps({"response": "Error, no signer metadata found"}))
+                else:
+                    signer_metadata = json_data.get("signer_metadata", {})
+                    if (
+                            not signer_metadata.get("email")
+                            or not signer_metadata.get("name")
+                            or not signer_metadata.get("public_key")
+                            or not json_data.get("signature")
+                            or not json_data.get("doc_id")
+                            or not json_data.get("pdf_b64")
+                    ):
+                        self.write(json.dumps({"response": "Error, missing document or signer metadata"}))
+
+                    else:
+                        new_document.signer_user = signerUser.SignerUser(
+                            signer_metadata.get("email"), signer_metadata.get("name"))
+                        # create the signer user so it can generate their keys
+                        new_document.signer_user.create()
+
+                        crypto_tool = CryptoTools()
+                        signer_public_key = signer_metadata.get("public_key")
+                        doc_signature = crypto_tool.hex2bin(signer_metadata.get("doc_id"))
+
+                        # The file name is composed by the email of the user,
+                        # the link id and the timestamp of the creation
+                        response.update(
+                            {"s3_contract_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
+                        )
+
+                        IOLoop.instance().add_callback(
+                            callback=lambda:
+                            new_document.b2chize_signed_doc(
+                                signer_public_key=signer_public_key,
+                                doc_signature=doc_signature,
+                                b64_pdf=json_data.get("pdf_b64")
+                            )
+                        )
+
+                        thislink = Link.Link()
+                        thislink = thislink.find_by_link(link_id)
+                        temp_signed_count = thislink.signed_count
+                        thislink.signed_count = int(temp_signed_count) + 1
+                        thislink.status = "signed"
+                        thislink.update()
+
+                        self.write(json.dumps(response))
+
+                if len(response) > 0:
+                    self.write(json.dumps(response))
+                else:
+                    self.write(json.dumps({"error": "failed sending the pdf file to cryptosign"}))
+
+            else:
+                self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+        except Exception as e:
+            logger.error(F"[ERROR] SignedToRexchain: {e} ")
+            self.write({"error": "Failed notarising the signed document"})
+
+
 class Documents(BaseHandler):
     '''Documents endpoint'''
 

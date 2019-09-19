@@ -377,3 +377,14 @@ class CryptoTools(object):
         except Exception as e:
             self.logger.error('{}'.format(e))
             return None
+
+    def read_fiel_cer(directory_file):
+        """Read FIEL.cer file and convert to rsa object"""
+        try:
+            public_key = None
+            with open(directory_file + '.cer', 'rb') as f:
+                public_key = RSA.import_key(f.read())
+        except Exception as e:
+            print(F'[ERROR read_fiel_cer] {e}, Type:{type(e)}')
+
+        return public_key
