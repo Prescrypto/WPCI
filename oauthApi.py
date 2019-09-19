@@ -944,6 +944,16 @@ def show_pdf(id):
                 # render and send the documents by email
                 new_document.link_id = id
 
+                if new_document.document.type == conf.CONTRACT or new_document.document.type == conf.NDA:
+                    is_contract = True
+                else:
+                    is_contract = False
+
+                if new_document.document.doc_url == "" and new_document.document.contract_url == "":
+                    error = 'No Document url provided, unable to render the pdf'
+                    logger.info(error)
+                    return render_template('pdf_form.html', id=doc_id, error=error)
+
                 # Render the pdf and convert it to b64
                 pdf_file = new_document.render_main_document()
                 b64_pdf_file = new_document.convert_bytes_to_b64(pdf_file)
@@ -954,10 +964,7 @@ def show_pdf(id):
                 thislink.view_count = int(temp_view_count) + 1
                 thislink.update()
 
-                if new_document.document.type == conf.CONTRACT or new_document.document.type == conf.NDA:
-                    is_contract = True
-                else:
-                    is_contract = False
+
 
                 if 'first_session' not in session and b64_pdf_file:
                     FIRST_SESSION = True
