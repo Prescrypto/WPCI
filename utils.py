@@ -317,7 +317,7 @@ class CryptoTools(object):
                 pkcs1_15.new(PublicKey).verify(message_hash, signature)
                 return True   
             except Exception as e:
-                self.logger.error("[CryptoTool, verify ERROR ] Signature or message are corrupted")
+                self.logger.error(F"[CryptoTool, verify ERROR ] Signature or message are corrupted: {e}")
                 return False
 
     def _verify(self, message, signature, PublicKey):

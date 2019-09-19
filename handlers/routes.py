@@ -1,31 +1,12 @@
 #python
-import logging
 import ast
 import jwt
-import datetime
-import json
-import tempfile
-import time
-import hashlib
-import os
-import subprocess
-import glob
-import base64
-import io
 
 #web app
-from tornado.web import os, asynchronous
 import tornado
-from tornado import gen
 from tornado.ioloop import IOLoop
 import jinja2
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
-
-#google oauth
-import google.oauth2.credentials
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-from googleapiclient.http import MediaIoBaseDownload
 
 #pdf context
 import fitz
@@ -33,7 +14,6 @@ import fitz
 #internal
 from handlers.apiBaseHandler import BaseHandler
 from models import User, Document, Link, signRecord, signerUser
-from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
 from handlers.WSHandler import *
 from handlers.manageDocuments import manageDocuments
@@ -729,6 +709,7 @@ class SignedToRexchain(BaseHandler):
 
         try:
             new_document = manageDocuments()
+            timestamp_now = time.time()
             # Tenemos registro de este link id en la base de datos?
             new_document.get_document_by_link_id(link_id)
             if new_document.is_valid_document():
@@ -744,9 +725,8 @@ class SignedToRexchain(BaseHandler):
                             not signer_metadata.get("email")
                             or not signer_metadata.get("name")
                             or not signer_metadata.get("public_key")
-                            or not json_data.get("signature")
                             or not json_data.get("doc_id")
-                            or not json_data.get("pdf_b64")
+                            or not json_data.get("doc_hash")
                     ):
                         self.write(json.dumps({"response": "Error, missing document or signer metadata"}))
 
@@ -758,10 +738,12 @@ class SignedToRexchain(BaseHandler):
 
                         crypto_tool = CryptoTools()
                         signer_public_key = signer_metadata.get("public_key")
-                        doc_signature = crypto_tool.hex2bin(signer_metadata.get("doc_id"))
+                        doc_signature = base64.b64encode(crypto_tool.hex2bin(signer_metadata.get("doc_id")))
 
                         # The file name is composed by the email of the user,
                         # the link id and the timestamp of the creation
+                        contract_file_name = F"contract_{signer_metadata.get('email')}_" \
+                            F"{new_document.link_id}_{timestamp_now}.pdf"
                         response.update(
                             {"s3_contract_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
                         )
@@ -770,8 +752,10 @@ class SignedToRexchain(BaseHandler):
                             callback=lambda:
                             new_document.b2chize_signed_doc(
                                 signer_public_key=signer_public_key,
-                                doc_signature=doc_signature,
-                                b64_pdf=json_data.get("pdf_b64")
+                                doc_signature_b64=doc_signature,
+                                doc_hash=json_data.get("doc_hash"),
+                                timestamp_now=timestamp_now,
+                                contract_file_name=contract_file_name
                             )
                         )
 
