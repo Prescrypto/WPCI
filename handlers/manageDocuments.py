@@ -522,7 +522,7 @@ class manageDocuments():
             else:
                 org_logo = self.user.org_logo
 
-            sign_document_hash(self.signer_user, b64_pdf)
+            sign_document_hash(self.signer_user, [b64_pdf])
             rsa_object = crypto_tool.import_RSA_string(self.signer_user.priv_key)
             pub_key_hex = crypto_tool.savify_key(rsa_object.publickey()).decode("utf-8")
 
