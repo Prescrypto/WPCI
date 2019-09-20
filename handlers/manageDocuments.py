@@ -179,7 +179,7 @@ class manageDocuments():
 
                     if not req.content:
                         logger.info("Error rendering the pdf external document")
-                        return None, None
+                        return None, None, None
 
                     if not is_contract:
                         pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y)
@@ -198,14 +198,14 @@ class manageDocuments():
                     return pdffile, complete_hash, file_tittle
                 else:
                     logger.info("[Error] download_render_url_doc: couldnt download the pdf ")
-                    return None, None
+                    return None, None, None
 
             except IOError as e:
                 logger.info('pdf render IOError' + str(e))
-                return None, None
+                return None, None, None
             except Exception as e:
                 logger.info("other error pdf render " + str(e))
-                return None, None
+                return None, None, None
 
     def download_render_google_doc(self, pdf_id):
         """Downloads and renders pdf document from google"""
@@ -522,7 +522,7 @@ class manageDocuments():
             else:
                 org_logo = self.user.org_logo
 
-            sign_document_hash(self.signer_user, b64_pdf)
+            sign_document_hash(self.signer_user, [b64_pdf])
             rsa_object = crypto_tool.import_RSA_string(self.signer_user.priv_key)
             pub_key_hex = crypto_tool.savify_key(rsa_object.publickey()).decode("utf-8")
 
@@ -663,6 +663,113 @@ class manageDocuments():
             finally:
                 logger.info("documents rendering has finished")
 
+    @gen.engine
+    def b2chize_signed_doc(self, signer_public_key_hex, doc_signature_b64,
+                           doc_hash, timestamp_now, contract_file_name, b64_pdf=None, main_tex="main.tex"):
+        error = ""
+        ATTACH_CONTENT_TYPE = 'octet-stream'
+        CONTRACT_FILE_NAME = "document.pdf"
+        pdf_file = contract_b2chainized = sign_record = None
+        attachment_list = []
+
+        doc_type = getattr(self.document, "render", "")
+        if b64_pdf is None:
+            if doc_type == conf.GOOGLE:
+                credentials_ok = self.set_google_credentials()
+                if not credentials_ok:
+                    error = "Your google credentials are wrong"
+                    logger.error(error)
+                else:
+                    doc_google_id = get_id_from_url(self.document.contract_url)
+
+                    pdf_file, complete_hash, file_tittle = self.download_and_sign_google_doc(
+                        doc_google_id,
+                        timestamp_now,
+                        is_contract=True
+                    )
+            elif doc_type == conf.LATEX:
+                pdf_file, complete_hash, file_tittle = self.download_and_sign_latex_doc(
+                    self.document.contract_url,
+                    main_tex,
+                    is_contract=True
+                )
+
+            elif doc_type == conf.EXTERNAL:
+                pdf_file, complete_hash, file_tittle = self.download_render_sign_url_doc(
+                    self.document.contract_url,
+                    timestamp_now,
+                    is_contract=True
+                )
+
+            b64_pdf = self.convert_bytes_to_b64(pdf_file)
+
+        if b64_pdf is None:
+            error = "[Error sending  doc to bch] couldn't convert to b64"
+            logger.error(error)
+
+        try:
+            crypto_tool = CryptoTools()
+            if self.user.org_logo is None or self.user.org_logo == "":
+                org_logo = open(conf.DEFAULT_LOGO_PATH, 'r').read()
+            else:
+                org_logo = self.user.org_logo
+
+            signer_public_key = crypto_tool.un_savify_key(signer_public_key_hex)
+            if crypto_tool.verify(doc_hash.encode(), doc_signature_b64, signer_public_key):
+
+                crypto_sign_payload = {
+                    "pdf": b64_pdf,
+                    "params": {
+                        "file_name": CONTRACT_FILE_NAME,
+                        "locale": conf.LANGUAGE,
+                        "logo": org_logo,
+                        "title": self.user.org_name + " contract"
+                    },
+                    "signatories": [
+                        {
+                            "email": self.signer_user.email,
+                            "name": self.signer_user.name,
+                            "public_key": signer_public_key_hex
+                        }],
+                    "signature": doc_signature_b64.decode(),
+                    "timezone": conf.TIMEZONE
+                }
+
+                contract_b2chainized, sign_record = get_b2h_document(crypto_sign_payload, self.signer_user)
+
+                with tempfile.TemporaryDirectory() as tmp_dir:
+
+                    contract_file_path = os.path.join(tmp_dir, conf.CONTRACT_FILE_NAME)
+
+                    if not contract_b2chainized:
+                        error = error + F" Couldn't verify and attach the contract: {contract_file_name}"
+                        logger.error(F"[ERROR b2chize_signed_doc render_contract] Couldn't render the pdf")
+
+                    else:
+                        with open(contract_file_path, 'wb') as temp_file:
+                            temp_file.write(contract_b2chainized)
+
+                        sign_record.s3_contract_url = S3_BASE_URL.format(contract_file_name)
+                        sign_record.link_id = self.link_id
+                        sign_record.update()
+
+                        uploaded_document_url = upload_to_s3(contract_file_path, contract_file_name)
+                        self.signer_user.s3_doc_url = S3_BASE_URL.format(contract_file_name)
+                        self.signer_user.update()
+                        # this is the payload for the white paper file
+                        doc_attachment = dict(file_type=ATTACH_CONTENT_TYPE,
+                                              file_path=contract_file_path,
+                                              filename=conf.CONTRACT_FILE_NAME)
+                        attachment_list.append(doc_attachment)
+
+                        if len(attachment_list) > 0 and error == "":
+                            self.send_attachments(attachment_list, DEFAULT_HTML_TEXT)
+                        else:
+                            logger.error(error)
+
+        except Exception as e:
+            logger.info("[Error] b2chize_signed_doc rendering contract: {}".format(str(e)))
+
     def render_main_document(self, main_tex="main.tex"):
         """ Trigger the renderization of the documents/contracts related to this doc object """
         pdf_rendered = None
@@ -706,7 +813,7 @@ class manageDocuments():
                 logger.info("documents rendering has finished")
                 return pdf_rendered
 
-    def send_attachments(self, attachment_list, email_body_html, email_body_text):
+    def send_attachments(self, attachment_list, email_body_html, email_body_text=""):
         """Send a list of attachments to the signer and organization"""
         BASE_PATH = "/docs/"
         mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)

@@ -1,31 +1,12 @@
 #python
-import logging
 import ast
 import jwt
-import datetime
-import json
-import tempfile
-import time
-import hashlib
-import os
-import subprocess
-import glob
-import base64
-import io
 
 #web app
-from tornado.web import os, asynchronous
 import tornado
-from tornado import gen
 from tornado.ioloop import IOLoop
 import jinja2
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template
-
-#google oauth
-import google.oauth2.credentials
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-from googleapiclient.http import MediaIoBaseDownload
 
 #pdf context
 import fitz
@@ -33,7 +14,6 @@ import fitz
 #internal
 from handlers.apiBaseHandler import BaseHandler
 from models import User, Document, Link, signRecord, signerUser
-from models.mongoManager import ManageDB
 from handlers.emailHandler import Mailer
 from handlers.WSHandler import *
 from handlers.manageDocuments import manageDocuments
@@ -714,6 +694,94 @@ class RenderDocToPDF(BaseHandler):
 
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+
+class SignedToRexchain(BaseHandler):
+    '''Receives a get with the id of the document and renders it to PDF with clone_repo'''
+
+    def get(self, link_id):
+        '''Receives a document id and retrieves a json with a b64 pdf'''
+        response = dict()
+        userjson = validate_token(self.request.headers.get('Authorization'))
+        if not userjson:
+            self.write_json(AUTH_ERROR, 403)
+
+        try:
+            new_document = manageDocuments()
+            timestamp_now = str(int(time.time()))
+            # Tenemos registro de este link id en la base de datos?
+            new_document.get_document_by_link_id(link_id)
+            if new_document.is_valid_document():
+                # render and send the documents by email
+                new_document.link_id = link_id
+
+                json_data = json.loads(self.request.body.decode('utf-8'))
+                if not json_data.get("signer_metadata"):
+                    self.write(json.dumps({"response": "Error, no signer metadata found"}))
+                else:
+                    signer_metadata = json_data.get("signer_metadata", {})
+                    if (
+                            not signer_metadata.get("email")
+                            or not signer_metadata.get("name")
+                            or not signer_metadata.get("public_key")
+                            or not json_data.get("doc_id")
+                            or not json_data.get("doc_hash")
+                    ):
+                        self.write(json.dumps({"response": "Error, missing document or signer metadata"}))
+
+                    else:
+
+                        new_document.signer_user = signerUser.SignerUser(
+                            signer_metadata.get("email"), signer_metadata.get("name"))
+                        # create the signer user so it can generate their keys
+                        new_document.signer_user.create()
+
+                        print("going crypto")
+
+                        crypto_tool = CryptoTools()
+                        signer_public_key = signer_metadata.get("public_key")
+                        doc_signature = base64.b64encode(crypto_tool.hex2bin(json_data.get("doc_id")))
+                        print("after doc signature")
+
+                        # The file name is composed by the email of the user,
+                        # the link id and the timestamp of the creation
+                        contract_file_name = F"contract_{signer_metadata.get('email')}_" \
+                            F"{new_document.link_id}_{timestamp_now}.pdf"
+                        response.update(
+                            {"s3_contract_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
+                        )
+
+                        IOLoop.instance().add_callback(
+                            callback=lambda:
+                            new_document.b2chize_signed_doc(
+                                signer_public_key_hex=signer_public_key,
+                                doc_signature_b64=doc_signature,
+                                doc_hash=json_data.get("doc_hash"),
+                                timestamp_now=timestamp_now,
+                                contract_file_name=contract_file_name
+                            )
+                        )
+
+                        thislink = Link.Link()
+                        thislink = thislink.find_by_link(link_id)
+                        temp_signed_count = thislink.signed_count
+                        thislink.signed_count = int(temp_signed_count) + 1
+                        thislink.status = "signed"
+                        thislink.update()
+
+                        self.write(json.dumps(response))
+
+                if len(response) > 0:
+                    self.write(json.dumps(response))
+                else:
+                    self.write(json.dumps({"error": "failed sending the pdf file to cryptosign"}))
+
+            else:
+                self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+        except Exception as e:
+            logger.error(F"[ERROR] SignedToRexchain: {e} ")
+            self.write({"error": "Incorrect data received for the the signed document"})
 
 
 class Documents(BaseHandler):
