@@ -721,23 +721,23 @@ class manageDocuments():
 
                 crypto_sign_payload = {
                     "pdf": b64_pdf,
-                    "timezone": conf.TIMEZONE,
-                    "signature": doc_signature_b64,
+                    "params": {
+                        "file_name": CONTRACT_FILE_NAME,
+                        "locale": conf.LANGUAGE,
+                        "logo": org_logo,
+                        "title": self.user.org_name + " contract"
+                    },
                     "signatories": [
                         {
                             "email": self.signer_user.email,
                             "name": self.signer_user.name,
                             "public_key": signer_public_key_hex
                         }],
-                    "params": {
-                        "locale": conf.LANGUAGE,
-                        "title": self.user.org_name + " contract",
-                        "file_name": CONTRACT_FILE_NAME,
-                        "logo": org_logo,
-                    }
+                    "signature": doc_signature_b64.decode(),
+                    "timezone": conf.TIMEZONE
                 }
 
-                print("payload", crypto_sign_payload)
+                print("payload")
 
                 contract_b2chainized, sign_record = get_b2h_document(crypto_sign_payload, self.signer_user)
 
