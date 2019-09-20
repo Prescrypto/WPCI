@@ -674,7 +674,6 @@ class manageDocuments():
 
         doc_type = getattr(self.document, "render", "")
         if b64_pdf is None:
-            print("pdf is none")
             if doc_type == conf.GOOGLE:
                 credentials_ok = self.set_google_credentials()
                 if not credentials_ok:
@@ -701,7 +700,6 @@ class manageDocuments():
                     timestamp_now,
                     is_contract=True
                 )
-            print("letsgo b64")
 
             b64_pdf = self.convert_bytes_to_b64(pdf_file)
 
@@ -737,19 +735,19 @@ class manageDocuments():
                     "timezone": conf.TIMEZONE
                 }
 
-                print("payload")
-
                 contract_b2chainized, sign_record = get_b2h_document(crypto_sign_payload, self.signer_user)
 
                 with tempfile.TemporaryDirectory() as tmp_dir:
 
                     contract_file_path = os.path.join(tmp_dir, conf.CONTRACT_FILE_NAME)
 
-                    if contract_b2chainized:
+                    if not contract_b2chainized:
+                        error = error + F" Couldn't verify and attach the contract: {contract_file_name}"
+                        logger.error(F"[ERROR b2chize_signed_doc render_contract] Couldn't render the pdf")
+
+                    else:
                         with open(contract_file_path, 'wb') as temp_file:
                             temp_file.write(contract_b2chainized)
-
-                        print("upload to s3")
 
                         sign_record.s3_contract_url = S3_BASE_URL.format(contract_file_name)
                         sign_record.link_id = self.link_id
@@ -764,19 +762,13 @@ class manageDocuments():
                                               filename=conf.CONTRACT_FILE_NAME)
                         attachment_list.append(doc_attachment)
 
-                    else:
-                        error = error + F" Couldn't verify and attach the contract: {contract_file_name}"
-                        logger.error(F"[ERROR b2chize_signed_doc render_contract] Couldn't render the pdf")
-
-            if len(attachment_list) > 0 and error == "":
-                self.send_attachments(attachment_list, DEFAULT_HTML_TEXT)
-            else:
-                logger.error(error)
+                        if len(attachment_list) > 0 and error == "":
+                            self.send_attachments(attachment_list, DEFAULT_HTML_TEXT)
+                        else:
+                            logger.error(error)
 
         except Exception as e:
             logger.info("[Error] b2chize_signed_doc rendering contract: {}".format(str(e)))
-        finally:
-            print(contract_b2chainized, sign_record, error)
 
     def render_main_document(self, main_tex="main.tex"):
         """ Trigger the renderization of the documents/contracts related to this doc object """
