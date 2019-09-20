@@ -179,7 +179,7 @@ class manageDocuments():
 
                     if not req.content:
                         logger.info("Error rendering the pdf external document")
-                        return None, None
+                        return None, None, None
 
                     if not is_contract:
                         pointa = fitz.Point(conf.AXIS_X, conf.AXIS_Y)
@@ -198,14 +198,14 @@ class manageDocuments():
                     return pdffile, complete_hash, file_tittle
                 else:
                     logger.info("[Error] download_render_url_doc: couldnt download the pdf ")
-                    return None, None
+                    return None, None, None
 
             except IOError as e:
                 logger.info('pdf render IOError' + str(e))
-                return None, None
+                return None, None, None
             except Exception as e:
                 logger.info("other error pdf render " + str(e))
-                return None, None
+                return None, None, None
 
     def download_render_google_doc(self, pdf_id):
         """Downloads and renders pdf document from google"""
@@ -679,14 +679,15 @@ class manageDocuments():
                 credentials_ok = self.set_google_credentials()
                 if not credentials_ok:
                     error = "Your google credentials are wrong"
-                    return None, None, error
-                doc_google_id = get_id_from_url(self.document.contract_url)
+                    logger.error(error)
+                else:
+                    doc_google_id = get_id_from_url(self.document.contract_url)
 
-                pdf_file, complete_hash, file_tittle = self.download_and_sign_google_doc(
-                    doc_google_id,
-                    timestamp_now,
-                    is_contract=True
-                )
+                    pdf_file, complete_hash, file_tittle = self.download_and_sign_google_doc(
+                        doc_google_id,
+                        timestamp_now,
+                        is_contract=True
+                    )
             elif doc_type == conf.LATEX:
                 pdf_file, complete_hash, file_tittle = self.download_and_sign_latex_doc(
                     self.document.contract_url,
@@ -700,13 +701,13 @@ class manageDocuments():
                     timestamp_now,
                     is_contract=True
                 )
+            print("letsgo b64")
 
             b64_pdf = self.convert_bytes_to_b64(pdf_file)
 
         if b64_pdf is None:
             error = "[Error sending  doc to bch] couldn't convert to b64"
             logger.error(error)
-            return None, sign_record, error
 
         try:
             crypto_tool = CryptoTools()
@@ -775,7 +776,7 @@ class manageDocuments():
         except Exception as e:
             logger.info("[Error] b2chize_signed_doc rendering contract: {}".format(str(e)))
         finally:
-            return contract_b2chainized, sign_record, error
+            print(contract_b2chainized, sign_record, error)
 
     def render_main_document(self, main_tex="main.tex"):
         """ Trigger the renderization of the documents/contracts related to this doc object """

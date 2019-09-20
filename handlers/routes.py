@@ -696,7 +696,6 @@ class RenderDocToPDF(BaseHandler):
             self.write(json.dumps({"error": "not enough information to perform the action"}))
 
 
-@jwtauth
 class SignedToRexchain(BaseHandler):
     '''Receives a get with the id of the document and renders it to PDF with clone_repo'''
 
@@ -709,7 +708,7 @@ class SignedToRexchain(BaseHandler):
 
         try:
             new_document = manageDocuments()
-            timestamp_now = time.time()
+            timestamp_now = str(int(time.time()))
             # Tenemos registro de este link id en la base de datos?
             new_document.get_document_by_link_id(link_id)
             if new_document.is_valid_document():
@@ -731,14 +730,18 @@ class SignedToRexchain(BaseHandler):
                         self.write(json.dumps({"response": "Error, missing document or signer metadata"}))
 
                     else:
+
                         new_document.signer_user = signerUser.SignerUser(
                             signer_metadata.get("email"), signer_metadata.get("name"))
                         # create the signer user so it can generate their keys
                         new_document.signer_user.create()
 
+                        print("going crypto")
+
                         crypto_tool = CryptoTools()
                         signer_public_key = signer_metadata.get("public_key")
-                        doc_signature = base64.b64encode(crypto_tool.hex2bin(signer_metadata.get("doc_id")))
+                        doc_signature = base64.b64encode(crypto_tool.hex2bin(json_data.get("doc_id")))
+                        print("after doc signature")
 
                         # The file name is composed by the email of the user,
                         # the link id and the timestamp of the creation
@@ -751,7 +754,7 @@ class SignedToRexchain(BaseHandler):
                         IOLoop.instance().add_callback(
                             callback=lambda:
                             new_document.b2chize_signed_doc(
-                                signer_public_key=signer_public_key,
+                                signer_public_key_hex=signer_public_key,
                                 doc_signature_b64=doc_signature,
                                 doc_hash=json_data.get("doc_hash"),
                                 timestamp_now=timestamp_now,
@@ -778,7 +781,7 @@ class SignedToRexchain(BaseHandler):
 
         except Exception as e:
             logger.error(F"[ERROR] SignedToRexchain: {e} ")
-            self.write({"error": "Failed notarising the signed document"})
+            self.write({"error": "Incorrect data received for the the signed document"})
 
 
 class Documents(BaseHandler):
