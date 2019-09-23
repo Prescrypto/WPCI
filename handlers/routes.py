@@ -536,12 +536,25 @@ class PostDocument(BaseHandler):
             if not json_data.get("doc_getit_btn"):
                 json_data["doc_getit_btn"] = "Sign to receive the document!"
 
-            if json_data.get("type") == conf.CONTRACT and json_data.get("contract_url") == "":
+            if json_data.get("type") == conf.CONTRACT and \
+                    json_data.get("contract_url") == "" and \
+                    json_data.get("doc_url") != "":
                 json_data["contract_url"] = json_data.get("doc_url")
 
             if json_data.get("type") == conf.NDA and (
-                    json_data.get("contract_url") == "" or json_data.get("doc_url") == ""):
-                self.write(json.dumps({"response": "Error, Couldn't create the document, no valid urls provided"}))
+                    json_data.get("contract_url") == "" or
+                    json_data.get("doc_url") == ""):
+                self.write(json.dumps({
+                    "response": "Error, Couldn't create the document, "
+                                "no valid urls provided"
+                }))
+
+            if json_data.get("type") == conf.DOCUMENT and \
+                    json_data.get("doc_url") == "":
+                self.write(json.dumps({ 
+                    "response": "Error, Couldn't create "
+                                "the document, no valid urls provided"
+                }))
 
             doc = Document.Document()
             doc.__dict__ = json_data
@@ -736,12 +749,10 @@ class SignedToRexchain(BaseHandler):
                         # create the signer user so it can generate their keys
                         new_document.signer_user.create()
 
-                        print("going crypto")
-
                         crypto_tool = CryptoTools()
                         signer_public_key = signer_metadata.get("public_key")
                         doc_signature = base64.b64encode(crypto_tool.hex2bin(json_data.get("doc_id")))
-                        print("after doc signature")
+
 
                         # The file name is composed by the email of the user,
                         # the link id and the timestamp of the creation

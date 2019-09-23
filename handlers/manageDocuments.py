@@ -453,7 +453,6 @@ class manageDocuments():
         pdf_file = None
 
         doc_type = getattr(self.document, "render", "")
-        print("nosign")
         if doc_type == conf.GOOGLE:
             credentials_ok = self.set_google_credentials()
             if not credentials_ok:
@@ -480,7 +479,6 @@ class manageDocuments():
 
         doc_type = getattr(self.document, "render", "")
         if b64_pdf is None:
-            print("pdf is none")
             if doc_type == conf.GOOGLE:
                 credentials_ok = self.set_google_credentials()
                 if not credentials_ok:
@@ -587,20 +585,15 @@ class manageDocuments():
 
                 if render_doc:
                     try:
-                        print("start rend doc")
                         doc_file_path = os.path.join(tmp_dir, conf.DOC_FILE_NAME)
-                        print("ag")
                         pdf_file, complete_hash, file_tittle = self.render_document(
                             main_tex,
                             timestamp_now,
                             sign=True
                         )
-                        print("pdf done", complete_hash)
                         if pdf_file:
                             with open(doc_file_path, 'wb') as temp_file:
                                 temp_file.write(pdf_file)
-
-                            print("upload to s3")
 
                             uploaded_document_url = upload_to_s3(doc_file_path, doc_file_name)
                             self.signer_user.s3_doc_url = S3_BASE_URL.format(doc_file_name)
@@ -619,21 +612,16 @@ class manageDocuments():
                         error = "couldn't render the document {doc_file_name}"
 
                 if render_contract:
-                    print("start rend contr")
                     contract_file_path = os.path.join(tmp_dir, conf.CONTRACT_FILE_NAME)
-                    print("contrrr")
                     contract_b2chainized, sign_record, error = self.render_and_sign_contract(
                         main_tex,
                         timestamp_now,
                         contract_b64_file
                     )
 
-                    print("pdf done c", sign_record)
                     if contract_b2chainized:
                         with open(contract_file_path, 'wb') as temp_file:
                             temp_file.write(contract_b2chainized)
-
-                        print("upload to s3")
 
                         sign_record.s3_contract_url = S3_BASE_URL.format(contract_file_name)
                         sign_record.link_id = self.link_id
