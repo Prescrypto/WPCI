@@ -699,7 +699,7 @@ class RenderDocToPDF(BaseHandler):
 class SignedToRexchain(BaseHandler):
     '''Receives a get with the id of the document and renders it to PDF with clone_repo'''
 
-    def get(self, link_id):
+    def post(self, link_id):
         '''Receives a document id and retrieves a json with a b64 pdf'''
         response = dict()
         userjson = validate_token(self.request.headers.get('Authorization'))
