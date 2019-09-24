@@ -551,7 +551,7 @@ class PostDocument(BaseHandler):
 
             if json_data.get("type") == conf.DOCUMENT and \
                     json_data.get("doc_url") == "":
-                self.write(json.dumps({ 
+                self.write(json.dumps({
                     "response": "Error, Couldn't create "
                                 "the document, no valid urls provided"
                 }))
@@ -730,7 +730,8 @@ class SignedToRexchain(BaseHandler):
 
                 json_data = json.loads(self.request.body.decode('utf-8'))
                 if not json_data.get("signer_metadata"):
-                    self.write(json.dumps({"response": "Error, no signer metadata found"}))
+                    self.write(json.dumps({
+                        "response": "Error, no signer metadata found"}))
                 else:
                     signer_metadata = json_data.get("signer_metadata", {})
                     if (
@@ -740,26 +741,36 @@ class SignedToRexchain(BaseHandler):
                             or not json_data.get("doc_id")
                             or not json_data.get("doc_hash")
                     ):
-                        self.write(json.dumps({"response": "Error, missing document or signer metadata"}))
+                        self.write(json.dumps({
+                            "response":
+                                "Error, missing document or signer metadata"
+                        }))
 
                     else:
 
                         new_document.signer_user = signerUser.SignerUser(
-                            signer_metadata.get("email"), signer_metadata.get("name"))
+                            signer_metadata.get("email"),
+                            signer_metadata.get("name"))
                         # create the signer user so it can generate their keys
                         new_document.signer_user.create()
 
                         crypto_tool = CryptoTools()
                         signer_public_key = signer_metadata.get("public_key")
-                        doc_signature = base64.b64encode(crypto_tool.hex2bin(json_data.get("doc_id")))
+                        doc_signature = base64.b64encode(crypto_tool.hex2bin(
+                            json_data.get("doc_id")))
 
 
                         # The file name is composed by the email of the user,
                         # the link id and the timestamp of the creation
-                        contract_file_name = F"contract_{signer_metadata.get('email')}_" \
+                        contract_file_name = F"contract_" \
+                            F"{signer_metadata.get('email')}_" \
                             F"{new_document.link_id}_{timestamp_now}.pdf"
                         response.update(
-                            {"s3_contract_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
+                            {
+                                "s3_contract_url":
+                                    F"{conf.BASE_URL}{BASE_PATH}view_sign_"
+                                    F"records/{link_id}"
+                             }
                         )
 
                         IOLoop.instance().add_callback(
@@ -781,12 +792,6 @@ class SignedToRexchain(BaseHandler):
                         thislink.update()
 
                         self.write(json.dumps(response))
-
-                if len(response) > 0:
-                    self.write(json.dumps(response))
-                else:
-                    self.write(json.dumps({"error": "failed sending the pdf file to cryptosign"}))
-
             else:
                 self.write(json.dumps({"error": "not enough information to perform the action"}))
 
