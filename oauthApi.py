@@ -110,7 +110,7 @@ def get_s3_presigned_url(file_url):
             ClientMethod='get_object',
             Params={
                 'Bucket': BUCKET,
-                'Key': f'{FOLDER}/{file_name.strip("/")}',
+                'Key': f'{FOLDER}{file_name.strip("/")}',
             },
             ExpiresIn=ONE_HOUR
         )
