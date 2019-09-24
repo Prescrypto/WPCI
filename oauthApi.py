@@ -102,7 +102,7 @@ github = oauth.remote_app(
 def get_s3_presigned_url(file_url):
     """Upload a file to the default S3 bucket"""
     try:
-        file_name = file_url.split("/")[5]
+        file_name = file_url.split("/")[-1]
         # Get the service client.
         s3 = boto3.client('s3')
         # Generate the URL to get 'key-name' from 'bucket-name'
@@ -110,7 +110,7 @@ def get_s3_presigned_url(file_url):
             ClientMethod='get_object',
             Params={
                 'Bucket': BUCKET,
-                'Key': '{}/{}'.format(FOLDER, file_name),
+                'Key': f'{FOLDER}/{file_name.strip("/")}',
             },
             ExpiresIn=ONE_HOUR
         )
