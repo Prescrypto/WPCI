@@ -41,6 +41,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tornado-info')
 
 #HTML EMAIL TEMPLATES
+#  TODO create html templates with this default copies
 DEFAULT_HTML_TEXT = \
             "<h3>Hello,</h3>\
             <p>You will find the documentation you requested attached, thank you very much for your interest.</p>\
@@ -94,16 +95,7 @@ class manageDocuments():
         except Exception as e:
             logger.info(F"[error get_document_by_link_id] obtaining link id: {str(e)}")
             return False
-        try:
-            doc = Document.Document()
-            self.document = doc.find_by_doc_id(doc_id)
-            user = User.User()
-            self.user = user.find_by_attr("org_id", self.document.org_id)
-        except Exception as e:
-            logger.info(F"[error get_document_by_link_id] obtaining document from linkid: {str(e)}")
-            return False
-
-        return True
+        return self.get_document_by_doc_id(doc_id)
 
     def get_document_by_doc_id(self, doc_id):
         try:
@@ -111,11 +103,11 @@ class manageDocuments():
             self.document = doc.find_by_doc_id(doc_id)
             user = User.User()
             self.user = user.find_by_attr("org_id", self.document.org_id)
+            return True
         except Exception as e:
-            logger.info(F"[error get_document_by_doc_id] obtaining document from docid: {str(e)}")
+            logger.info(F"[error get_document_by_doc_id] "
+                        F"obtaining document from docid: {str(e)}")
             return False
-
-        return True
 
     def set_google_credentials(self):
 
@@ -138,7 +130,7 @@ class manageDocuments():
 
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
-                file_full_path = tmpdir + "/" + pdf_url.split("/")[-1]
+                file_full_path = os.path.join(tmpdir, pdf_url.split("/")[-1])
                 file_tittle = file_full_path.split(".")[0]
                 req = requests.get(pdf_url)
                 if req.status_code == 200:
@@ -167,7 +159,7 @@ class manageDocuments():
 
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
-                file_full_path = tmpdir + "/" + pdf_url.split("/")[-1]
+                file_full_path = os.path.join(tmpdir, pdf_url.split("/")[-1])
                 file_tittle = file_full_path.split(".")[0]
                 watermark = "Document generated for: " + self.signer_user.email
                 complete_hash = get_hash([timestamp_now, self.signer_user.email], [file_tittle])
@@ -197,7 +189,8 @@ class manageDocuments():
                     pdffile = open(file_full_path, 'rb').read()
                     return pdffile, complete_hash, file_tittle
                 else:
-                    logger.info("[Error] download_render_url_doc: couldnt download the pdf ")
+                    logger.info(f"[Error] download_render_url_doc:"
+                                f" couldnt download the pdf: {req.content}")
                     return None, None, None
 
             except IOError as e:
@@ -215,9 +208,12 @@ class manageDocuments():
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
-                file_full_path = tmpdir + "/" + pdf_id + ".pdf"
+                file_full_path = os.path.join(tmpdir, f"{pdf_id}.pdf")
                 drive = googleapiclient.discovery.build(
-                    conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
+                    conf.API_SERVICE_NAME,
+                    conf.API_VERSION,
+                    credentials=credentials
+                )
 
                 request = drive.files().export_media(fileId=pdf_id,
                                                      mimeType='application/pdf')
@@ -227,7 +223,11 @@ class manageDocuments():
                 mime_type = metadata.get("mimeType")
 
                 fh = io.BytesIO()
-                downloader = MediaIoBaseDownload(fh, request, chunksize=conf.CHUNKSIZE)
+                downloader = MediaIoBaseDownload(
+                    fh,
+                    request,
+                    chunksize=conf.CHUNKSIZE
+                )
                 done = False
                 while done is False:
                     status, done = downloader.next_chunk()
@@ -262,7 +262,9 @@ class manageDocuments():
                 file_tittle = repo_name.strip(" ") + ".pdf"
                 filesdir = os.path.join(tmpdir, repo_name)
 
-                file_full_path = filesdir + "/" + main_tex.split(".")[0] + ".pdf"
+                file_full_path = os.path.join(
+                    filesdir,
+                    f"{main_tex.split('.')[0]}.pdf")
                 subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
                 subprocess.call(
                     F"texliveonfly --compiler=latexmk --arguments='-interaction=nonstopmode -pdf' -f {main_tex}",
@@ -295,9 +297,12 @@ class manageDocuments():
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
-                file_full_path = tmpdir + "/" + pdf_id + ".pdf"
+                file_full_path = os.path.join(tmpdir, f"{pdf_id}.pdf")
                 drive = googleapiclient.discovery.build(
-                    conf.API_SERVICE_NAME, conf.API_VERSION, credentials=credentials)
+                    conf.API_SERVICE_NAME,
+                    conf.API_VERSION,
+                    credentials=credentials
+                )
 
                 request = drive.files().export_media(fileId=pdf_id,
                                                      mimeType='application/pdf')
@@ -348,7 +353,8 @@ class manageDocuments():
                 logger.info("other error google render sign" + str(e))
                 return None, None, None
 
-    def download_and_sign_latex_doc(self, repo_url, main_tex="main.tex", is_contract=False, options={}):
+    def download_and_sign_latex_doc(self, repo_url, main_tex="main.tex",
+                                    is_contract=False, options={}):
         """clones a repo, renders and signs a pdf latex document"""
         new_main_tex = "main2.tex"
         watermark = "Document generated for: " + self.signer_user.email
@@ -365,14 +371,17 @@ class manageDocuments():
                 filesdir = os.path.join(tmpdir, repo_name)
                 if options != {}:  # if there are special conditions to render
                     # modify the original template:
-                    template = latex_jinja_env.get_template(filesdir + "/" + main_tex)
+                    template = latex_jinja_env.get_template(
+                        os.path.join(filesdir, main_tex)
+                    )
                     renderer_template = template.render(**options)
-                    with open(filesdir + "/" + new_main_tex, "w") as f:  # saves tex_code to outpout file
+                    with open(os.path.join(filesdir, new_main_tex), "w") as f:  # saves tex_code to outpout file
                         f.write(renderer_template)
                 else:
                     new_main_tex = main_tex
 
-                file_full_path = filesdir + "/" + new_main_tex.split(".")[0] + ".pdf"
+                file_full_path = os.path.join(
+                    filesdir, f"{new_main_tex.split('.')[0]}.pdf")
                 run_git_rev_parse = subprocess.check_output(rev_parse, shell=True, cwd=filesdir)
                 complete_hash = get_hash([timestamp, self.signer_user.email], [run_git_rev_parse.decode('UTF-8')])
                 subprocess.call(
@@ -505,6 +514,7 @@ class manageDocuments():
                     is_contract=True
                 )
 
+            #  TODO move this to a different function al together
             b64_pdf = self.convert_bytes_to_b64(pdf_file)
 
         # Check if the b64 file exists after its rendering

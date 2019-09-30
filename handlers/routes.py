@@ -458,54 +458,6 @@ class WebhookConfirm(BaseHandler):
             self.write_json({"error": error}, 500)
 
 
-class RenderUrl(BaseHandler):
-    '''Receives a get with the github repository url as parameters and renders it to PDF with clone_repo'''
-
-    def get(self):
-        response = dict()
-        try:
-            timestamp_now = time.time()
-            link_id = self.get_argument('link_id', "")
-            email = self.get_argument('email', "")
-            name = self.get_argument('name', "")
-            email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
-            email_body_text =self.get_argument('email_body_text', "")
-            options = json.loads(self.get_argument('options', "{}"))
-
-            if is_valid_email(email):
-                new_document = manageDocuments()
-                new_document.get_document_by_link_id(link_id)
-                if new_document.is_valid_document():
-                    # The file name is composed by the email of the user,
-                    # the link id and the timestamp of the creation
-                    doc_file_name = F"doc_{email}_{new_document.link_id}_{timestamp_now}.pdf"
-                    response.update(
-                        {"s3_doc_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
-                    )
-
-                    contract_file_name = F"contract_{email}_{new_document.link_id}_{timestamp_now}.pdf"
-                    response.update(
-                        {"s3_contract_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
-                    )
-
-                    IOLoop.instance().add_callback(
-                        callback=lambda:
-                        new_document.render_and_send_all_documents(
-                            email, name, email_body_html, timestamp_now, contract_file_name, doc_file_name,
-                            contract_b64_file=None, main_tex="main.tex", email_body_text=email_body_text
-                        )
-                    )
-
-            if not response:
-                self.write(json.dumps({"response": "Error"}))
-            else:
-                self.write(json.dumps(response))
-
-        except Exception as e:
-            logger.info("error on clone"+ str(e))
-            self.write(json.dumps({"response": "Error"}))
-
-
 @jwtauth
 class PostDocument(BaseHandler):
     '''Receives a post with the document url and responses with a document id '''
@@ -514,6 +466,7 @@ class PostDocument(BaseHandler):
 
         try:
             json_data = json.loads(self.request.body.decode('utf-8'))
+            #  TODO convert this to a validator function
             if not json_data.get("doc_url"):
                 self.write(json.dumps({"response": "Error, White paper url not found"}))
             if not json_data.get("doc_name"):
@@ -710,7 +663,8 @@ class RenderDocToPDF(BaseHandler):
 
 
 class SignedToRexchain(BaseHandler):
-    '''Receives a get with the id of the document and renders it to PDF with clone_repo'''
+    """Receives a post with the link id and sends it to the rexchain and
+    renders back a signed document with the signers attached sheet"""
 
     def post(self, link_id):
         '''Receives a document id and retrieves a json with a b64 pdf'''
