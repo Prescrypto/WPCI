@@ -488,6 +488,7 @@ class manageDocuments():
 
         doc_type = getattr(self.document, "render", "")
         if b64_pdf is None:
+            #  TODO change this conditions to a switch case
             if doc_type == conf.GOOGLE:
                 credentials_ok = self.set_google_credentials()
                 if not credentials_ok:
