@@ -27,10 +27,19 @@ pwd_context = CryptContext(
 class Document(object):
     '''The Document class include all the information needed to render a new pdf file '''
 
-    def __init__(self, org_id = None):
+    org_id = None
+    contract_url = None
+    doc_url = None
+    link_count = None
+    view_count = None
+    down_count = None
+    date = None
+    render = None
+
+    def __init__(self, org_id=None):
         self.org_id = org_id
-        self.nda_url = ""
-        self.wp_url = ""
+        self.contract_url = ""
+        self.doc_url = ""
 
     def __str__(self):
         return "Document(org_id='%s')" % self.org_id
@@ -48,14 +57,16 @@ class Document(object):
             self.down_count = 0
             self.date = int(time.time())
 
-            if self.nda_url is None:
-                self.nda_url = ""
-            if self.wp_url is None:
-                self.wp_url = ""
+            if self.contract_url is None:
+                self.contract_url = ""
+            if self.doc_url is None:
+                self.doc_url = ""
+            if self.render is None or self.render == "":
+                self.render = "google"
 
             if self.org_id is not None:
                 user = User.User().find_by_attr("org_id", self.org_id)
-                doc_name = self.wp_name.strip(" ").replace(" ", "_")
+                doc_name = self.doc_name.strip(" ").replace(" ", "_")
                 self.doc_id = '{}_{}'.format(doc_name, str(int(time.time() * 1000)))
                 result = self.create()
                 if not result:
@@ -131,7 +142,6 @@ class Document(object):
                 mydb.close()
 
         return result
-
 
     def create(self):
         '''creates a new document on the bd'''

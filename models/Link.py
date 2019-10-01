@@ -53,7 +53,7 @@ class Link(object):
             if thisdocument.render == "latex":
                 '''If the document has a repo then we can name the version after the last commit'''
                 with tempfile.TemporaryDirectory() as tmpdir:
-                    clone = 'git clone ' + thisdocument.wp_url
+                    clone = 'git clone ' + thisdocument.doc_url
                     subprocess.check_output(clone, shell=True, cwd=tmpdir)
                     repo_name = os.listdir(tmpdir)[0]
                     filesdir = os.path.join(tmpdir, repo_name)

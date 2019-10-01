@@ -17,7 +17,7 @@
 			<div class="leftcolumn col-lg-3 col-md-12" style="margin-bottom:-10px;padding-bottom:10px;">
 				<!--Jumbo box organization name-->
 				<div class="jumbo" id="org_title">
-					<strong><p style="font-size:2em;" >{{ wp_description }}</p></strong>
+					<strong><p style="font-size:2em;" >{{ doc_description }}</p></strong>
 				</div>
 			</div>
 
@@ -35,7 +35,7 @@
 							<label style="font-size: 11px">(we won't save it or use it for anything else, we promise.)</label>
 							<input type="email" class="form-control" id="signer_email" name="signer_email" aria-describedby="emailHelp" placeholder="Enter email" required>
 						</div>
-						<input type="hidden" id="nda_file" name="nda_file" value="">
+						<input type="hidden" id="contract_file" name="contract_file" value="">
 						<div class="uk-text-center">
 							<div id="spinner" ></div>
 							<button  id="signbtn" name="signbtn" type="submit" class="btn btn-info btn-lg"  >Send!</button>
@@ -53,7 +53,7 @@
 					</div>
 					<div id="checkdiv" style="align-items:bottom;padding-left:2%">
 						<h2> <input  onclick="thisClick()" id="getit_input" name="getit_input" value="" >
-							<label for="getit_input" id="lagetit_input" name="lagetit_input">{{ wp_getit_btn }}</label></h2>
+							<label for="getit_input" id="lagetit_input" name="lagetit_input">{{ doc_getit_btn }}</label></h2>
 					</div>
 				</div>
 				<div id="lastdiv"></div>
@@ -61,7 +61,7 @@
 			<!-- closing Pdf Container-->
 
 			<script type="text/javascript">
-	      {% if has_nda %}
+	      {% if is_contract %}
 	        //if the document needs first to sign a contract the it will render a checkbox
 	        var myinput = document.getElementById("getit_input");
 	        myinput.type = 'checkbox';
@@ -100,7 +100,7 @@
 				var winheight= $( window ).height() - 60;
 				$('#pdf_container').attr('style','height:'+ winheight +'px;overflow: scroll;');
 				var pdfData = atob('{{ pdffile }}');
-				$('#nda_file').val('{{ pdffile }}');
+				$('#contract_file').val('{{ pdffile }}');
 				// Get div#container and cache it for later use
 				var wholecontainer = document.getElementById("pdf_container");
 				var container = document.getElementById("dynamic_container");
@@ -114,7 +114,7 @@
 				loadingTask.promise.then(function(pdf) {
 					var pdf_pages = pdf.numPages;
 
-	        {% if not has_nda %}
+	        {% if not is_contract %}
 	            pdf_pages = 1;
 	        {% endif %}
 
