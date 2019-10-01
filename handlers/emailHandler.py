@@ -62,7 +62,7 @@ class Mailer(object):
                 part.add_header('Content-Disposition', 'attachment; filename="' + attachment.get('filename') + '"')
                 msg.attach(part)
 
-            if ast.literal_eval(conf.DEBUG):
+            if not ast.literal_eval(conf.DEBUG):
                 self.server = smtplib.SMTP(host=self.host, port=self.port)
                 self.server.ehlo()
                 self.server.starttls()
