@@ -54,7 +54,7 @@ NOTIFICATION_HTML = \
             <p>WPCI Admin</p>"
 
 
-class manageDocuments():
+class ManageDocuments:
 
     document = None
     user = None
@@ -62,6 +62,7 @@ class manageDocuments():
     google_credentials = None
     git_credentials = None
     link_id = None
+    send_by_email = True
 
     def __init__(self, doc_id=None):
         if doc_id:
@@ -566,8 +567,9 @@ class manageDocuments():
             return contract_b2chainized, sign_record, error
 
     @gen.engine
-    def render_and_send_all_documents(self, email, name, email_body_html, timestamp_now,
-                                      contract_file_name, doc_file_name, contract_b64_file=None,
+    def render_and_send_all_documents(self, email, name, email_body_html,
+                                      timestamp_now, contract_file_name,
+                                      doc_file_name, contract_b64_file=None,
                                       main_tex="main.tex", email_body_text=""):
         """ Trigger the renderization of the documents/contracts related to this doc object """
         ATTACH_CONTENT_TYPE = 'octet-stream'
@@ -651,8 +653,10 @@ class manageDocuments():
                         error = error + F" Couldn't render and attach the contract: {contract_file_name}"
                         logger.error(F"[ERROR render_and_send_all_documents render_contract] Couldn't render the pdf")
 
-                if len(attachment_list) > 0 and error == "":
-                    self.send_attachments(attachment_list, email_body_html, email_body_text)
+                if self.send_by_email and \
+                        len(attachment_list) > 0 and error == "":
+                    self.send_attachments(attachment_list, email_body_html,
+                                          email_body_text)
                 else:
                     logger.error(error)
 
@@ -664,7 +668,8 @@ class manageDocuments():
 
     @gen.engine
     def b2chize_signed_doc(self, signer_public_key_hex, doc_signature_b64,
-                           doc_hash, timestamp_now, contract_file_name, b64_pdf=None, main_tex="main.tex"):
+                           doc_hash, timestamp_now, contract_file_name,
+                           b64_pdf=None, main_tex="main.tex"):
         error = ""
         ATTACH_CONTENT_TYPE = 'octet-stream'
         CONTRACT_FILE_NAME = "document.pdf"
@@ -761,8 +766,12 @@ class manageDocuments():
                                               filename=conf.CONTRACT_FILE_NAME)
                         attachment_list.append(doc_attachment)
 
-                        if len(attachment_list) > 0 and error == "":
-                            self.send_attachments(attachment_list, DEFAULT_HTML_TEXT)
+                        if self.send_by_email and len(attachment_list) > 0 \
+                                and error == "":
+                            self.send_attachments(
+                                attachment_list,
+                                DEFAULT_HTML_TEXT
+                            )
                         else:
                             logger.error(error)
 

@@ -16,7 +16,7 @@ from handlers.apiBaseHandler import BaseHandler
 from models import User, Document, Link, signRecord, signerUser
 from handlers.emailHandler import Mailer
 from handlers.WSHandler import *
-from handlers.manageDocuments import manageDocuments
+from handlers.manageDocuments import ManageDocuments
 from utils import *
 
 latex_jinja_env = jinja2.Environment(
@@ -314,7 +314,7 @@ def get_b64_pdf(doc_id, userjson):
     try:
         user = User.User()
         user = user.find_by_attr("username", userjson.get("username"))
-        new_document = manageDocuments()
+        new_document = ManageDocuments()
         new_document.get_document_by_doc_id(doc_id)
         if new_document.is_valid_document() and new_document.user_has_permission(user):
             # render and send the documents by email
@@ -533,6 +533,7 @@ class PostDocument(BaseHandler):
             name = self.get_argument('name', "")
             email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
             email_body_text = self.get_argument('email_body_text', "")
+            send_by_email = self.get_argument('send_by_email', True)
             options = json.loads(self.get_argument('options', "{}"))
 
             if is_valid_email(email):
@@ -543,29 +544,32 @@ class PostDocument(BaseHandler):
                     temp_signed_count = thislink.signed_count
                     thislink.signed_count = int(temp_signed_count) + 1
 
-                    new_document = manageDocuments()
+                    new_document = ManageDocuments()
                     new_document.get_document_by_link_id(link_id)
                     if new_document.is_valid_document():
                         # render and send the documents by email
                         new_document.link_id = link_id
+                        new_document.send_by_email = send_by_email
 
                         # The file name is composed by the email of the user,
                         # the link id and the timestamp of the creation
                         doc_file_name = F"doc_{email}_{new_document.link_id}_{timestamp_now}.pdf"
                         response.update(
-                            {"s3_doc_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
+                            {"doc_keywords": F"doc_{email}_{new_document.link_id}_{timestamp_now}"}
                         )
 
                         contract_file_name = F"contract_{email}_{new_document.link_id}_{timestamp_now}.pdf"
                         response.update(
-                            {"s3_contract_url": F"{conf.BASE_URL}{BASE_PATH}view_sign_records/{link_id}"}
+                            {"contract_keywords": F"contract_{email}_{new_document.link_id}_{timestamp_now}"}
                         )
 
                         IOLoop.instance().add_callback(
                             callback=lambda:
                             new_document.render_and_send_all_documents(
-                                email, name, email_body_html, timestamp_now, contract_file_name, doc_file_name,
-                                contract_b64_file=None, main_tex="main.tex", email_body_text=email_body_text
+                                email, name, email_body_html, timestamp_now,
+                                contract_file_name, doc_file_name,
+                                contract_b64_file=None, main_tex="main.tex",
+                                email_body_text=email_body_text
                             )
                         )
                         thislink.status = "signed"
@@ -666,7 +670,7 @@ class SignedToRexchain(BaseHandler):
     """Receives a post with the link id and sends it to the rexchain and
     renders back a signed document with the signers attached sheet"""
 
-    def post(self, link_id):
+    def post(self, link_id, send_by_email):
         '''Receives a document id and retrieves a json with a b64 pdf'''
         response = dict()
         userjson = validate_token(self.request.headers.get('Authorization'))
@@ -674,13 +678,14 @@ class SignedToRexchain(BaseHandler):
             self.write_json(AUTH_ERROR, 403)
 
         try:
-            new_document = manageDocuments()
+            new_document = ManageDocuments()
             timestamp_now = str(int(time.time()))
             # Tenemos registro de este link id en la base de datos?
             new_document.get_document_by_link_id(link_id)
             if new_document.is_valid_document():
                 # render and send the documents by email
                 new_document.link_id = link_id
+                new_document.send_by_email = send_by_email
 
                 json_data = json.loads(self.request.body.decode('utf-8'))
                 if not json_data.get("signer_metadata"):
@@ -713,7 +718,6 @@ class SignedToRexchain(BaseHandler):
                         doc_signature = base64.b64encode(crypto_tool.hex2bin(
                             json_data.get("doc_id")))
 
-
                         # The file name is composed by the email of the user,
                         # the link id and the timestamp of the creation
                         contract_file_name = F"contract_" \
@@ -721,9 +725,10 @@ class SignedToRexchain(BaseHandler):
                             F"{new_document.link_id}_{timestamp_now}.pdf"
                         response.update(
                             {
-                                "s3_contract_url":
-                                    F"{conf.BASE_URL}{BASE_PATH}view_sign_"
-                                    F"records/{link_id}"
+                                "contract_keywords":
+                                    F"{signer_metadata.get('email')}_"
+                                    F"{new_document.link_id}_"
+                                    F"{timestamp_now}"
                              }
                         )
 
