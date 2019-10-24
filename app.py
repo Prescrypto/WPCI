@@ -32,7 +32,7 @@ web_app = Application([
     (r"/"+API_BASE_PATH+"documents/links/([^/]+)", routes.Links),
     (r"/"+API_BASE_PATH+"documents/([^/]+)", routes.Documents),
     (r"/"+API_BASE_PATH+"documents/pdf/([^/]+)", routes.RenderDocToPDF),
-    (r"/"+API_BASE_PATH+"documents/signed/([^/]+)", routes.SignedToRexchain),
+    (r"/"+API_BASE_PATH+"documents/signed/([^\/]+)", routes.SignedToRexchain),
     (r"/"+API_BASE_PATH+"documents", routes.PostDocument),
     (r"/"+API_BASE_PATH+"login", routes.AuthLoginHandler),
     (r"/"+API_BASE_PATH+"signin", routes.RegisterUser),

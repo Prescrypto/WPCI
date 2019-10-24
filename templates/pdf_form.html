@@ -123,7 +123,7 @@
 	          // Get desired page
 	          pdf.getPage(i).then(function(page) {
 	            var scale = 2.5;
-	            var viewport = page.getViewport(scale);
+	            var viewport = page.getViewport({ scale: scale, });
 	            var div = document.createElement("div");
 
 	            // Set id attribute with page-#{pdf_page_number} format

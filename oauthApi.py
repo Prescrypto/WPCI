@@ -6,7 +6,8 @@ import subprocess
 import os
 
 #web app
-from flask import Flask, redirect, url_for, session, request, jsonify, render_template
+from flask import Flask, redirect, url_for
+from flask import session, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 from flask_oauthlib.client import OAuth
 from tornado.wsgi import WSGIContainer, WSGIAdapter
@@ -29,7 +30,7 @@ import config as conf
 from models.mongoManager import ManageDB
 from handlers.routes import *
 from handlers.emailHandler import Mailer
-from models import User, Document,signerUser, signRecord
+from models import User, Document, signerUser, signRecord
 from handlers.WSHandler import *
 from utils import *
 
@@ -38,7 +39,7 @@ from utils import *
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tornado-info')
 
-#SMTP VARIABLES
+# SMTP VARIABLES
 SMTP_PASS = conf.SMTP_PASS
 SMTP_USER = conf.SMTP_USER
 SMTP_EMAIL = conf.SMTP_EMAIL
@@ -93,8 +94,8 @@ github = oauth.remote_app(
     base_url=conf.GITHUB_API_URL,
     request_token_url=None,
     access_token_method='POST',
-    access_token_url= conf.GITHUB_OAUTH_URI +'access_token',
-    authorize_url= conf.GITHUB_OAUTH_URI +'authorize'
+    access_token_url=conf.GITHUB_OAUTH_URI + 'access_token',
+    authorize_url=conf.GITHUB_OAUTH_URI + 'authorize'
 )
 
 
@@ -126,6 +127,7 @@ def _jinja2_filter_datetime(date, fmt=None):
     native = date.replace(tzinfo=None)
     format='%b %d, %Y'
     return native.strftime(format)
+
 
 @app.route(BASE_PATH+'index', methods=['GET', 'POST'])
 def index():
@@ -186,7 +188,9 @@ def index():
                 except Exception as e:
                     logger.info("loading logo " + str(e))
                     error = "error loading the file"
-                    return render_template('index.html', error=error, step_2 = step_2, step_3 = step_3, myuser=user)
+                    return render_template('index.html', error=error,
+                                           step_2=step_2, step_3=step_3,
+                                           myuser=user)
 
                 data.pop("prev_logo")
                 data["google_refresh_token"] = ""
@@ -203,8 +207,10 @@ def index():
             error = 'Invalid Values. Please try again.'
             logger.info(error)
 
-    return render_template('index.html', error=error, step_2=step_2, step_3=step_3, myuser=user,
-                           document_list=document_list, doc_len=doc_len, success=success)
+    return render_template('index.html', error=error, step_2=step_2,
+                           step_3=step_3, myuser=user,
+                           document_list=document_list, doc_len=doc_len,
+                           success=success)
 
 
 @app.route(BASE_PATH+'github_reg')
@@ -372,6 +378,7 @@ def register_org():
     if request.method == 'GET':
 
         return render_template('register_org.html', error=error, myuser=user)
+
 
 @app.route(BASE_PATH+'view_docs', methods=['GET', 'POST'])
 def view_docs():
@@ -938,7 +945,7 @@ def show_pdf(id):
     if request.method == 'GET':
         try:
 
-            new_document = manageDocuments()
+            new_document = ManageDocuments()
             new_document.get_document_by_link_id(id)
             if new_document.is_valid_document():
                 # render and send the documents by email
@@ -988,7 +995,7 @@ def show_pdf(id):
         email_body_html = DEFAULT_HTML_TEXT
         timestamp_now = str(int(time.time()))
         try:
-            new_document = manageDocuments()
+            new_document = ManageDocuments()
             new_document.get_document_by_link_id(id)
             if new_document.is_valid_document():
                 # render and send the documents by email
