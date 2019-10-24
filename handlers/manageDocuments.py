@@ -653,12 +653,12 @@ class ManageDocuments:
                         error = error + F" Couldn't render and attach the contract: {contract_file_name}"
                         logger.error(F"[ERROR render_and_send_all_documents render_contract] Couldn't render the pdf")
 
-                if self.send_by_email and \
-                        len(attachment_list) > 0 and error == "":
-                    self.send_attachments(attachment_list, email_body_html,
-                                          email_body_text)
-                else:
-                    logger.error(error)
+                if self.send_by_email:
+                    if len(attachment_list) > 0 and error == "":
+                        self.send_attachments(attachment_list, email_body_html,
+                                              email_body_text)
+                    else:
+                        logger.error(error)
 
             except Exception as e:
                 logger.info("error rendering all documents: {}".format(str(e)))
@@ -766,14 +766,14 @@ class ManageDocuments:
                                               filename=conf.CONTRACT_FILE_NAME)
                         attachment_list.append(doc_attachment)
 
-                        if self.send_by_email and len(attachment_list) > 0 \
-                                and error == "":
-                            self.send_attachments(
-                                attachment_list,
-                                DEFAULT_HTML_TEXT
-                            )
-                        else:
-                            logger.error(error)
+                        if self.send_by_email:
+                            if len(attachment_list) > 0 and error == "":
+                                self.send_attachments(
+                                    attachment_list,
+                                    DEFAULT_HTML_TEXT
+                                )
+                            else:
+                                logger.error(error)
 
         except Exception as e:
             logger.info("[Error] b2chize_signed_doc rendering contract: {}".format(str(e)))
@@ -821,7 +821,8 @@ class ManageDocuments:
                 logger.info("documents rendering has finished")
                 return pdf_rendered
 
-    def send_attachments(self, attachment_list, email_body_html, email_body_text=""):
+    def send_attachments(self, attachment_list, email_body_html,
+                         email_body_text=""):
         """Send a list of attachments to the signer and organization"""
         BASE_PATH = "/docs/"
         mymail = Mailer(username=conf.SMTP_USER, password=conf.SMTP_PASS, host=conf.SMTP_ADDRESS, port=conf.SMTP_PORT)
@@ -833,11 +834,15 @@ class ManageDocuments:
         sender_format = "{} <{}>"
         loader = Loader("templates/email")
         button = loader.load("cta_button.html")
-        notification_subject = F"Your Document {self.document.doc_id} has been downloaded"
-        analytics_link = F"{conf.BASE_URL}{BASE_PATH}analytics/{self.document.doc_id}"
+        notification_subject = F"Your Document {self.document.doc_id}" \
+                               F" has been downloaded"
+        analytics_link = F"{conf.BASE_URL}{BASE_PATH}" \
+                         F"analytics/{self.document.doc_id}"
 
         mymail.send(subject=self.document.doc_name,
-                    email_from=sender_format.format(self.user.org_name, conf.SMTP_EMAIL),
+                    email_from=sender_format.format(
+                        self.user.org_name, conf.SMTP_EMAIL
+                    ),
                     emails_to=[self.signer_user.email],
                     attachments_list=attachment_list,
                     html_message=email_body_html + button.generate().decode("utf-8"),

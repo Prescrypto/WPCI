@@ -533,7 +533,9 @@ class PostDocument(BaseHandler):
             name = self.get_argument('name', "")
             email_body_html = self.get_argument('email_body_html', DEFAULT_HTML_TEXT)
             email_body_text = self.get_argument('email_body_text', "")
-            send_by_email = self.get_argument('send_by_email', True)
+            send_by_email = ast.literal_eval(
+                self.get_argument('send_by_email', "True")
+            )
             options = json.loads(self.get_argument('options', "{}"))
 
             if is_valid_email(email):
@@ -670,7 +672,7 @@ class SignedToRexchain(BaseHandler):
     """Receives a post with the link id and sends it to the rexchain and
     renders back a signed document with the signers attached sheet"""
 
-    def post(self, link_id, send_by_email):
+    def post(self, link_id):
         '''Receives a document id and retrieves a json with a b64 pdf'''
         response = dict()
         userjson = validate_token(self.request.headers.get('Authorization'))
@@ -685,8 +687,9 @@ class SignedToRexchain(BaseHandler):
             if new_document.is_valid_document():
                 # render and send the documents by email
                 new_document.link_id = link_id
-                new_document.send_by_email = send_by_email
-
+                new_document.send_by_email = ast.literal_eval(
+                    self.get_argument('send_by_email', "True")
+                )
                 json_data = json.loads(self.request.body.decode('utf-8'))
                 if not json_data.get("signer_metadata"):
                     self.write(json.dumps({
