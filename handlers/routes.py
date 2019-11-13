@@ -670,6 +670,8 @@ class RenderDocToPDF(BaseHandler):
 
 class SignLink(BaseHandler):
     def post(self, link_id):
+        """ Receives a post with a signer user data
+         and signs the document with it"""
         result = None
         response = dict()
         contract_file_name = doc_file_name = "unknown.pdf"
@@ -677,6 +679,15 @@ class SignLink(BaseHandler):
             userjson = validate_token(self.request.headers.get('Authorization'))
             if not userjson:
                 self.write_json(AUTH_ERROR, 403)
+
+            if not link_id:
+                self.write(
+                    json.dumps(
+                        {
+                            "response": "Error, link id not found"
+                        }
+                    )
+                )
 
             json_data = json.loads(self.request.body.decode('utf-8'))
             if not json_data.get("email") or not json_data.get("name"):
@@ -743,11 +754,14 @@ class SignLink(BaseHandler):
                         self.write(json.dumps(
                             {"response": "Error, Couldn't find the document"}))
                 except Exception as e:
-                    logger.error(F"[ERROR PostDocument GET] {str(e)}")
+                    logger.error(F"[ERROR SignLink POST] {str(e)}")
+                    self.write(json.dumps(
+                        {"response": "Error, Couldn't find the link_id"}
+                    ))
 
         except Exception as e:
-            logger.info("error on clone" + str(e))
-            self.write(json.dumps({"response": "Error"}))
+            logger.info("error on payload data" + str(e))
+            self.write(json.dumps({"response": "Error on Payload data"}))
 
 
 class SignedToRexchain(BaseHandler):
