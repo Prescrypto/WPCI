@@ -24,12 +24,14 @@ cwd = os.getcwd() # used by static file server
 # When running locally, disable OAuthlib's HTTPs verification.
 # ACTION ITEM for developers:
 #     When running in production *do not* leave this option enabled.
+# TODO Enable automatically if the host is 127.0.0.1
 #os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 
 '''Initializing the application with routes'''
 web_app = Application([
     (r"/"+API_BASE_PATH+"documents/links/([^/]+)", routes.Links),
+    (r"/"+API_BASE_PATH+"documents/links/sign/([^/]+)", routes.SignLink),
     (r"/"+API_BASE_PATH+"documents/([^/]+)", routes.Documents),
     (r"/"+API_BASE_PATH+"documents/pdf/([^/]+)", routes.RenderDocToPDF),
     (r"/"+API_BASE_PATH+"documents/signed/([^\/]+)", routes.SignedToRexchain),

@@ -1,7 +1,6 @@
 #python
 import ast
 import jwt
-
 #web app
 import tornado
 from tornado.ioloop import IOLoop
@@ -541,6 +540,7 @@ class PostDocument(BaseHandler):
             if is_valid_email(email):
                 timestamp_now = str(time.time())
                 try:
+                    # TODO refactor on a dryer method
                     thislink = Link.Link()
                     thislink = thislink.find_by_link(link_id)
                     temp_signed_count = thislink.signed_count
@@ -666,6 +666,103 @@ class RenderDocToPDF(BaseHandler):
 
         else:
             self.write(json.dumps({"error": "not enough information to perform the action"}))
+
+
+class SignLink(BaseHandler):
+    def post(self, link_id):
+        """ Receives a post with a signer user data
+         and signs the document with it"""
+        result = None
+        response = dict()
+        contract_file_name = doc_file_name = "unknown.pdf"
+        try:
+            userjson = validate_token(self.request.headers.get('Authorization'))
+            if not userjson:
+                self.write_json(AUTH_ERROR, 403)
+
+            if not link_id:
+                self.write(
+                    json.dumps(
+                        {
+                            "response": "Error, link id not found"
+                        }
+                    )
+                )
+
+            json_data = json.loads(self.request.body.decode('utf-8'))
+            if not json_data.get("email") or not json_data.get("name"):
+                self.write(
+                    json.dumps(
+                        {
+                            "response": "Error, not enough information to sign the pdf"
+                        }
+                    )
+                )
+
+            email = json_data.get("email")
+            name = json_data.get("name")
+            email_body_html = json_data.get("email_body_html", DEFAULT_HTML_TEXT)
+            email_body_text = json_data.get("email_body_text", "")
+            send_by_email = ast.literal_eval(
+                json_data.get("send_by_email", "True")
+            )
+
+            if is_valid_email(email):
+                timestamp_now = str(time.time())
+                try:
+                    # TODO refactor on a dryer method
+                    thislink = Link.Link()
+                    thislink = thislink.find_by_link(link_id)
+                    temp_signed_count = thislink.signed_count
+                    thislink.signed_count = int(temp_signed_count) + 1
+
+                    new_document = ManageDocuments()
+                    new_document.get_document_by_link_id(link_id)
+                    if new_document.is_valid_document():
+                        # render and send the documents by email
+                        new_document.link_id = link_id
+                        new_document.send_by_email = send_by_email
+
+                        # The file name is composed by the email of the user,
+                        # the link id and the timestamp of the creation
+                        doc_file_name = F"doc_{email}_{new_document.link_id}_{timestamp_now}.pdf"
+                        response.update(
+                            {
+                                "doc_keywords": F"doc_{email}_{new_document.link_id}_{timestamp_now}"}
+                        )
+
+                        contract_file_name = F"contract_{email}_{new_document.link_id}_{timestamp_now}.pdf"
+                        response.update(
+                            {
+                                "contract_keywords": F"contract_{email}_{new_document.link_id}_{timestamp_now}"}
+                        )
+
+                        IOLoop.instance().add_callback(
+                            callback=lambda:
+                            new_document.render_and_send_all_documents(
+                                email, name, email_body_html, timestamp_now,
+                                contract_file_name, doc_file_name,
+                                contract_b64_file=None, main_tex="main.tex",
+                                email_body_text=email_body_text
+                            )
+                        )
+                        thislink.status = "signed"
+                        thislink.update()
+
+                        self.write(json.dumps(response))
+
+                    else:
+                        self.write(json.dumps(
+                            {"response": "Error, Couldn't find the document"}))
+                except Exception as e:
+                    logger.error(F"[ERROR SignLink POST] {str(e)}")
+                    self.write(json.dumps(
+                        {"response": "Error, Couldn't find the link_id"}
+                    ))
+
+        except Exception as e:
+            logger.info(F"error on payload data: {e}")
+            self.write(json.dumps({"response": "Error on Payload data"}))
 
 
 class SignedToRexchain(BaseHandler):
