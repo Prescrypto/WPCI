@@ -30,6 +30,7 @@ cwd = os.getcwd() # used by static file server
 '''Initializing the application with routes'''
 web_app = Application([
     (r"/"+API_BASE_PATH+"documents/links/([^/]+)", routes.Links),
+    (r"/"+API_BASE_PATH+"documents/sign/([^/]+)", routes.SignLink),
     (r"/"+API_BASE_PATH+"documents/([^/]+)", routes.Documents),
     (r"/"+API_BASE_PATH+"documents/pdf/([^/]+)", routes.RenderDocToPDF),
     (r"/"+API_BASE_PATH+"documents/signed/([^\/]+)", routes.SignedToRexchain),
