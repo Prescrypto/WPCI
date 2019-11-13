@@ -540,6 +540,7 @@ class PostDocument(BaseHandler):
             if is_valid_email(email):
                 timestamp_now = str(time.time())
                 try:
+                    # TODO refactor on a dryer method
                     thislink = Link.Link()
                     thislink = thislink.find_by_link(link_id)
                     temp_signed_count = thislink.signed_count
@@ -709,6 +710,7 @@ class SignLink(BaseHandler):
             if is_valid_email(email):
                 timestamp_now = str(time.time())
                 try:
+                    # TODO refactor on a dryer method
                     thislink = Link.Link()
                     thislink = thislink.find_by_link(link_id)
                     temp_signed_count = thislink.signed_count
