@@ -55,10 +55,11 @@ def get_b2h_document(payload, signer_user):
                     logger.info("No pdf resulting from cryptosign")
                 else:
                     tx_id = json_result.get("tx_id")
+                    # This is stored to have a historic data of the signed document
                     tx_record = signRecord.SignRecord(tx_id)
+                    tx_record.signer_user = signer_user.email
                     tx_record.rx_audit_url = conf.REXCHAIN_URL + "hash/" + tx_id
                     tx_record.rx_is_valid = True
-                    tx_record.signer_user = signer_user.email
                     tx_record.crypto_audit_url = json_result.get("audit_url")
                     tx_record.create()
                     pdfbytes = base64.b64decode(json_result.get("pdf"))
