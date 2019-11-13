@@ -701,7 +701,6 @@ class SignLink(BaseHandler):
             email = json_data.get("email")
             name = json_data.get("name")
             email_body_html = json_data.get("email_body_html", DEFAULT_HTML_TEXT)
-            print(email_body_html)
             email_body_text = json_data.get("email_body_text", "")
             send_by_email = ast.literal_eval(
                 json_data.get("send_by_email", "True")
