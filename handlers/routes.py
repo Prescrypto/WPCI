@@ -1,7 +1,6 @@
 #python
 import ast
 import jwt
-from urllib.parse import urlunparse
 #web app
 import tornado
 from tornado.ioloop import IOLoop
@@ -701,20 +700,14 @@ class SignLink(BaseHandler):
 
             email = json_data.get("email")
             name = json_data.get("name")
-            email_body_html = json_data.get("email_body_html", False)
-            if not email_body_html:
-                print("no email body")
-                email_body_html = DEFAULT_HTML_TEXT
-            else:
-                email_body_html = urlunparse(email_body_html)
-                print(email_body_html)
+            email_body_html = json_data.get("email_body_html", DEFAULT_HTML_TEXT)
+            print(email_body_html)
             email_body_text = json_data.get("email_body_text", "")
             send_by_email = ast.literal_eval(
                 json_data.get("send_by_email", "True")
             )
 
             if is_valid_email(email):
-                print("it is a valid email")
                 timestamp_now = str(time.time())
                 try:
                     thislink = Link.Link()
