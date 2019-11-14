@@ -51,7 +51,7 @@ $ vagrant up
 __#get server running and start creating stuff__  
 $ vagrant ssh  
   
-$ cd /vagrant/
-$ python app.py --port=5000 --bind=0.0.0.0 --timeout 120
+$ cd /vagrant/  
+$ python app.py --port=5000 --bind=0.0.0.0 --timeout 120  
 
 
