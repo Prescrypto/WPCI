@@ -4,6 +4,7 @@ import base64
 import tempfile
 import subprocess
 import os
+import io
 
 #web app
 from flask import Flask, redirect, url_for
