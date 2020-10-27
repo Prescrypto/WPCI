@@ -40,7 +40,7 @@ PyMuPDF==1.14.20
 
 #encryption and security
 certifi==2018.4.16
-cryptography==2.3.1
+cryptography==3.2
 itsdangerous==0.24
 MarkupSafe==1.0
 passlib==1.7.1
