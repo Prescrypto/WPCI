@@ -45,7 +45,7 @@ itsdangerous==0.24
 MarkupSafe==1.0
 passlib==1.7.1
 PyJWT==1.6.4
-rsa==4.0
+rsa==4.7
 pycryptodome==3.7.2
 
 #templating
