@@ -38,6 +38,7 @@ from utils import *
 
 # Load Logging definition
 logging.basicConfig(level=logging.INFO)
+logging.getLogger('googleapiclient.discovery').setLevel(logging.CRITICAL)
 logger = logging.getLogger('tornado-info')
 
 # SMTP VARIABLES
