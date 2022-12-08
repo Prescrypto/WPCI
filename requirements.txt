@@ -39,7 +39,7 @@ Flask-SSLify==0.1.5
 PyMuPDF==1.14.20
 
 #encryption and security
-certifi==2018.4.16
+certifi==2022.12.7
 cryptography==2.3.1
 itsdangerous==0.24
 MarkupSafe==1.0
